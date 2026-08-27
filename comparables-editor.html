@@ -564,7 +564,7 @@ function renderSidebar(){
     <div class="field"><label>Superficie</label><input type="number" value="${c.superficie}" step="0.05" oninput="setC(${c.id},'superficie',this.value)"></div>
   </div>
   <div class="field-row">
-    <div class="field"><label>Planta</label><select oninput="setC(${c.id},'planta',this.value);if(!this.closest('.comp-card').querySelector('.planta-coef-input').value){setC(${c.id},'plantaCoef','');renderSidebar();}renderPreview()"><option value="">— (coef 1)</option>${Object.keys(PLANTA_COEF).map(k=>`<option value="${k}"${c.planta===k?' selected':''} >${k} (${PLANTA_COEF[k].toFixed(2)})</option>`).join('')}</select></div>
+    <div class="field"><label>Planta</label><select oninput="setC(${c.id},'planta',this.value);if(!this.closest('.comp-card').querySelector('.planta-coef-input').value){setC(${c.id},'plantaCoef','');renderSidebar();}renderPreview()"><option value="">— (coef 1)</option>${Object.keys(PLANTA_COEF).map(k=>'<option value="'+k+'"'+(c.planta===k?' selected':'')+'>'+k+' ('+PLANTA_COEF[k].toFixed(2)+')</option>').join('')}</select></div>
     <div class="field"><label>Coef. planta</label><input class="planta-coef-input" type="number" value="${c.plantaCoef}" step="0.05" placeholder="auto" oninput="setC(${c.id},'plantaCoef',this.value)"></div>
   </div>
   <div class="field"><label>Factor Superficie (vacío = auto ${autoSF.toFixed(2)})</label>
