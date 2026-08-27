@@ -231,7 +231,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <h2>Propiedad Tasada</h2>
   <div class="field"><label>Nombre / Dirección</label><input type="text" id="s-nombre" placeholder="ej: Cabildo 2302 y Olazábal, CABA" oninput="renderPreview()"></div>
   <div class="field-row">
-    <div class="field"><label>Fecha del informe</label><input type="text" id="s-fecha" placeholder="ej: Junio 2026" oninput="renderPreview()"></div>
+    <div class="field"><label>Fecha del informe</label><input type="text" id="s-fecha" placeholder="ej: 12 Junio 2026" oninput="renderPreview()"></div>
     <div class="field"><label>Tasador</label><input type="text" id="s-analista" placeholder="ej: Santiago G." oninput="renderPreview()"></div>
   </div>
   <div class="field"><label>Descripción</label><textarea id="s-desc" rows="3" placeholder="Breve descripción del inmueble..." oninput="renderPreview()"></textarea></div>
@@ -874,12 +874,11 @@ function rSection(comps,tipo,ss){
     ${vals.map(v=>`<td class="vc hom">${v.hom>0?cur+' '+fN(Math.round(v.hom)):'—'}</td>`).join('')}</tr>
     </tbody></table>
     ${avg>0?`
-    <div class="concl-box">
+    <div class="concl-box" style="justify-content:center;gap:12mm;">
       <div class="concl-item"><div class="concl-lbl">Valor Homogeneizado Promedio</div><div class="concl-val">${cur} ${fN(Math.round(avg))}/m²</div><div class="concl-sub">Promedio de comparables</div></div>
       <div class="concl-div"></div>
       <div class="concl-item"><div class="concl-lbl">Superficie Tasado</div><div class="concl-val">${fN(Math.round(ss))} m²</div><div class="concl-sub">Sup. considerada</div></div>
-      <div class="concl-div"></div>
-      <div class="concl-item"><div class="concl-lbl">${tipo==='ALQUILER'?'Valor de Alquiler Estimado (mensual)':'Valor de Venta Estimado'}</div><div class="concl-val">${cur} ${fN(Math.round(vf))}</div><div class="concl-sub">${tipo==='ALQUILER'?cur+'/m² × '+fN(Math.round(ss))+' m²':'Total'}</div></div>
+    </div>
     </div>
     <div class="valor-box">
       <div class="valor-lbl">${tipo==='ALQUILER'?'Valor de Alquiler Mensual Estimado':'Valor de Venta Estimado'}</div>
