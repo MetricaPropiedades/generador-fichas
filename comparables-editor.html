@@ -301,12 +301,17 @@ function cSup(c){const w=W();return(parseFloat(c.pb)||0)+(parseFloat(c.ss)||0)*w
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
+const PLANTA_COEF={'Subsuelo':0.30,'Entrepiso':0.70,'1er piso':0.60,'2do piso':0.50};
+function getPlantaCoef(c){
+  if(c.plantaCoef!==''&&c.plantaCoef!=null&&c.plantaCoef!==undefined){const n=parseFloat(c.plantaCoef);if(!isNaN(n))return n;}
+  return c.planta&&PLANTA_COEF[c.planta]!=null?PLANTA_COEF[c.planta]:1;
+}
 function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
   const ss=subSup(),autoSF=(sup>0&&ss>0)?Math.pow(sup/ss,0.2):1;
   const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
-  const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.tipologia)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1);
-  return{sup,pm2,autoSF,sf,hom};
+  const planta=getPlantaCoef(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.tipologia)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta;
+  return{sup,pm2,autoSF,sf,hom,planta};
 }
 
 // ══════════════════════════════════════
@@ -431,7 +436,7 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',notes:'',photo:null,photoOrig:null});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',plantaCoef:'',notes:'',photo:null,photoOrig:null});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -557,6 +562,10 @@ function renderSidebar(){
   </div>
   <div class="field-row">
     <div class="field"><label>Superficie</label><input type="number" value="${c.superficie}" step="0.05" oninput="setC(${c.id},'superficie',this.value)"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>Planta</label><select oninput="setC(${c.id},'planta',this.value);if(!this.closest('.comp-card').querySelector('.planta-coef-input').value){setC(${c.id},'plantaCoef','');renderSidebar();}renderPreview()"><option value="">— (coef 1)</option>${Object.keys(PLANTA_COEF).map(k=>`<option value="${k}"${c.planta===k?' selected':''} >${k} (${PLANTA_COEF[k].toFixed(2)})</option>`).join('')}</select></div>
+    <div class="field"><label>Coef. planta</label><input class="planta-coef-input" type="number" value="${c.plantaCoef}" step="0.05" placeholder="auto" oninput="setC(${c.id},'plantaCoef',this.value)"></div>
   </div>
   <div class="field"><label>Factor Superficie (vacío = auto ${autoSF.toFixed(2)})</label>
     <input type="number" value="${c.sfOverride}" placeholder="auto" step="0.01" oninput="setC(${c.id},'sfOverride',this.value)">
@@ -855,6 +864,7 @@ function rSection(comps,tipo,ss){
     ['Tipología y Formas',comps.map(c=>c.tipologia)],
     ['Estado',comps.map(c=>c.estado)],
     ['Superficie',comps.map(c=>c.superficie||'1')],
+    ['Planta',comps.map(c=>getPlantaCoef(c).toFixed(2))],
   ];
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
@@ -877,7 +887,7 @@ function rSection(comps,tipo,ss){
     <div class="sec-title" style="margin-top:5mm">Proceso de Homogeneización</div>
     <table class="ctable"><thead><tr><th class="lh" style="width:28%">Factor</th>${hdrs}</tr></thead>
     <tbody>${fRows.map(fRow).join('')}
-    <tr><td class="lc" style="font-weight:700">Valor Homogeneizado<br><span style="font-weight:400;font-size:7pt;color:#aaa">${cur}/m²</span></td>
+    <tr><td class="lc" style="font-weight:700"><div style="display:flex;justify-content:space-between;align-items:baseline"><span>Valor Homogeneizado</span><span style="font-weight:400;font-size:7pt;color:#aaa">${cur}/m²</span></div></td>
     ${vals.map(v=>`<td class="vc hom">${v.hom>0?cur+' '+fN(Math.round(v.hom)):'—'}</td>`).join('')}</tr>
     </tbody></table>
     ${avg>0?`
