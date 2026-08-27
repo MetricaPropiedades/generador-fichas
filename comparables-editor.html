@@ -234,7 +234,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field"><label>Nombre / Dirección</label><input type="text" id="s-nombre" placeholder="ej: Cabildo 2302 y Olazábal, CABA" oninput="renderPreview()"></div>
   <div class="field-row">
     <div class="field"><label>Fecha del informe</label><input type="text" id="s-fecha" placeholder="ej: 12 Junio 2026" oninput="renderPreview()"></div>
-    <div class="field"><label>Tasador</label><input type="text" id="s-analista" placeholder="ej: Santiago G." oninput="renderPreview()"></div>
+    <div class="field"><label>Tasador <small style="font-weight:400;opacity:.55">(dato interno)</small></label><input type="text" id="s-analista" placeholder="ej: Santiago G." oninput="renderPreview()"></div>
   </div>
   <div class="field"><label>Tipo de tasación</label><div class="tog"><button id="st-alq" class="on" onclick="setSubjectTipo('Alquiler')">Alquiler</button><button id="st-vta" onclick="setSubjectTipo('Venta')">Venta</button></div></div>
   <div class="field"><label>Descripción</label><textarea id="s-desc" rows="3" placeholder="Breve descripción del inmueble..." oninput="renderPreview()"></textarea></div>
@@ -425,14 +425,13 @@ function renderCompPhotoSb(c){
 // COMPARABLE CRUD
 // ══════════════════════════════════════
 function setSubjectTipo(t){
-  comparables.forEach(c=>{c.tipo=t;});
   document.getElementById('st-alq').classList.toggle('on',t==='Alquiler');
   document.getElementById('st-vta').classList.toggle('on',t==='Venta');
-  renderSidebar();renderPreview();
+  renderPreview();
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:'Alquiler',tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',notes:'',photo:null,photoOrig:null});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',notes:'',photo:null,photoOrig:null});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -596,9 +595,7 @@ function renderPreview(){
     rHeader(nombre,fecha)+
     rSubject(nombre,fecha,analista,desc,pb,sv,p1,p2,w,ss,parseFloat(document.getElementById('s-frente').value)||0)+
     ((showMap||mapPhoto)?rMap():'')+
-    (alqs.length?rSection(alqs,'ALQUILER',ss):'')+
-    (vtas.length?rSection(vtas,'VENTA',ss):'')+
-    (!alqs.length&&!vtas.length?rEmpty():'')+
+    (()=>{const activeTipo=document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'ALQUILER':'VENTA';const activeComps=activeTipo==='ALQUILER'?alqs:vtas;return activeComps.length?rSection(activeComps,activeTipo,ss):rEmpty();})()+
     rFooter(analista);
   if(showMap&&!capturedMapImg)setTimeout(()=>initMapFromCache(),60);
   autoSave();
@@ -888,7 +885,6 @@ function rSection(comps,tipo,ss){
       <div class="concl-item"><div class="concl-lbl">Valor Homogeneizado Promedio</div><div class="concl-val">${cur} ${fN(Math.round(avg))}/m²</div><div class="concl-sub">Promedio de comparables</div></div>
       <div class="concl-div"></div>
       <div class="concl-item"><div class="concl-lbl">Superficie Tasado</div><div class="concl-val">${fN(Math.round(ss))} m²</div><div class="concl-sub">Sup. considerada</div></div>
-    </div>
     </div>
     <div class="valor-box">
       <div class="valor-lbl">${tipo==='ALQUILER'?'Valor de Alquiler Mensual Estimado':'Valor de Venta Estimado'}</div>
