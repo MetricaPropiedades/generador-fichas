@@ -77,7 +77,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .d-header-l h2{font-size:8pt;font-weight:400;color:rgba(255,255,255,.4);margin-top:1.5mm;}
 .d-header img{height:66px;flex-shrink:0;}
 
-.d-subject{background:var(--cream);padding:8mm 13mm;border-left:4px solid var(--g);}
+.d-subject{background:var(--cream);padding:8mm 13mm;}
 .d-over{font-size:7pt;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.35);margin-bottom:2mm;}
 .d-addr{font-size:14.5pt;font-weight:800;color:var(--dark);line-height:1.2;}
 .d-meta{display:flex;gap:7mm;margin-top:4mm;flex-wrap:wrap;align-items:flex-start;}
@@ -237,7 +237,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field"><label>Descripción</label><textarea id="s-desc" rows="3" placeholder="Breve descripción del inmueble..." oninput="renderPreview()"></textarea></div>
 
   <div class="field">
-    <label>Foto del tasado</label>
+    <label>Foto del inmueble tasado</label>
     <label class="file-label">📷 Agregar foto(s)<input type="file" accept="image/*" multiple onchange="loadSubjectPhoto(this)"></label>
     <div class="sb-photos" id="sb-subject-photo"></div>
   </div>
