@@ -429,7 +429,9 @@ function renderCompPhotoSb(c){
 // ══════════════════════════════════════
 // COMPARABLE CRUD
 // ══════════════════════════════════════
+function setPlantaPreset(id,planta,coef){setC(id,'planta',planta);setC(id,'plantaCoef',coef);renderSidebar();renderPreview();}
 function setSubjectTipo(t){
+  comparables.forEach(c=>{c.tipo=t;});
   document.getElementById('st-alq').classList.toggle('on',t==='Alquiler');
   document.getElementById('st-vta').classList.toggle('on',t==='Venta');
   renderPreview();
@@ -480,12 +482,7 @@ function renderSidebar(){
     <label style="color:#C8941A;font-size:9px;letter-spacing:.1em">🔗 LINK (interno)</label>
     <input type="text" value="${esc(c.link||'')}" placeholder="ej: zonaprop.com.ar/..." oninput="setC(${c.id},'link',this.value)" style="font-size:10px;color:#aaa">
   </div>
-  <div class="field"><label>Tipo transacción</label>
-    <div class="tog">
-      <button class="tt ${c.tipo==='Alquiler'?'on':''}" data-v="Alquiler" onclick="setC(${c.id},'tipo','Alquiler')">Alquiler</button>
-      <button class="tt ${c.tipo==='Venta'?'on':''}" data-v="Venta" onclick="setC(${c.id},'tipo','Venta')">Venta</button>
-    </div>
-  </div>
+  
   <div class="field"><label>Tipo operación</label>
     <div class="field-hint" style="margin-bottom:3px">Oferta = precio pedido en portal (×0.9). Real = operación cerrada (×1.0).</div>
     <div class="tog">
@@ -563,9 +560,9 @@ function renderSidebar(){
   <div class="field-row">
     <div class="field"><label>Superficie</label><input type="number" value="${c.superficie}" step="0.05" oninput="setC(${c.id},'superficie',this.value)"></div>
   </div>
-  <div class="field-row">
-    <div class="field"><label>Planta</label><select oninput="setC(${c.id},'planta',this.value);if(!this.closest('.comp-card').querySelector('.planta-coef-input').value){setC(${c.id},'plantaCoef','');renderSidebar();}renderPreview()"><option value="">— (coef 1)</option>${Object.keys(PLANTA_COEF).map(k=>'<option value="'+k+'"'+(c.planta===k?' selected':'')+'>'+k+' ('+PLANTA_COEF[k].toFixed(2)+')</option>').join('')}</select></div>
-    <div class="field"><label>Coef. planta</label><input class="planta-coef-input" type="number" value="${c.plantaCoef}" step="0.05" placeholder="auto" oninput="setC(${c.id},'plantaCoef',this.value)"></div>
+  <div class="field"><label>Planta</label>
+    <div style="display:flex;gap:3px;margin-bottom:4px">${['Subsuelo','Entrepiso','1er piso','2do piso'].map(k=>'<button onclick="setPlantaPreset('+c.id+',\''+k+'\','+({'Subsuelo':0.30,'Entrepiso':0.70,'1er piso':0.60,'2do piso':0.50})[k]+')" style="flex:1;padding:3px 0;font-size:9px;border-radius:3px;border:1px solid rgba(255,255,255,.15);background:'+(c.planta===k?'rgba(200,148,26,.3)':'rgba(255,255,255,.05)')+';color:rgba(255,255,255,.75);cursor:pointer">'+k+'</button>').join('')}</div>
+    <input type="number" value="${c.plantaCoef}" step="0.05" oninput="setC(${c.id},'plantaCoef',this.value)" placeholder="1">
   </div>
   <div class="field"><label>Factor Superficie (vacío = auto ${autoSF.toFixed(2)})</label>
     <input type="number" value="${c.sfOverride}" placeholder="auto" step="0.01" oninput="setC(${c.id},'sfOverride',this.value)">
