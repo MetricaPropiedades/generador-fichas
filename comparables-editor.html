@@ -422,7 +422,7 @@ function renderCompPhotoSb(c){
 // COMPARABLE CRUD
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',tipo:'Alquiler',tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',notes:'',photo:null,photoOrig:null});
+  comparables.push({id:nextId++,address:'',link:'',tipo:'Alquiler',tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',notes:'',photo:null,photoOrig:null});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -461,6 +461,10 @@ function renderSidebar(){
 <div class="sb-card-body">
   <div class="field"><label>Dirección / Nombre</label>
     <input type="text" value="${esc(c.address)}" placeholder="ej: Belgrano 925" oninput="setC(${c.id},'address',this.value)">
+  </div>
+  <div class="field" style="margin-top:2px">
+    <label style="color:#C8941A;font-size:9px;letter-spacing:.1em">🔗 LINK (interno)</label>
+    <input type="text" value="${esc(c.link||'')}" placeholder="ej: zonaprop.com.ar/..." oninput="setC(${c.id},'link',this.value)" style="font-size:10px;color:#aaa">
   </div>
   <div class="field"><label>Tipo transacción</label>
     <div class="tog">
@@ -759,7 +763,7 @@ function rSubject(nombre,fecha,analista,desc,pb,sv,p1,p2,w,ss,frente){
   if(sv>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(sv)} m²</strong><span>Subsuelo ×${w.ss}</span></div>`);
   if(p1>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(p1)} m²</strong><span>1er Piso ×${w.p1}</span></div>`);
   if(p2>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(p2)} m²</strong><span>2do Piso ×${w.p2}</span></div>`);
-  if(analista)metaItems.push(`<div class="d-meta-item"><strong>${esc(analista)}</strong><span>Tasador</span></div>`);
+  // analista is internal only — not rendered in ficha
   return`<div class="d-subject">
     <div class="d-over">Propiedad Tasada</div>
     <div class="d-addr">${esc(nombre)||'Dirección no especificada'}</div>
