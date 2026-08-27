@@ -303,8 +303,8 @@ function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace('
 
 const PLANTA_COEF={'Subsuelo':0.30,'Entrepiso':0.70,'1er piso':0.60,'2do piso':0.50};
 function getPlantaCoef(c){
-  if(c.plantaCoef!==''&&c.plantaCoef!=null&&c.plantaCoef!==undefined){const n=parseFloat(c.plantaCoef);if(!isNaN(n))return n;}
-  return c.planta&&PLANTA_COEF[c.planta]!=null?PLANTA_COEF[c.planta]:1;
+  const map={Subsuelo:+c.pcs||0.30,Entrepiso:+c.pce||0.70,'1er piso':+c.pc1||0.60,'2do piso':+c.pc2||0.50};
+  return c.planta&&map[c.planta]!=null?map[c.planta]:1;
 }
 function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
@@ -429,7 +429,7 @@ function renderCompPhotoSb(c){
 // ══════════════════════════════════════
 // COMPARABLE CRUD
 // ══════════════════════════════════════
-function setPlantaPreset(id,planta,coef){setC(id,'planta',planta);setC(id,'plantaCoef',coef);renderSidebar();renderPreview();}
+function setPlantaPreset(id,planta){setC(id,'planta',planta);renderSidebar();renderPreview();}
 function setSubjectTipo(t){
   comparables.forEach(c=>{c.tipo=t;});
   document.getElementById('st-alq').classList.toggle('on',t==='Alquiler');
@@ -438,7 +438,7 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',plantaCoef:'',notes:'',photo:null,photoOrig:null});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',pcs:0.30,pce:0.70,pc1:0.60,pc2:0.50,notes:'',photo:null,photoOrig:null});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -561,8 +561,10 @@ function renderSidebar(){
     <div class="field"><label>Superficie</label><input type="number" value="${c.superficie}" step="0.05" oninput="setC(${c.id},'superficie',this.value)"></div>
   </div>
   <div class="field"><label>Planta</label>
-    <div style="display:flex;gap:3px;margin-bottom:4px">${['Subsuelo','Entrepiso','1er piso','2do piso'].map(k=>'<button onclick="setPlantaPreset('+c.id+',\''+k+'\','+({'Subsuelo':0.30,'Entrepiso':0.70,'1er piso':0.60,'2do piso':0.50})[k]+')" style="flex:1;padding:3px 0;font-size:9px;border-radius:3px;border:1px solid rgba(255,255,255,.15);background:'+(c.planta===k?'rgba(200,148,26,.3)':'rgba(255,255,255,.05)')+';color:rgba(255,255,255,.75);cursor:pointer">'+k+'</button>').join('')}</div>
-    <input type="number" value="${c.plantaCoef}" step="0.05" oninput="setC(${c.id},'plantaCoef',this.value)" placeholder="1">
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">${c.planta==="Subsuelo"?'<button onclick="setPlantaPreset('+c.id+',\'Subsuelo\')" style="border-radius:3px;border:1px solid rgba(200,148,26,.6);background:rgba(200,148,26,.2);color:#C8941A;font-weight:700;cursor:pointer;padding:1px 5px;font-size:9px;font-family:inherit">●</button>':'<button onclick="setPlantaPreset('+c.id+',\'Subsuelo\')" style="border-radius:3px;border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.4);cursor:pointer;padding:1px 5px;font-size:9px;font-family:inherit">○</button>'}<span style="font-size:9px;color:rgba(255,255,255,.6);flex:1">Subsuelo</span><input type="number" value="${c.pcs}" step="0.05" oninput="setC(${c.id},'pcs',parseFloat(this.value)||0.30);renderPreview()" style="width:52px;text-align:right"></div>
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">${c.planta==="Entrepiso"?'<button onclick="setPlantaPreset('+c.id+',\'Entrepiso\')" style="border-radius:3px;border:1px solid rgba(200,148,26,.6);background:rgba(200,148,26,.2);color:#C8941A;font-weight:700;cursor:pointer;padding:1px 5px;font-size:9px;font-family:inherit">●</button>':'<button onclick="setPlantaPreset('+c.id+',\'Entrepiso\')" style="border-radius:3px;border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.4);cursor:pointer;padding:1px 5px;font-size:9px;font-family:inherit">○</button>'}<span style="font-size:9px;color:rgba(255,255,255,.6);flex:1">Entrepiso</span><input type="number" value="${c.pce}" step="0.05" oninput="setC(${c.id},'pce',parseFloat(this.value)||0.70);renderPreview()" style="width:52px;text-align:right"></div>
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">${c.planta==="1er piso"?'<button onclick="setPlantaPreset('+c.id+',\'1er piso\')" style="border-radius:3px;border:1px solid rgba(200,148,26,.6);background:rgba(200,148,26,.2);color:#C8941A;font-weight:700;cursor:pointer;padding:1px 5px;font-size:9px;font-family:inherit">●</button>':'<button onclick="setPlantaPreset('+c.id+',\'1er piso\')" style="border-radius:3px;border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.4);cursor:pointer;padding:1px 5px;font-size:9px;font-family:inherit">○</button>'}<span style="font-size:9px;color:rgba(255,255,255,.6);flex:1">1er piso</span><input type="number" value="${c.pc1}" step="0.05" oninput="setC(${c.id},'pc1',parseFloat(this.value)||0.60);renderPreview()" style="width:52px;text-align:right"></div>
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">${c.planta==="2do piso"?'<button onclick="setPlantaPreset('+c.id+',\'2do piso\')" style="border-radius:3px;border:1px solid rgba(200,148,26,.6);background:rgba(200,148,26,.2);color:#C8941A;font-weight:700;cursor:pointer;padding:1px 5px;font-size:9px;font-family:inherit">●</button>':'<button onclick="setPlantaPreset('+c.id+',\'2do piso\')" style="border-radius:3px;border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.4);cursor:pointer;padding:1px 5px;font-size:9px;font-family:inherit">○</button>'}<span style="font-size:9px;color:rgba(255,255,255,.6);flex:1">2do piso</span><input type="number" value="${c.pc2}" step="0.05" oninput="setC(${c.id},'pc2',parseFloat(this.value)||0.50);renderPreview()" style="width:52px;text-align:right"></div>
   </div>
   <div class="field"><label>Factor Superficie (vacío = auto ${autoSF.toFixed(2)})</label>
     <input type="number" value="${c.sfOverride}" placeholder="auto" step="0.01" oninput="setC(${c.id},'sfOverride',this.value)">
@@ -861,7 +863,7 @@ function rSection(comps,tipo,ss){
     ['Tipología y Formas',comps.map(c=>c.tipologia)],
     ['Estado',comps.map(c=>c.estado)],
     ['Superficie',comps.map(c=>c.superficie||'1')],
-    ['Planta',comps.map(c=>getPlantaCoef(c).toFixed(2))],
+    ['Planta',comps.map(c=>c.planta?getPlantaCoef(c).toFixed(2):'—')],
   ];
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
