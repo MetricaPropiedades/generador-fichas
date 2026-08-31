@@ -914,7 +914,7 @@ function rSection(comps,tipo,ss){
     ['Régimen',comps.map(c=>c.regimen?getRegimenAdj(c).toFixed(2):'—')],
   ];
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
-  const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
+  const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
   const tipoLabel=tipo==='ALQUILER'?'Alquiler':'Venta';
 
   return`<div class="d-section comp-section">
