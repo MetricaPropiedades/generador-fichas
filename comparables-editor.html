@@ -684,9 +684,12 @@ function initMapFromCache(){
   if(st2)st2.textContent='Restaurando: sujeto '+(geoCoords.subject?'✓':'✗')+', comparables '+nComp+'/'+geoCoords.comparables.length;
   if(leafletMap){leafletMap.remove();leafletMap=null;}
   leafletMap=L.map('leaflet-map',{zoomControl:true,attributionControl:true});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
-    attribution:'© <a href="https://www.openstreetmap.org">OpenStreetMap</a> © <a href="https://carto.com">CARTO</a>',
-    maxZoom:19,crossOrigin:true
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{
+    attribution:'© <a href="https://www.esri.com">Esri</a>',
+    maxZoom:16,crossOrigin:true
+  }).addTo(leafletMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{
+    maxZoom:16,crossOrigin:true,pane:'overlayPane'
   }).addTo(leafletMap);
   const bounds=[];
   if(geoCoords.subject){
