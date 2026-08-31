@@ -331,7 +331,7 @@ function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
   const ss=subSup(),autoSF=(sup>0&&ss>0)?Math.pow(sup/ss,0.2):1;
   const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
-  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.tipologia)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta*frenteAdj*posAdj;
+  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta*frenteAdj*posAdj;
   return{sup,pm2,autoSF,sf,hom,planta};
 }
 
@@ -594,10 +594,7 @@ function renderSidebar(){
     <div class="field"><label>% Negociación</label><input type="number" class="oferta-i" value="${c.oferta}" step="0.05" oninput="setC(${c.id},'oferta',this.value)"></div>
     <div class="field"><label>Ubicación</label><input type="number" value="${c.ubicacion}" step="0.05" oninput="setC(${c.id},'ubicacion',this.value)"></div>
   </div>
-  <div class="field-row">
-    <div class="field"><label>Tipología y Formas</label><input type="number" value="${c.tipologia}" step="0.05" oninput="setC(${c.id},'tipologia',this.value)"></div>
-    <div class="field"><label>Estado</label><input type="number" value="${c.estado}" step="0.05" oninput="setC(${c.id},'estado',this.value)"></div>
-  </div>
+  <div class="field"><label>Estado</label><input type="number" value="${c.estado}" step="0.05" oninput="setC(${c.id},'estado',this.value)"></div>
   <div class="field-row">
     <div class="field"><label>Superficie</label><input type="number" value="${c.superficie}" step="0.05" oninput="setC(${c.id},'superficie',this.value)"></div>
   </div>
@@ -896,7 +893,6 @@ function rSection(comps,tipo,ss){
   const fRows=[
     ['% Negociación',comps.map(c=>c.oferta)],
     ['Ubicación',comps.map(c=>c.ubicacion)],
-    ['Tipología y Formas',comps.map(c=>c.tipologia)],
     ['Estado',comps.map(c=>c.estado)],
     ['Superficie',comps.map(c=>c.superficie||'1')],
     ['Planta',comps.map(c=>c.planta?getPlantaCoef(c).toFixed(2):'—')],
