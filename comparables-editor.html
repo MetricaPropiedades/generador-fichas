@@ -343,7 +343,7 @@ function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
   const ss=subSup(),autoSF=(sup>0&&ss>0)?Math.pow(sup/ss,0.2):1;
   const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
-  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const calidadAdj=getCalidadAdj(c);const regimenAdj=getRegimenAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta*frenteAdj*posAdj*calidadAdj*regimenAdj;
+  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const calidadAdj=getCalidadAdj(c);const regimenAdj=getRegimenAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta*frenteAdj*posAdj*calidadAdj*regimenAdj*(parseFloat(c.alturaInterna)||1);
   return{sup,pm2,autoSF,sf,hom,planta};
 }
 
@@ -471,7 +471,7 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',pcs:0.30,pce:0.70,pc1:0.60,pc2:0.50,frenteRango:'',frenteCustomCoef:'',posicion:'',notes:'',photo:null,photoOrig:null});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',pcs:0.30,pce:0.70,pc1:0.60,pc2:0.50,frenteRango:'',frenteCustomCoef:'',posicion:'',alturaInterna:'',notes:'',photo:null,photoOrig:null});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -567,6 +567,14 @@ function renderSidebar(){
         <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja (factor: 1.67)</option>
       </select>
     </div>
+  </div>
+  <div class="field"><label>Altura interna salón PB</label>
+    <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'alturaInterna',this.value);renderPreview()">
+      <option value="" ${!c.alturaInterna?'selected':''}>— sin ajuste</option>
+      <option value="0.9" ${c.alturaInterna==='0.9'?'selected':''}>Baja (factor: 0.90)</option>
+      <option value="1" ${c.alturaInterna==='1'?'selected':''}>Normal (factor: 1.00)</option>
+      <option value="1.1" ${c.alturaInterna==='1.1'?'selected':''}>Alta (factor: 1.10)</option>
+    </select>
   </div>
   <div class="field-row" style="align-items:flex-end">
     <div class="field" style="max-width:90px"><label>Frente (m)</label><input type="number" value="${c.frente}" placeholder="0.00" step="0.1" oninput="setC(${c.id},'frente',this.value)"></div>
@@ -912,6 +920,7 @@ function rSection(comps,tipo,ss){
     ['Posición en cuadra',comps.map(c=>c.posicion?getPosicionAdj(c).toFixed(2):'—')],
     ['Calidad',comps.map(c=>c.calidad?getCalidadAdj(c).toFixed(2):'—')],
     ['Régimen',comps.map(c=>c.regimen?getRegimenAdj(c).toFixed(2):'—')],
+    ['Altura interna PB',comps.map(c=>c.alturaInterna||'—')],
   ];
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
