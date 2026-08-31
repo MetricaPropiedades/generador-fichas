@@ -591,7 +591,7 @@ function renderSidebar(){
   <div class="field-calc">${calcTxt}</div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Factores de homogeneización</div>
   <div class="field-row">
-    <div class="field"><label>Oferta</label><input type="number" class="oferta-i" value="${c.oferta}" step="0.05" oninput="setC(${c.id},'oferta',this.value)"></div>
+    <div class="field"><label>% Negociación</label><input type="number" class="oferta-i" value="${c.oferta}" step="0.05" oninput="setC(${c.id},'oferta',this.value)"></div>
     <div class="field"><label>Ubicación</label><input type="number" value="${c.ubicacion}" step="0.05" oninput="setC(${c.id},'ubicacion',this.value)"></div>
   </div>
   <div class="field-row">
@@ -894,7 +894,7 @@ function rSection(comps,tipo,ss){
     ['Notas',comps.map(c=>esc(c.notes)||'—'),'notes'],
   ];
   const fRows=[
-    ['Oferta',comps.map(c=>c.oferta)],
+    ['% Negociación',comps.map(c=>c.oferta)],
     ['Ubicación',comps.map(c=>c.ubicacion)],
     ['Tipología y Formas',comps.map(c=>c.tipologia)],
     ['Estado',comps.map(c=>c.estado)],
