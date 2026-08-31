@@ -295,7 +295,7 @@ let mapPhoto=null, mapPhotoOrig=null;
 let showMap=false, geoCoords={subject:null,comparables:[]}, capturedMapImg=null, geoCache={};
 let leafletMap=null;
 
-function W(){return{ss:parseFloat(document.getElementById('w-ss').value)||0.5,p1:parseFloat(document.getElementById('w-p1').value)||0.6,p2:parseFloat(document.getElementById('w-p2').value)||0.5};}
+function W(){return{ss:parseFloat(document.getElementById('w-ss').value)||0.5,p1:parseFloat(document.getElementById('w-p1').value)||0.6};}
 let subjectCustomFloors=[];
 
 function renderSubjectFloors(){
@@ -1035,7 +1035,7 @@ function closeBanner(){document.getElementById('recovery-banner').style.display=
 function discardDraft(){
   localStorage.removeItem(DRAFT_KEY);
   ['s-nombre','s-fecha','s-analista','s-desc','s-pb','s-ss','s-p1','s-p2'].forEach(id=>{document.getElementById(id).value='';});
-  document.getElementById('w-ss').value='0.50';document.getElementById('w-p1').value='0.60';document.getElementById('w-p2').value='0.50';
+  document.getElementById('w-ss').value='0.50';document.getElementById('w-p1').value='0.60';
   subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;
   renderSubjectPhotoSb();renderMapPhotoSb();
   comparables=[];nextId=1;renderSidebar();renderPreview();closeBanner();
@@ -1045,7 +1045,7 @@ function discardDraft(){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function getState(){
-  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,customFloors:subjectCustomFloors.map(f=>({name:f.name,m2:f.m2})),photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,p2:document.getElementById('w-p2').value},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
+  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,customFloors:subjectCustomFloors.map(f=>({name:f.name,m2:f.m2})),photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1066,7 +1066,7 @@ function applyState(state){
   const w=state.weights||{};
   document.getElementById('w-ss').value=w.ss||'0.50';
   document.getElementById('w-p1').value=w.p1||'0.60';
-  document.getElementById('w-p2').value=w.p2||'0.50';
+  
   comparables=(state.comparables||[]).map(c=>({...c}));
   nextId=comparables.length?Math.max(...comparables.map(c=>c.id))+1:1;
   // Restaurar estado del mapa ANTES de renderPreview para que #leaflet-map exista en el DOM
