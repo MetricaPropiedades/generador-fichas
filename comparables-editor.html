@@ -675,13 +675,13 @@ function renderPreview(){
   const pb=parseFloat(document.getElementById('s-pb').value)||0;
   const sv=parseFloat(document.getElementById('s-ss').value)||0;
   const p1=parseFloat(document.getElementById('s-p1').value)||0;
-  const p2=parseFloat(document.getElementById('s-p2').value)||0;
+  
   const w=W();
   const alqs=comparables.filter(c=>c.tipo==='Alquiler');
   const vtas=comparables.filter(c=>c.tipo==='Venta');
   document.getElementById('doc').innerHTML=
     rHeader(nombre,fecha)+
-    rSubject(nombre,fecha,analista,desc,pb,sv,p1,p2,w,ss,parseFloat(document.getElementById('s-frente').value)||0)+
+    rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,parseFloat(document.getElementById('s-frente').value)||0)+
     ((showMap||mapPhoto)?rMap():'')+
     (()=>{const activeTipo=document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'ALQUILER':'VENTA';const activeComps=activeTipo==='ALQUILER'?alqs:vtas;return activeComps.length?rSection(activeComps,activeTipo,ss):rEmpty();})()+
     rFooter(analista);
@@ -850,14 +850,14 @@ function rSubjectPhotos(){
   const imgs=subjectPhotos.map(p=>'<img src="'+p.photo+'" style="width:100%;height:auto;border-radius:3px;display:block;" alt="">').join('');
   return'<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:2mm;margin-top:4mm">'+imgs+'</div>';
 }
-function rSubject(nombre,fecha,analista,desc,pb,sv,p1,p2,w,ss,frente){
+function rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,frente){
   const metaItems=[];
   if(frente>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(frente)} m</strong><span>Frente</span></div>`);
   if(ss>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(Math.round(ss))} m²</strong><span>Sup. Considerada</span></div>`);
   if(pb>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(pb)} m²</strong><span>Planta Baja</span></div>`);
   if(sv>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(sv)} m²</strong><span>Subsuelo ×${w.ss}</span></div>`);
   if(p1>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(p1)} m²</strong><span>1er Piso ×${w.p1}</span></div>`);
-  if(p2>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(p2)} m²</strong><span>2do Piso ×${w.p2}</span></div>`);
+  
   // analista is internal only — not rendered in ficha
   return`<div class="d-subject">
     <div class="d-over">Propiedad Tasada</div>
@@ -1034,7 +1034,7 @@ function autoSave(){
 function closeBanner(){document.getElementById('recovery-banner').style.display='none';}
 function discardDraft(){
   localStorage.removeItem(DRAFT_KEY);
-  ['s-nombre','s-fecha','s-analista','s-desc','s-pb','s-ss','s-p1','s-p2'].forEach(id=>{document.getElementById(id).value='';});
+  ['s-nombre','s-fecha','s-analista','s-desc','s-pb','s-ss','s-p1'].forEach(id=>{document.getElementById(id).value='';});
   document.getElementById('w-ss').value='0.50';document.getElementById('w-p1').value='0.60';
   subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;
   renderSubjectPhotoSb();renderMapPhotoSb();
