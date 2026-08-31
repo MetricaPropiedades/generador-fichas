@@ -238,6 +238,24 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   </div>
   <div class="field"><label>Tipo de tasación</label><div class="tog"><button id="st-alq" class="on" onclick="setSubjectTipo('Alquiler')">Alquiler</button><button id="st-vta" onclick="setSubjectTipo('Venta')">Venta</button></div></div>
   <div class="field"><label>Descripción</label><textarea id="s-desc" rows="3" placeholder="Breve descripción del inmueble..." oninput="renderPreview()"></textarea></div>
+  <div class="field-row">
+    <div class="field"><label>Régimen</label>
+      <select id="s-regimen" onchange="renderPreview()" style="width:100%">
+        <option value="">— sin ajuste</option>
+        <option value="P. Horizontal">P. Horizontal (1.00)</option>
+        <option value="Terreno propio">Terreno propio (1.15)</option>
+      </select>
+    </div>
+    <div class="field"><label>Calidad</label>
+      <select id="s-calidad" onchange="renderPreview()" style="width:100%">
+        <option value="">— sin ajuste</option>
+        <option value="Muy buena">Muy buena (1.00)</option>
+        <option value="Buena">Buena (0.90)</option>
+        <option value="Media">Media (0.75)</option>
+        <option value="Baja">Baja (0.60)</option>
+      </select>
+    </div>
+  </div>
 
   <div class="field">
     <label>Foto del inmueble tasado</label>
@@ -301,6 +319,22 @@ function cSup(c){const w=W();return(parseFloat(c.pb)||0)+(parseFloat(c.ss)||0)*w
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
+const CALIDAD_COEF={'Muy buena':1.00,'Buena':0.90,'Media':0.75,'Baja':0.60};
+const REGIMEN_COEF={'Terreno propio':1.15,'P. Horizontal':1.00};
+function getCalidadAdj(c){
+  if(!c.calidad)return 1;
+  const sv=document.getElementById('s-calidad')?.value||'';
+  const sc=CALIDAD_COEF[sv]||1.00;
+  const cc=CALIDAD_COEF[c.calidad]||1.00;
+  return sc/cc;
+}
+function getRegimenAdj(c){
+  if(!c.regimen)return 1;
+  const sv=document.getElementById('s-regimen')?.value||'';
+  const sc=REGIMEN_COEF[sv]||1.00;
+  const cc=REGIMEN_COEF[c.regimen]||1.00;
+  return sc/cc;
+}
 const POSICION_COEF={'esquina':1.25,'ante-esquina':1.10,'mitad':1.00};
 function getPosicionAdj(c){
   if(!c.posicion)return 1;
@@ -331,7 +365,7 @@ function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
   const ss=subSup(),autoSF=(sup>0&&ss>0)?Math.pow(sup/ss,0.2):1;
   const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
-  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta*frenteAdj*posAdj;
+  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const calidadAdj=getCalidadAdj(c);const regimenAdj=getRegimenAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta*frenteAdj*posAdj*calidadAdj*regimenAdj;
   return{sup,pm2,autoSF,sf,hom,planta};
 }
 
@@ -898,6 +932,8 @@ function rSection(comps,tipo,ss){
     ['Planta',comps.map(c=>c.planta?getPlantaCoef(c).toFixed(2):'—')],
     ['Frente',comps.map(c=>c.frenteRango?getFrenteAdj(c).toFixed(2):'—')],
     ['Posición en cuadra',comps.map(c=>c.posicion?getPosicionAdj(c).toFixed(2):'—')],
+    ['Calidad',comps.map(c=>c.calidad?getCalidadAdj(c).toFixed(2):'—')],
+    ['Régimen',comps.map(c=>c.regimen?getRegimenAdj(c).toFixed(2):'—')],
   ];
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
@@ -995,7 +1031,7 @@ function discardDraft(){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function getState(){
-  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,p2:document.getElementById('s-p2').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,p2:document.getElementById('w-p2').value},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
+  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,regimen:document.getElementById('s-regimen')?.value||'',calidad:document.getElementById('s-calidad')?.value||'',pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,p2:document.getElementById('s-p2').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,p2:document.getElementById('w-p2').value},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1005,6 +1041,8 @@ function applyState(state){
   document.getElementById('s-analista').value=s.analista||'';
   document.getElementById('s-desc').value=s.desc||'';
   document.getElementById('s-frente').value=s.frente||'';
+  if(document.getElementById('s-regimen'))document.getElementById('s-regimen').value=s.regimen||'';
+  if(document.getElementById('s-calidad'))document.getElementById('s-calidad').value=s.calidad||'';
   document.getElementById('s-pb').value=s.pb||'';
   document.getElementById('s-ss').value=s.ss||'';
   document.getElementById('s-p1').value=s.p1||'';
