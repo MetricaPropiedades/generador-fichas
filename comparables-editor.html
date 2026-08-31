@@ -561,12 +561,11 @@ function renderSidebar(){
     <div class="field"><label>Calidad</label>
       <select onchange="setC(${c.id},'calidad',this.value)">
         <option value="" ${!c.calidad?'selected':''}>—</option>
-        <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena</option>
-        <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena</option>
-        <option value="Media" ${c.calidad==='Media'?'selected':''}>Media</option>
-        <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja</option>
+        <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena (factor: 1.00)</option>
+        <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena (factor: 1.11)</option>
+        <option value="Media" ${c.calidad==='Media'?'selected':''}>Media (factor: 1.33)</option>
+        <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja (factor: 1.67)</option>
       </select>
-      ${c.calidad?'<div style="font-size:9px;color:#C8941A;margin-top:3px;text-align:right">factor: '+getCalidadAdj(c).toFixed(2)+'</div>':''}
     </div>
   </div>
   <div class="field-row" style="align-items:flex-end">
@@ -575,11 +574,10 @@ function renderSidebar(){
   <div class="field"><label>Posición en cuadra</label>
     <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'posicion',this.value);renderPreview()">
       <option value=""${c.posicion===''?' selected':''}>— sin ajuste</option>
-      <option value="esquina"${c.posicion==='esquina'?' selected':''}>Esquina (1.25)</option>
-      <option value="ante-esquina"${c.posicion==='ante-esquina'?' selected':''}>Ante-esquina (1.10)</option>
-      <option value="mitad"${c.posicion==='mitad'?' selected':''}>Mitad de cuadra (1.00)</option>
+      <option value="esquina"${c.posicion==='esquina'?' selected':''}>Esquina (factor: 0.80)</option>
+      <option value="ante-esquina"${c.posicion==='ante-esquina'?' selected':''}>Ante-esquina (factor: 0.91)</option>
+      <option value="mitad"${c.posicion==='mitad'?' selected':''}>Mitad de cuadra (factor: 1.00)</option>
     </select>
-    ${c.posicion?'<div style="font-size:9px;color:#C8941A;margin-top:3px;text-align:right">factor: '+getPosicionAdj(c).toFixed(2)+'</div>':''}
   </div>
   <div class="field"><label>Rango de frente</label>
     <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'frenteRango',this.value);renderSidebar();renderPreview()">
@@ -591,7 +589,6 @@ function renderSidebar(){
       <option value="20+"${c.frenteRango==='20+'?' selected':''}>20m+ (coef base 1.30)</option>
       <option value="custom"${c.frenteRango==='custom'?' selected':''}>Personalizado</option>
     </select>
-    ${c.frenteRango?'<div style="font-size:9px;color:#C8941A;margin-top:3px;text-align:right">factor: '+getFrenteAdj(c).toFixed(2)+'</div>':''}
   </div>
   ${c.frenteRango==='custom'?`<div class='field-row'><div class='field'><label style='font-size:8px;opacity:.6'>Metros</label><input type='number' value='${c.frente}' step='0.1' oninput='setC(${c.id},"frente",this.value)'></div><div class='field'><label style='font-size:8px;opacity:.6'>Coef. base</label><input type='number' value='${c.frenteCustomCoef||1}' step='0.05' oninput='setC(${c.id},"frenteCustomCoef",parseFloat(this.value)||1);renderPreview()'></div></div>`:''}
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Superficie por planta</div>
