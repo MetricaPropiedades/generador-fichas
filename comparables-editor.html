@@ -253,14 +253,6 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <h2>Superficie Tasado</h2>
   <div class="field-row">
     <div class="field" style="max-width:100px"><label>Frente (m)</label><input type="number" id="s-frente" placeholder="0.00" step="0.1" oninput="renderPreview()"></div>
-    <div class="field"><label>Posición en cuadra</label>
-      <select id="s-posicion" oninput="renderPreview()" style="width:100%">
-        <option value="">— sin ajuste</option>
-        <option value="esquina">Esquina (1.25)</option>
-        <option value="ante-esquina">Ante-esquina (1.10)</option>
-        <option value="mitad">Mitad de cuadra (1.00)</option>
-      </select>
-    </div>
   </div>
   <div class="field-row">
     <div class="field"><label>PB (m²)</label><input type="number" id="s-pb" placeholder="0" oninput="renderPreview()"></div>
@@ -312,10 +304,8 @@ function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace('
 const POSICION_COEF={'esquina':1.25,'ante-esquina':1.10,'mitad':1.00};
 function getPosicionAdj(c){
   if(!c.posicion)return 1;
-  const sv=document.getElementById('s-posicion')?.value||'';
-  const sc=POSICION_COEF[sv]||1.00;
   const cc=POSICION_COEF[c.posicion]||1.00;
-  return sc/cc;
+  return 1.00/cc;
 }
 const FRENTE_BASE={'0-4':0.65,'4-8.5':0.85,'8.5-12':1.00,'12-20':1.15,'20+':1.30};
 function getFrenteBase(rango,customCoef){
@@ -1009,7 +999,7 @@ function discardDraft(){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function getState(){
-  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,posicion:document.getElementById('s-posicion')?.value||'',pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,p2:document.getElementById('s-p2').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,p2:document.getElementById('w-p2').value},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
+  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,p2:document.getElementById('s-p2').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,p2:document.getElementById('w-p2').value},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1019,7 +1009,6 @@ function applyState(state){
   document.getElementById('s-analista').value=s.analista||'';
   document.getElementById('s-desc').value=s.desc||'';
   document.getElementById('s-frente').value=s.frente||'';
-  document.getElementById('s-posicion').value=s.posicion||'';
   document.getElementById('s-pb').value=s.pb||'';
   document.getElementById('s-ss').value=s.ss||'';
   document.getElementById('s-p1').value=s.p1||'';
