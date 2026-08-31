@@ -253,6 +253,14 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <h2>Superficie Tasado</h2>
   <div class="field-row">
     <div class="field" style="max-width:100px"><label>Frente (m)</label><input type="number" id="s-frente" placeholder="0.00" step="0.1" oninput="renderPreview()"></div>
+    <div class="field"><label>Posición en cuadra</label>
+      <select id="s-posicion" oninput="renderPreview()" style="width:100%">
+        <option value="">— sin ajuste</option>
+        <option value="esquina">Esquina (1.25)</option>
+        <option value="ante-esquina">Ante-esquina (1.10)</option>
+        <option value="mitad">Mitad de cuadra (1.00)</option>
+      </select>
+    </div>
   </div>
   <div class="field-row">
     <div class="field"><label>PB (m²)</label><input type="number" id="s-pb" placeholder="0" oninput="renderPreview()"></div>
@@ -301,6 +309,14 @@ function cSup(c){const w=W();return(parseFloat(c.pb)||0)+(parseFloat(c.ss)||0)*w
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
+const POSICION_COEF={'esquina':1.25,'ante-esquina':1.10,'mitad':1.00};
+function getPosicionAdj(c){
+  if(!c.posicion)return 1;
+  const sv=document.getElementById('s-posicion')?.value||'';
+  const sc=POSICION_COEF[sv]||1.00;
+  const cc=POSICION_COEF[c.posicion]||1.00;
+  return sc/cc;
+}
 const FRENTE_BASE={'0-4':0.65,'4-8.5':0.85,'8.5-12':1.00,'12-20':1.15,'20+':1.30};
 function getFrenteBase(rango,customCoef){
   if(rango==='custom')return parseFloat(customCoef)||1;
@@ -325,7 +341,7 @@ function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
   const ss=subSup(),autoSF=(sup>0&&ss>0)?Math.pow(sup/ss,0.2):1;
   const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
-  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.tipologia)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta*frenteAdj;
+  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.tipologia)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta*frenteAdj*posAdj;
   return{sup,pm2,autoSF,sf,hom,planta};
 }
 
@@ -453,7 +469,7 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',pcs:0.30,pce:0.70,pc1:0.60,pc2:0.50,frenteRango:'',frenteCustomCoef:'',notes:'',photo:null,photoOrig:null});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',pcs:0.30,pce:0.70,pc1:0.60,pc2:0.50,frenteRango:'',frenteCustomCoef:'',posicion:'',notes:'',photo:null,photoOrig:null});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -552,6 +568,14 @@ function renderSidebar(){
   </div>
   <div class="field-row" style="align-items:flex-end">
     <div class="field" style="max-width:90px"><label>Frente (m)</label><input type="number" value="${c.frente}" placeholder="0.00" step="0.1" oninput="setC(${c.id},'frente',this.value)"></div>
+  </div>
+  <div class="field"><label>Posición en cuadra</label>
+    <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'posicion',this.value);renderPreview()">
+      <option value=""${c.posicion===''?' selected':''}>— sin ajuste</option>
+      <option value="esquina"${c.posicion==='esquina'?' selected':''}>Esquina (1.25)</option>
+      <option value="ante-esquina"${c.posicion==='ante-esquina'?' selected':''}>Ante-esquina (1.10)</option>
+      <option value="mitad"${c.posicion==='mitad'?' selected':''}>Mitad de cuadra (1.00)</option>
+    </select>
   </div>
   <div class="field"><label>Rango de frente</label>
     <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'frenteRango',this.value);renderSidebar();renderPreview()">
@@ -887,6 +911,7 @@ function rSection(comps,tipo,ss){
     ['Superficie',comps.map(c=>c.superficie||'1')],
     ['Planta',comps.map(c=>c.planta?getPlantaCoef(c).toFixed(2):'—')],
     ['Frente',comps.map(c=>c.frenteRango?getFrenteAdj(c).toFixed(2):'—')],
+    ['Posición en cuadra',comps.map(c=>c.posicion?getPosicionAdj(c).toFixed(2):'—')],
   ];
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
@@ -984,7 +1009,7 @@ function discardDraft(){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function getState(){
-  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,p2:document.getElementById('s-p2').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,p2:document.getElementById('w-p2').value},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
+  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,posicion:document.getElementById('s-posicion')?.value||'',pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,p2:document.getElementById('s-p2').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,p2:document.getElementById('w-p2').value},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -994,6 +1019,7 @@ function applyState(state){
   document.getElementById('s-analista').value=s.analista||'';
   document.getElementById('s-desc').value=s.desc||'';
   document.getElementById('s-frente').value=s.frente||'';
+  document.getElementById('s-posicion').value=s.posicion||'';
   document.getElementById('s-pb').value=s.pb||'';
   document.getElementById('s-ss').value=s.ss||'';
   document.getElementById('s-p1').value=s.p1||'';
