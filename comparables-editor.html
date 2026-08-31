@@ -571,9 +571,9 @@ function renderSidebar(){
   <div class="field"><label>Altura interna salón PB</label>
     <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'alturaInterna',this.value);renderPreview()">
       <option value="" ${!c.alturaInterna?'selected':''}>— sin ajuste</option>
-      <option value="0.9" ${c.alturaInterna==='0.9'?'selected':''}>Baja (factor: 0.90)</option>
-      <option value="1" ${c.alturaInterna==='1'?'selected':''}>Normal (factor: 1.00)</option>
-      <option value="1.1" ${c.alturaInterna==='1.1'?'selected':''}>Alta (factor: 1.10)</option>
+      <option value="0.9" ${c.alturaInterna==='0.9'?'selected':''}>Techo bajo (factor: 0.90)</option>
+      <option value="1" ${c.alturaInterna==='1'?'selected':''}>Techo normal (factor: 1.00)</option>
+      <option value="1.1" ${c.alturaInterna==='1.1'?'selected':''}>Techo alto (factor: 1.10)</option>
     </select>
   </div>
   <div class="field-row" style="align-items:flex-end">
