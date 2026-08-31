@@ -684,12 +684,9 @@ function initMapFromCache(){
   if(st2)st2.textContent='Restaurando: sujeto '+(geoCoords.subject?'✓':'✗')+', comparables '+nComp+'/'+geoCoords.comparables.length;
   if(leafletMap){leafletMap.remove();leafletMap=null;}
   leafletMap=L.map('leaflet-map',{zoomControl:true,attributionControl:true});
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{
-    attribution:'© <a href="https://www.esri.com">Esri</a>',
-    maxZoom:16,crossOrigin:true
-  }).addTo(leafletMap);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{
-    maxZoom:16,crossOrigin:true,pane:'overlayPane'
+  L.tileLayer('https://{s}.tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey=799db6d6ca3343839a985264e7476796',{
+    attribution:'© <a href="https://www.thunderforest.com">Thunderforest</a> © <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
+    maxZoom:19,crossOrigin:true
   }).addTo(leafletMap);
   const bounds=[];
   if(geoCoords.subject){
