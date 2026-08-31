@@ -261,8 +261,6 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field-row">
     <div class="field"><label>1er Piso</label><input type="number" id="s-p1" placeholder="0" oninput="renderPreview()"></div>
   </div>
-  <div id="s-custom-floors"></div>
-  <button onclick="addSubjectFloor()" style="width:100%;margin-top:4px;padding:4px;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.2);border-radius:3px;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer">+ Agregar planta</button>
   <div class="field-calc" id="s-calc">Sup. considerada: —</div>
 
   <h2>Coeficientes de Homogeneización</h2>
@@ -296,33 +294,12 @@ let showMap=false, geoCoords={subject:null,comparables:[]}, capturedMapImg=null,
 let leafletMap=null;
 
 function W(){return{ss:parseFloat(document.getElementById('w-ss').value)||0.5,p1:parseFloat(document.getElementById('w-p1').value)||0.6};}
-let subjectCustomFloors=[];
-
-function renderSubjectFloors(){
-  const el=document.getElementById('s-custom-floors');
-  if(!el)return;
-  el.innerHTML=subjectCustomFloors.map((f,i)=>
-    '<div class="field-row" style="align-items:flex-end;margin-top:2px">'
-    +'<div class="field"><label style="font-size:8px;opacity:.6">Nombre</label>'
-    +'<input type="text" value="'+esc(f.name||'')+'" placeholder="ej: Entrepiso" oninput="subjectCustomFloors['+i+'].name=this.value;renderPreview()">'
-    +'</div>'
-    +'<div class="field" style="max-width:70px"><label style="font-size:8px;opacity:.6">m²</label>'
-    +'<input type="number" value="'+(f.m2||'')+'" placeholder="0" oninput="subjectCustomFloors['+i+'].m2=this.value;renderPreview()">'
-    +'</div>'
-    +'<button onclick="removeSubjectFloor('+i+')" style="padding:2px 7px;border:none;background:rgba(255,80,80,.2);color:#f88;border-radius:3px;cursor:pointer;margin-bottom:1px;font-size:12px">×</button>'
-    +'</div>'
-  ).join('');
-}
-
-function addSubjectFloor(){subjectCustomFloors.push({name:'',m2:''});renderSubjectFloors();renderPreview();}
-function removeSubjectFloor(i){subjectCustomFloors.splice(i,1);renderSubjectFloors();renderPreview();}
-
 function addFloor(id){setC(id,'customFloors',[...(comparables.find(c=>c.id===id)?.customFloors||[]),{name:'',m2:''}]);renderSidebar();renderPreview();}
 function removeFloor(id,fi){const c=comparables.find(x=>x.id===id);if(c){c.customFloors.splice(fi,1);renderSidebar();renderPreview();}}
 function setFloorName(id,fi,val){const c=comparables.find(x=>x.id===id);if(c&&c.customFloors[fi])c.customFloors[fi].name=val;}
 function setFloorM2(id,fi,val){const c=comparables.find(x=>x.id===id);if(c&&c.customFloors[fi]){c.customFloors[fi].m2=val;renderPreview();}}
 
-function subSup(){const w=W();return(parseFloat(document.getElementById('s-pb').value)||0)+(parseFloat(document.getElementById('s-ss').value)||0)*w.ss+(parseFloat(document.getElementById('s-p1').value)||0)*w.p1+subjectCustomFloors.reduce((s,f)=>s+(parseFloat(f.m2)||0)*w.p1,0);}
+function subSup(){const w=W();return(parseFloat(document.getElementById('s-pb').value)||0)+(parseFloat(document.getElementById('s-ss').value)||0)*w.ss+(parseFloat(document.getElementById('s-p1').value)||0)*w.p1;}
 function cSup(c){const w=W();return(parseFloat(c.pb)||0)+(parseFloat(c.ss)||0)*w.ss+(parseFloat(c.p1)||0)*w.p1+(c.customFloors||[]).reduce((s,f)=>s+(parseFloat(f.m2)||0)*w.p1,0);}
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
@@ -1045,7 +1022,7 @@ function discardDraft(){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function getState(){
-  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,customFloors:subjectCustomFloors.map(f=>({name:f.name,m2:f.m2})),photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
+  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1058,9 +1035,7 @@ function applyState(state){
   document.getElementById('s-pb').value=s.pb||'';
   document.getElementById('s-ss').value=s.ss||'';
   document.getElementById('s-p1').value=s.p1||'';
-  subjectCustomFloors=(s.customFloors||[]).map(f=>({name:f.name||'',m2:f.m2||''}));
-  renderSubjectFloors();
-  subjectPhotos=(s.photos||[]).map(p=>({photo:p.photo,photoOrig:p.photoOrig||p.photo}));
+    subjectPhotos=(s.photos||[]).map(p=>({photo:p.photo,photoOrig:p.photoOrig||p.photo}));
   if(!subjectPhotos.length&&s.photo){subjectPhotos=[{photo:s.photo,photoOrig:s.photoOrig||s.photo}];}
   mapPhoto=s.mapPhoto||null;mapPhotoOrig=s.mapPhotoOrig||null;
   const w=state.weights||{};
