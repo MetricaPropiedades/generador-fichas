@@ -554,8 +554,8 @@ function renderSidebar(){
     <div class="field"><label>Régimen</label>
       <select onchange="setC(${c.id},'regimen',this.value)">
         <option value="" ${!c.regimen?'selected':''}>—</option>
-        <option value="Terreno propio" ${c.regimen==='Terreno propio'?'selected':''}>Terreno propio</option>
-        <option value="P. Horizontal" ${c.regimen==='P. Horizontal'?'selected':''}>P. Horizontal</option>
+        <option value="Terreno propio" ${c.regimen==='Terreno propio'?'selected':''}>Terreno propio (factor: 0.87)</option>
+        <option value="P. Horizontal" ${c.regimen==='P. Horizontal'?'selected':''}>P. Horizontal (factor: 1.00)</option>
       </select>
     </div>
     <div class="field"><label>Calidad</label>
