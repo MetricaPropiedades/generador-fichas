@@ -481,13 +481,11 @@ function rLocal(l,idx){
     photosHtml='<div class="placeholder-slot">📷 Imagen del local</div>';
   }
 
-  let planosHtml='<div class="planos-title">Planos</div>';
+  let planosHtml='';
   if(l.planos&&l.planos.length){
-    planosHtml+='<div class="planos-section">';
+    planosHtml='<div class="planos-title">Planos</div><div class="planos-section">';
     l.planos.forEach(p=>{planosHtml+='<div class="plano-full"><img src="'+p.plano+'" alt="Plano"></div>';});
     planosHtml+='</div>';
-  }else{
-    planosHtml+='<div class="placeholder-slot">📐 Imagen de plano</div>';
   }
 
   return '<div class="local-section">'+
