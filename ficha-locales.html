@@ -204,7 +204,7 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',espAereo:'No',frente:'',posicion:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supTerreno:'',espAereo:'No',frente:'',posicion:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
@@ -396,6 +396,9 @@ function renderSidebar(){
           '<div class="field"><label>Sup. Subsuelo m²</label>'+
             '<input type="number" value="'+esc(l.supSS)+'" step="0.01" data-id="'+l.id+'" data-f="supSS" oninput="sLev(this)">'+
           '</div>'+
+          '<div class="field"><label>Terreno m²</label>'+
+            '<input type="number" value="'+esc(l.supTerreno)+'" step="0.01" data-id="'+l.id+'" data-f="supTerreno" oninput="sLev(this)">'+
+          '</div>'+
         '</div>'+
         '<div class="field-row">'+
           '<div class="field"><label>Posición relativa</label>'+
@@ -455,6 +458,7 @@ function rLocal(l,idx){
   rows.push(['Superficie PB',l.supPB?fN(l.supPB)+' m²':dash]);
   rows.push(['Superficie PA',l.supPA?fN(l.supPA)+' m²':dash]);
   rows.push(['Superficie Subsuelo',l.supSS?fN(l.supSS)+' m²':dash]);
+  rows.push(['Terreno',l.supTerreno?fN(l.supTerreno)+' m²':dash]);
   rows.push(['Frente',l.frente?fN(l.frente)+' m':dash]);
   rows.push(['Espacio Aéreo Propio',l.espAereo?esc(l.espAereo):dash]);
   rows.push(['Posición Relativa',l.posicion?esc(l.posicion):dash]);
