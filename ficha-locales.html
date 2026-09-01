@@ -140,7 +140,11 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 <body>
 <aside id="sidebar">
   <div class="sb-header">
-    <div class="sb-title">Ficha de Alquiler</div>
+    <div class="sb-title" id="sb-title-label">Ficha de Alquiler</div>
+    <div class="tog" style="margin-top:6px">
+      <button id="tog-alq" class="on" onclick="setTipo('Alquiler')">Alquiler</button>
+      <button id="tog-vta" onclick="setTipo('Venta')">Venta</button>
+    </div>
     <div class="sb-actions">
       <button class="btn-add" onclick="addLocal()">+ Agregar local</button>
       <button class="btn-sec" onclick="triggerMapGen()">🗺 Mapa</button>
@@ -174,6 +178,7 @@ const FIRMA_B64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOwAAAC6CAYAAACtB
 
 let locals=[], nextId=1, _autoSaveEnabled=false, _mapDebounce=null, _mapRunning=false, _mapInitTimer=null, showFirma=true;
 let showMap=false, geoCoords={locals:[]}, capturedMapImg=null, geoCache={};
+let tipoOperacion='Alquiler';
 let leafletMap=null;
 let _cropTarget={type:'',localId:0,idx:0}, _cropper=null;
 const DRAFT_KEY='metrica_fichas_locales_v1';
@@ -200,6 +205,13 @@ function compressImage(file){
 
 function defaultLocal(){
   return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',espAereo:'No',frente:'',posicion:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+}
+function setTipo(t){
+  tipoOperacion=t;
+  document.getElementById('sb-title-label').textContent='Ficha de '+t;
+  document.getElementById('tog-alq').classList.toggle('on',t==='Alquiler');
+  document.getElementById('tog-vta').classList.toggle('on',t==='Venta');
+  renderPreview();autoSave();
 }
 function addLocal(){locals.push(defaultLocal());renderSidebar();renderPreview();}
 function removeLocal(id){locals=locals.filter(l=>l.id!==id);renderSidebar();renderPreview();}
@@ -425,7 +437,7 @@ function renderSidebar(){
 }
 
 function rHeader(){
-  const title=locals.length<=1?'Ficha de Alquiler de Local':'Ficha de Alquiler de Locales';
+  const title=locals.length<=1?'Ficha de '+tipoOperacion+' de Local':'Ficha de '+tipoOperacion+' de Locales';
   return '<div class="doc-header">'+
     '<div class="doc-title-block">'+
       '<div class="doc-title">'+title+'</div>'+
@@ -447,7 +459,7 @@ function rLocal(l,idx){
   rows.push(['Espacio Aéreo Propio',l.espAereo?esc(l.espAereo):dash]);
   rows.push(['Posición Relativa',l.posicion?esc(l.posicion):dash]);
   const tableRows=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
-  const precioRow='<tr class="precio-row"><td>Precio de alquiler</td><td>'+(l.precio?esc(l.currency)+' '+esc(l.precio):dash)+'</td></tr>';
+  const precioRow='<tr class="precio-row"><td>Precio de '+tipoOperacion.toLowerCase()+'</td><td>'+(l.precio?esc(l.currency)+' '+esc(l.precio):dash)+'</td></tr>';
   const tableHtml='<table class="prop-table"><tbody>'+tableRows+precioRow+'</tbody></table>';
 
   let photosHtml='';
@@ -616,11 +628,12 @@ async function triggerMapGen(){
   initMapFromCache();autoSave();_mapRunning=false;
 }
 
-function getState(){return{version:1,locals:locals.map(l=>({...l})),map:{showMap,geoCoords,capturedMapImg}};}
+function getState(){return{version:1,tipoOperacion,locals:locals.map(l=>({...l})),map:{showMap,geoCoords,capturedMapImg}};}
 function applyState(state){
   if(!state)return;
   locals=(state.locals||[]).map(l=>({...l}));
   nextId=locals.length?Math.max(...locals.map(l=>l.id))+1:1;
+  if(state.tipoOperacion)setTipo(state.tipoOperacion);
   const m=state.map||{};
   showMap=m.showMap||false;geoCoords=m.geoCoords||{locals:[]};capturedMapImg=m.capturedMapImg||null;
   renderSidebar();renderPreview();
