@@ -576,7 +576,7 @@ function mkPinSvg(color,label){
   </svg>`;
 }
 function mkBlueIcon(num){
-  const html='<div style="position:relative;width:36px;height:46px;margin-left:-18px;margin-top:-46px;">'+mkPinSvg('#C8941A',num)+'</div>';
+  const html='<div style="width:36px;height:46px;">'+mkPinSvg('#C8941A',num)+'</div>';
   return L.divIcon({className:'',html,iconSize:[36,46],iconAnchor:[18,46]});
 }
 
