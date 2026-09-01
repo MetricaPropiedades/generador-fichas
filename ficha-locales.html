@@ -586,7 +586,7 @@ function initMapFromCache(){
   if(!mapDiv)return;
   if(leafletMap){leafletMap.remove();leafletMap=null;}
   leafletMap=L.map('leaflet-map',{zoomControl:true,attributionControl:true});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19,crossOrigin:true}).addTo(leafletMap);
+  L.tileLayer('https://{s}.tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey=799db6d6ca3343839a985264e7476796',{attribution:'© <a href="https://www.thunderforest.com">Thunderforest</a> © <a href="https://www.openstreetmap.org">OpenStreetMap</a>',maxZoom:19,crossOrigin:true}).addTo(leafletMap);
   const bounds=[];let n=0;
   geoCoords.locals.forEach(item=>{
     if(!item?.coord)return;
