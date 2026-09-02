@@ -310,8 +310,6 @@ function openCropper(typeCode,localId,idx){const types=["photo","plano"];const t
   if(_cropper){_cropper.destroy();_cropper=null;}
   cimg.onload=()=>{_cropper=new Cropper(cimg,{viewMode:1,autoCropArea:.9,movable:true,zoomable:true});};
 }
-  renderPreview();
-}
 function rotateCropper(deg){
   if(!_cropper)return;
   const img=document.getElementById('cropper-img');
