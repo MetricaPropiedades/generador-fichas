@@ -298,7 +298,7 @@ function W(){return{semi:parseFloat(document.getElementById('w-semi').value)||0.
 
 
 function subSup(){const w=W();return(parseFloat(document.getElementById('s-cub').value)||0)+(parseFloat(document.getElementById('s-semi').value)||0)*w.semi+(parseFloat(document.getElementById('s-descu').value)||0)*w.descu+(parseFloat(document.getElementById('s-terr').value)||0)*w.terr;}
-function cSup(c){const w=W();return(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0)*w.semi+(parseFloat(c.descu)||0)*w.descu+(parseFloat(c.terr)||0)*w.terr;}
+function cSup(c){const w=W();return(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0)*w.semi+(parseFloat(c.descu)||0)*w.descu+(parseFloat(c.terr)||0)*w.terr+(parseFloat(c.supExtra)||0)*(parseFloat(c.supExtraCoef)||1);}
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
@@ -628,6 +628,11 @@ function renderSidebar(){
   <div class="field-row">
     <div class="field"><label>Descubierta (m²)</label><input type="number" value="${c.descu}" placeholder="0" oninput="setC(${c.id},'descu',this.value)"></div>
     <div class="field"><label>Terraza (m²)</label><input type="number" value="${c.terr}" placeholder="0" oninput="setC(${c.id},'terr',this.value)"></div>
+  </div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field" style="flex:2"><label>Personalizable — nombre</label><input type="text" value="${c.supExtraNombre||''}" placeholder="ej: Baulera, Jardín..." oninput="setC(${c.id},'supExtraNombre',this.value)"></div>
+    <div class="field"><label>m²</label><input type="number" value="${c.supExtra||''}" placeholder="0" oninput="setC(${c.id},'supExtra',this.value)"></div>
+    <div class="field"><label>Coef ×</label><input type="number" value="${c.supExtraCoef||'1.00'}" step="0.05" min="0" max="1" oninput="setC(${c.id},'supExtraCoef',this.value)"></div>
   </div>
   <div class="field-calc">${calcTxt}</div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Factores de homogeneización</div>
