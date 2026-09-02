@@ -298,7 +298,7 @@ function W(){return{semi:parseFloat(document.getElementById('w-semi').value)||0.
 
 
 function subSup(){const w=W();return(parseFloat(document.getElementById('s-cub').value)||0)+(parseFloat(document.getElementById('s-semi').value)||0)*w.semi+(parseFloat(document.getElementById('s-descu').value)||0)*w.descu+(parseFloat(document.getElementById('s-terr').value)||0)*w.terr;}
-function cSup(c){const w=W();return(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0)*w.semi+(parseFloat(c.descu)||0)*w.descu+(parseFloat(c.terr)||0)*w.terr+(parseFloat(c.supExtra)||0)*(parseFloat(c.supExtraCoef)||1);}
+function cSup(c){const w=W();let s=(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0)*w.semi+(parseFloat(c.descu)||0)*w.descu+(parseFloat(c.terr)||0)*w.terr;(c.supExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
@@ -470,11 +470,14 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',calidad:'',cub:'',semi:'',descu:'',terr:'',oferta:'0.9',ubicacion:'1',estado:'1',superficie:'1',sfOverride:'',posicionDepto:'',orientacion:'',luminosidad:'',edificio:'',antiguedad:'',alturaInterna:'',pileta:false,sum:false,amenitiesOtros:'',baulera:false,notes:'',photo:null,photoOrig:null});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',calidad:'',cub:'',semi:'',descu:'',terr:'',oferta:'0.9',ubicacion:'1',estado:'1',superficie:'1',sfOverride:'',posicionDepto:'',orientacion:'',luminosidad:'',edificio:'',antiguedad:'',alturaInterna:'',pileta:false,sum:false,amenitiesOtros:'',baulera:false,notes:'',photo:null,photoOrig:null,supExtras:[]});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
 
+function addSupExtra(id){const c=comparables.find(x=>x.id===id);if(!c)return;if(!c.supExtras)c.supExtras=[];c.supExtras.push({nombre:'',m2:'',coef:'1.00'});renderSidebar();renderPreview();}
+function removeSupExtra(id,idx){const c=comparables.find(x=>x.id===id);if(!c)return;(c.supExtras||[]).splice(idx,1);renderSidebar();renderPreview();}
+function setSupExtra(id,idx,field,value){const c=comparables.find(x=>x.id===id);if(!c||!(c.supExtras||[])[idx])return;c.supExtras[idx][field]=value;renderPreview();}
 function setC(id,field,value){
   const c=comparables.find(c=>c.id===id);if(!c)return;
   c[field]=value;
@@ -629,11 +632,8 @@ function renderSidebar(){
     <div class="field"><label>Descubierta (m²)</label><input type="number" value="${c.descu}" placeholder="0" oninput="setC(${c.id},'descu',this.value)"></div>
     <div class="field"><label>Terraza (m²)</label><input type="number" value="${c.terr}" placeholder="0" oninput="setC(${c.id},'terr',this.value)"></div>
   </div>
-  <div class="field-row" style="align-items:flex-end">
-    <div class="field" style="flex:2"><label>Personalizable — nombre</label><input type="text" value="${c.supExtraNombre||''}" placeholder="ej: Baulera, Jardín..." oninput="setC(${c.id},'supExtraNombre',this.value)"></div>
-    <div class="field"><label>m²</label><input type="number" value="${c.supExtra||''}" placeholder="0" oninput="setC(${c.id},'supExtra',this.value)"></div>
-    <div class="field"><label>Coef ×</label><input type="number" value="${c.supExtraCoef||'1.00'}" step="0.05" min="0" max="1" oninput="setC(${c.id},'supExtraCoef',this.value)"></div>
-  </div>
+  ${(c.supExtras||[]).map((e,i)=>`<div class="field-row" style="align-items:flex-end;gap:4px;margin-bottom:4px"><div class="field" style="flex:2"><label>Personalizable — nombre</label><input type="text" value="${e.nombre||''}" placeholder="ej: Baulera, Jardín..." oninput="setSupExtra(${c.id},${i},'nombre',this.value)"></div><div class="field"><label>m²</label><input type="number" value="${e.m2||''}" placeholder="0" oninput="setSupExtra(${c.id},${i},'m2',this.value)"></div><div class="field"><label>Coef ×</label><input type="number" value="${e.coef||'1.00'}" step="0.05" min="0" max="1" oninput="setSupExtra(${c.id},${i},'coef',this.value)"></div><button onclick="removeSupExtra(${c.id},${i})" style="margin-top:16px;padding:4px 8px;background:#b55;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px;flex-shrink:0">✕</button></div>`).join('')}
+  <button onclick="addSupExtra(${c.id})" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
   <div class="field-calc">${calcTxt}</div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Factores de homogeneización</div>
   <div class="field-row">
