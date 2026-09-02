@@ -751,12 +751,12 @@ function mkPinSvg(color, label){
   </svg>`;
 }
 function mkRedIcon(){
-  const html='<div style="position:relative;width:36px;height:46px;margin-left:-18px;margin-top:-46px;">'+mkPinSvg('#C8941A','')+'</div>';
-  return L.divIcon({className:'',html,iconSize:[36,46],iconAnchor:[18,46]});
+  const html='<div style="position:absolute;transform:translate(-50%,-100%);width:36px;height:46px;">'+mkPinSvg('#C8941A','')+'</div>';
+  return L.divIcon({className:'',html,iconSize:[0,0]});
 }
 function mkBlueIcon(num){
-  const html='<div style="position:relative;width:36px;height:46px;margin-left:-18px;margin-top:-46px;">'+mkPinSvg('#2471a3',num)+'</div>';
-  return L.divIcon({className:'',html,iconSize:[36,46],iconAnchor:[18,46]});
+  const html='<div style="position:absolute;transform:translate(-50%,-100%);width:36px;height:46px;">'+mkPinSvg('#2471a3',num)+'</div>';
+  return L.divIcon({className:'',html,iconSize:[0,0]});
 }
 
 function initMapFromCache(){
