@@ -1085,7 +1085,7 @@ function applyState(state){
   
   subjectExtras=(state.subject&&state.subject.subjectExtras)||[];
   comparables=(state.comparables||[]).map(c=>({...c}));
-  {const t=state.tipoOperacion||(comparables.length&&comparables[0].tipo)||'Alquiler';document.getElementById('st-alq').classList.toggle('on',t==='Alquiler');document.getElementById('st-vta').classList.toggle('on',t==='Venta');}
+  {const t=(comparables.length&&comparables[0].tipo)||state.tipoOperacion||'Alquiler';document.getElementById('st-alq').classList.toggle('on',t==='Alquiler');document.getElementById('st-vta').classList.toggle('on',t==='Venta');}
   nextId=comparables.length?Math.max(...comparables.map(c=>c.id))+1:1;
   // Restaurar estado del mapa ANTES de renderPreview para que #leaflet-map exista en el DOM
   const m=state.map||{};
