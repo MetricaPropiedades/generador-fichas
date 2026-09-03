@@ -1062,7 +1062,7 @@ function discardDraft(){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function getState(){
-  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,descu:document.getElementById('s-descu').value,terr:document.getElementById('s-terr').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig,subjectExtras:[...(subjectExtras||[])]},weights:{semi:document.getElementById('w-semi').value,descu:document.getElementById('w-descu').value,terr:document.getElementById('w-terr').value,},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
+  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,descu:document.getElementById('s-descu').value,terr:document.getElementById('s-terr').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig,subjectExtras:[...(subjectExtras||[])]},weights:{semi:document.getElementById('w-semi').value,descu:document.getElementById('w-descu').value,terr:document.getElementById('w-terr').value,},comparables:comparables.map(c=>({...c})),tipoOperacion:document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta',map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1085,6 +1085,7 @@ function applyState(state){
   
   subjectExtras=(state.subject&&state.subject.subjectExtras)||[];
   comparables=(state.comparables||[]).map(c=>({...c}));
+  if(state.tipoOperacion){const t=state.tipoOperacion;document.getElementById('st-alq').classList.toggle('on',t==='Alquiler');document.getElementById('st-vta').classList.toggle('on',t==='Venta');}
   nextId=comparables.length?Math.max(...comparables.map(c=>c.id))+1:1;
   // Restaurar estado del mapa ANTES de renderPreview para que #leaflet-map exista en el DOM
   const m=state.map||{};
