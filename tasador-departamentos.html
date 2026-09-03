@@ -1026,22 +1026,31 @@ function toggleFirma(){
   renderPreview();
 }
 
+// ══════════════════════════════════════
+// INDEXED DB — persistencia de fotos
+// ══════════════════════════════════════
+const _IDB_NAME='metrica-tasador-dptos',_IDB_STORE='photos',_IDB_KEY='all';
+function _openIDB(){return new Promise((res,rej)=>{const r=indexedDB.open(_IDB_NAME,1);r.onupgradeneeded=e=>e.target.result.createObjectStore(_IDB_STORE);r.onsuccess=e=>res(e.target.result);r.onerror=rej;});}
+async function savePhotosIDB(data){try{const db=await _openIDB();await new Promise((res,rej)=>{const tx=db.transaction(_IDB_STORE,'readwrite');tx.objectStore(_IDB_STORE).put(data,_IDB_KEY);tx.oncomplete=res;tx.onerror=rej;});}catch(e){}}
+async function loadPhotosIDB(){try{const db=await _openIDB();return await new Promise((res,rej)=>{const tx=db.transaction(_IDB_STORE,'readonly');const r=tx.objectStore(_IDB_STORE).get(_IDB_KEY);r.onsuccess=e=>res(e.target.result||null);r.onerror=rej;});}catch(e){return null;}}
+async function clearPhotosIDB(){try{const db=await _openIDB();await new Promise((res)=>{const tx=db.transaction(_IDB_STORE,'readwrite');tx.objectStore(_IDB_STORE).delete(_IDB_KEY);tx.oncomplete=res;});}catch(e){}}
+
 function autoSave(){
   if(!_autoSaveEnabled)return;
   const ts=new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-  const mkStripped=()=>{const st=getState();if(st.subject){st.subject.photos=[];st.subject.mapPhoto=null;st.subject.mapPhotoOrig=null;}if(st.map)st.map.capturedMapImg=null;if(st.comparables)st.comparables.forEach(c=>{c.photo=null;c.photoOrig=null;});st._savedAt=ts;st._hasPhotos=false;return st;};
-  try{
-    const st=getState();
-    if(st.map)st.map.capturedMapImg=null;
-    st._savedAt=ts;st._hasPhotos=true;
-    localStorage.setItem(DRAFT_KEY,JSON.stringify(st));
-  }catch(e){
-    try{localStorage.setItem(DRAFT_KEY,JSON.stringify(mkStripped()));}catch(e2){}
-  }
+  const st=getState();
+  // Guardar fotos en IndexedDB (sin límite de tamaño)
+  savePhotosIDB({subjectPhotos:st.subject.photos||[],mapPhoto:st.subject.mapPhoto||null,mapPhotoOrig:st.subject.mapPhotoOrig||null,compPhotos:(st.comparables||[]).map(c=>({id:c.id,photo:c.photo||null,photoOrig:c.photoOrig||null}))});
+  // Guardar datos (sin fotos) en localStorage
+  if(st.subject){st.subject.photos=[];st.subject.mapPhoto=null;st.subject.mapPhotoOrig=null;}
+  if(st.map)st.map.capturedMapImg=null;
+  if(st.comparables)st.comparables.forEach(c=>{c.photo=null;c.photoOrig=null;});
+  st._savedAt=ts;
+  try{localStorage.setItem(DRAFT_KEY,JSON.stringify(st));}catch(e){}
 }
 function closeBanner(){document.getElementById('recovery-banner').style.display='none';}
 function discardDraft(){
-  localStorage.removeItem(DRAFT_KEY);
+  localStorage.removeItem(DRAFT_KEY);clearPhotosIDB();
   ['s-nombre','s-fecha','s-analista','s-desc','s-cub','s-semi','s-descu','s-terr'].forEach(id=>{document.getElementById(id).value='';});
   document.getElementById('w-semi').value='0.50';document.getElementById('w-descu').value='0.25';document.getElementById('w-terr').value='0.25';
   subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;subjectExtras=[];renderSubjectExtrasSb();
@@ -1131,19 +1140,32 @@ const FIRMA_B64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOwAAAC6CAYAAACtB
 // ══════════════════════════════════════
 // INIT — restaura borrador ANTES de cualquier render
 // ══════════════════════════════════════
-(function init(){
+(async function init(){
   let restored=false;
-  _autoSaveEnabled=true; // habilitar ANTES de applyState para que el primer renderPreview ya guarde
+  _autoSaveEnabled=true;
   try{
     const raw=localStorage.getItem(DRAFT_KEY);
     if(raw){
       const parsed=JSON.parse(raw);
       if(parsed&&(parsed.subject?.nombre||(parsed.comparables?.length>0))){
+        // Restaurar fotos desde IndexedDB
+        try{
+          const photos=await loadPhotosIDB();
+          if(photos){
+            if(parsed.subject){
+              parsed.subject.photos=photos.subjectPhotos||[];
+              parsed.subject.mapPhoto=photos.mapPhoto||null;
+              parsed.subject.mapPhotoOrig=photos.mapPhotoOrig||null;
+            }
+            if(parsed.comparables){
+              const pm={};(photos.compPhotos||[]).forEach(p=>pm[p.id]=p);
+              parsed.comparables.forEach(c=>{if(pm[c.id]){c.photo=pm[c.id].photo;c.photoOrig=pm[c.id].photoOrig;}});
+            }
+          }
+        }catch(pe){}
         applyState(parsed);
         const tsEl=document.getElementById('draft-ts');
         if(tsEl)tsEl.textContent=parsed._savedAt||'fecha desconocida';
-        const npEl=document.getElementById('draft-nophotos');
-        if(npEl&&parsed._hasPhotos===false)npEl.style.display='';
         document.getElementById('recovery-banner').style.display='block';
         restored=true;
       }
