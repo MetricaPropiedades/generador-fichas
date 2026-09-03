@@ -260,6 +260,8 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
     <div class="field"><label>Terraza (m²)</label><input type="number" id="s-terr" placeholder="0" oninput="renderPreview()"></div>
   </div>
   <div class="field-calc" id="s-calc">Sup. considerada: —</div>
+  <div id="s-extras-list"></div>
+  <button onclick="addSubjectExtra()" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
 
   <h2>Coeficientes de Homogeneización</h2>
   <div class="field-hint">Factor de reducción de superficie respecto a cubierta. Semicubierta: 0.50. Descubierta: 0.25. Terraza: 0.25.</div>
@@ -289,6 +291,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 // STATE
 // ══════════════════════════════════════
 let comparables=[], nextId=1, _fh=null, showFirma=true;
+let subjectExtras=[];
 let subjectPhotos=[];
 let mapPhoto=null, mapPhotoOrig=null;
 let showMap=false, geoCoords={subject:null,comparables:[]}, capturedMapImg=null, geoCache={};
@@ -297,7 +300,7 @@ let leafletMap=null;
 function W(){return{semi:parseFloat(document.getElementById('w-semi').value)||0.5,descu:parseFloat(document.getElementById('w-descu').value)||0.25,terr:parseFloat(document.getElementById('w-terr').value)||0.25};}
 
 
-function subSup(){const w=W();return(parseFloat(document.getElementById('s-cub').value)||0)+(parseFloat(document.getElementById('s-semi').value)||0)*w.semi+(parseFloat(document.getElementById('s-descu').value)||0)*w.descu+(parseFloat(document.getElementById('s-terr').value)||0)*w.terr;}
+function subSup(){const w=W();let s=(parseFloat(document.getElementById('s-cub').value)||0)+(parseFloat(document.getElementById('s-semi').value)||0)*w.semi+(parseFloat(document.getElementById('s-descu').value)||0)*w.descu+(parseFloat(document.getElementById('s-terr').value)||0)*w.terr;(subjectExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
 function cSup(c){const w=W();let s=(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0)*w.semi+(parseFloat(c.descu)||0)*w.descu+(parseFloat(c.terr)||0)*w.terr;(c.supExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
@@ -475,6 +478,10 @@ function addComparable(){
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
 
+function renderSubjectExtrasSb(){const list=document.getElementById('s-extras-list');if(!list)return;list.innerHTML=(subjectExtras||[]).map((e,i)=>'<div class="field-row" style="align-items:flex-end;gap:4px;margin-bottom:4px"><div class="field" style="flex:2"><label>Personalizable — nombre</label><input type="text" value="'+esc(e.nombre||'')+'" placeholder="ej: Baulera, Jardín..." oninput="setSubjectExtra('+i+',\'nombre\',this.value)"></div><div class="field"><label>m²</label><input type="number" value="'+(e.m2||'')+'" placeholder="0" oninput="setSubjectExtra('+i+',\'m2\',this.value)"></div><div class="field"><label>Coef ×</label><input type="number" value="'+(e.coef||'1.00')+'" step="0.05" min="0" max="1" oninput="setSubjectExtra('+i+',\'coef\',this.value)"></div><button onclick="removeSubjectExtra('+i+')" style="margin-top:16px;padding:4px 8px;background:#b55;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px;flex-shrink:0">✕</button></div>').join('');}
+function addSubjectExtra(){subjectExtras.push({nombre:'',m2:'',coef:'1.00'});renderSubjectExtrasSb();renderPreview();}
+function removeSubjectExtra(idx){subjectExtras.splice(idx,1);renderSubjectExtrasSb();renderPreview();}
+function setSubjectExtra(idx,field,value){if(!subjectExtras[idx])return;subjectExtras[idx][field]=value;renderPreview();}
 function addSupExtra(id){const c=comparables.find(x=>x.id===id);if(!c)return;if(!c.supExtras)c.supExtras=[];c.supExtras.push({nombre:'',m2:'',coef:'1.00'});renderSidebar();renderPreview();}
 function removeSupExtra(id,idx){const c=comparables.find(x=>x.id===id);if(!c)return;(c.supExtras||[]).splice(idx,1);renderSidebar();renderPreview();}
 function setSupExtra(id,idx,field,value){const c=comparables.find(x=>x.id===id);if(!c||!(c.supExtras||[])[idx])return;c.supExtras[idx][field]=value;renderPreview();}
@@ -680,7 +687,7 @@ function renderPreview(){
   const vtas=comparables.filter(c=>c.tipo==='Venta');
   document.getElementById('doc').innerHTML=
     rHeader(nombre,fecha)+
-    rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss)+
+    rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss,subjectExtras)+
     ((showMap||mapPhoto)?rMap():'')+
     (()=>{const activeTipo=document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'ALQUILER':'VENTA';const activeComps=activeTipo==='ALQUILER'?alqs:vtas;return activeComps.length?rSection(activeComps,activeTipo,ss):rEmpty();})()+
     rFooter(analista);
@@ -849,13 +856,14 @@ function rSubjectPhotos(){
   const imgs=subjectPhotos.map(p=>'<img src="'+p.photo+'" style="width:100%;height:auto;border-radius:3px;display:block;" alt="">').join('');
   return'<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:2mm;margin-top:4mm">'+imgs+'</div>';
 }
-function rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss){
+function rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss,subExtras){
   const metaItems=[];
   if(ss>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(Math.round(ss))} m²</strong><span>Sup. Considerada</span></div>`);
   if(cub>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(cub)} m²</strong><span>Cubierta</span></div>`);
-  if(semi>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(semi)} m²</strong><span>Semicubierta ×${w.semi}</span></div>`);
-  if(descu>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(descu)} m²</strong><span>Descubierta ×${w.descu}</span></div>`);
-  if(terr>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(terr)} m²</strong><span>Terraza ×${w.terr}</span></div>`);
+  if(semi>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(semi)} m²</strong><span>Semicubierta</span></div>`);
+  if(descu>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(descu)} m²</strong><span>Descubierta</span></div>`);
+  if(terr>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(terr)} m²</strong><span>Terraza</span></div>`);
+  (subExtras||[]).forEach(e=>{if(parseFloat(e.m2)>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(parseFloat(e.m2))} m²</strong><span>${esc(e.nombre||'Personalizado')}</span></div>`);});
   
   // analista is internal only — not rendered in ficha
   return`<div class="d-subject">
@@ -1036,7 +1044,7 @@ function discardDraft(){
   localStorage.removeItem(DRAFT_KEY);
   ['s-nombre','s-fecha','s-analista','s-desc','s-cub','s-semi','s-descu','s-terr'].forEach(id=>{document.getElementById(id).value='';});
   document.getElementById('w-semi').value='0.50';document.getElementById('w-descu').value='0.25';document.getElementById('w-terr').value='0.25';
-  subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;
+  subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;subjectExtras=[];renderSubjectExtrasSb();
   renderSubjectPhotoSb();renderMapPhotoSb();
   comparables=[];nextId=1;renderSidebar();renderPreview();closeBanner();
 }
@@ -1045,7 +1053,7 @@ function discardDraft(){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function getState(){
-  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,descu:document.getElementById('s-descu').value,terr:document.getElementById('s-terr').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{semi:document.getElementById('w-semi').value,descu:document.getElementById('w-descu').value,terr:document.getElementById('w-terr').value,},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
+  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,descu:document.getElementById('s-descu').value,terr:document.getElementById('s-terr').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig,subjectExtras:[...(subjectExtras||[])]},weights:{semi:document.getElementById('w-semi').value,descu:document.getElementById('w-descu').value,terr:document.getElementById('w-terr').value,},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1066,6 +1074,7 @@ function applyState(state){
   document.getElementById('w-descu').value=w.descu||'0.25';
   document.getElementById('w-terr').value=w.terr||'0.25';
   
+  subjectExtras=(state.subject&&state.subject.subjectExtras)||[];
   comparables=(state.comparables||[]).map(c=>({...c}));
   nextId=comparables.length?Math.max(...comparables.map(c=>c.id))+1:1;
   // Restaurar estado del mapa ANTES de renderPreview para que #leaflet-map exista en el DOM
@@ -1074,7 +1083,7 @@ function applyState(state){
   geoCoords=m.geoCoords||{subject:null,comparables:[]};
   capturedMapImg=null; // siempre mostrar mapa interactivo al cargar (no imagen congelada)
   renderSidebar();renderPreview();
-  renderSubjectPhotoSb();renderMapPhotoSb();
+  renderSubjectExtrasSb();renderSubjectPhotoSb();renderMapPhotoSb();
   if(showMap){const st=document.getElementById('map-status');if(st)st.textContent='Mapa restaurado';setTimeout(()=>initMapFromCache(),300);}
 }
 async function saveJSON(){
