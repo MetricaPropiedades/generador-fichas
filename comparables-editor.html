@@ -421,38 +421,50 @@ async function loadPhotoFromLink(id){
   const btn=document.getElementById('btn-load-link-'+id);
   if(btn){btn.disabled=true;btn.textContent='⏳ Cargando...';}
   const restore=()=>{if(btn){btn.disabled=false;btn.textContent='🌐 Desde link';}};
+  // Carga imagen via images.weserv.nl (proxy de imágenes con CORS, muy confiable)
+  async function weservImg(url){
+    // weserv requiere la URL sin protocolo
+    const bare=url.replace(/^https?:\/\//,'');
+    const proxyUrl='https://images.weserv.nl/?url='+encodeURIComponent(bare)+'&output=jpg&maxage=1d';
+    const r=await fetch(proxyUrl);
+    if(!r.ok)throw new Error('weserv '+r.status);
+    return r;
+  }
+  // Detecta si la URL es directamente una imagen
+  function isDirectImageUrl(url){
+    return /\.(jpe?g|png|webp|gif|avif)(\?.*)?$/i.test(url);
+  }
   try{
-    function fetchWithTimeout(url,ms){
-      return Promise.race([fetch(url),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
+    let imgUrl=c.link;
+    if(!isDirectImageUrl(c.link)){
+      // Intentar scraping de la página para obtener og:image
+      async function fetchPage(url){
+        const proxies=[
+          'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url),
+          'https://api.allorigins.win/get?url='+encodeURIComponent(url),
+        ];
+        for(const p of proxies){
+          try{
+            const r=await Promise.race([fetch(p),new Promise((_,rej)=>setTimeout(()=>rej(new Error('t')),10000))]);
+            if(!r.ok)continue;
+            const ct=r.headers.get('content-type')||'';
+            const txt=ct.includes('json')?(await r.json()).contents||'':(await r.text());
+            if(txt)return txt;
+          }catch(e){}
+        }
+        return '';
+      }
+      const pageHtml=await fetchPage(c.link);
+      const m1=pageHtml.match(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+      const m2=pageHtml.match(/content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+      const m3=pageHtml.match(/"og:image","content":"([^"]+)"/i);
+      const m4=pageHtml.match(/"image"\s*:\s*\[?"([^"]+\.(?:jpe?g|png|webp)[^"]*)"/i);
+      imgUrl=(m1&&m1[1])||(m2&&m2[1])||(m3&&m3[1])||(m4&&m4[1])||'';
+      if(!imgUrl)throw new Error('No se encontró imagen. ZonaProp y Argenprop cargan fotos con JavaScript — pegá el link directo de la foto en cambio (clic derecho en la foto → Copiar dirección de imagen).');
+      if(imgUrl.startsWith('//'))imgUrl='https:'+imgUrl;
+      else if(imgUrl.startsWith('/')){try{const u=new URL(c.link);imgUrl=u.origin+imgUrl;}catch(e){}}
     }
-    async function fetchViaProxy(url){
-      const proxies=[
-        ()=>fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url),9000).then(r=>{if(!r.ok)throw new Error(r.status);return r.text().then(t=>({html:t}));}),
-        ()=>fetchWithTimeout('https://api.allorigins.win/get?url='+encodeURIComponent(url),9000).then(r=>{if(!r.ok)throw new Error(r.status);return r.json().then(d=>({html:d.contents||''}));}),
-        ()=>fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(url),9000).then(r=>{if(!r.ok)throw new Error(r.status);return r.text().then(t=>({html:t}));}),
-      ];
-      for(const p of proxies){try{return await p();}catch(e){}}
-      throw new Error('No se pudo conectar al portal. Probá pegar el link de la foto directamente.');
-    }
-    const {html:pageHtml}=await fetchViaProxy(c.link);
-    let imgUrl=null;
-    const m1=pageHtml.match(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
-    const m2=pageHtml.match(/content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-    if(m1)imgUrl=m1[1];else if(m2)imgUrl=m2[1];
-    if(!imgUrl)throw new Error('No se encontró imagen en la publicación. El portal puede requerir JavaScript para cargar las fotos.');
-    if(imgUrl.startsWith('//'))imgUrl='https:'+imgUrl;
-    else if(imgUrl.startsWith('/')){try{const u=new URL(c.link);imgUrl=u.origin+imgUrl;}catch(e){}}
-    async function fetchImgViaProxy(url){
-      const proxies=[
-        ()=>fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url),9000),
-        ()=>fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(url),9000),
-        ()=>fetchWithTimeout('https://api.allorigins.win/raw?url='+encodeURIComponent(url),9000),
-      ];
-      for(const p of proxies){try{const r=await p();if(r.ok)return r;}catch(e){}}
-      throw new Error('No se pudo descargar la imagen');
-    }
-    const imgR=await fetchImgViaProxy(imgUrl);
-    if(!imgR.ok)throw new Error('No se pudo descargar la imagen ('+imgR.status+')');
+    const imgR=await weservImg(imgUrl);
     const blob=await imgR.blob();
     const b64=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=e=>res(e.target.result);rd.onerror=rej;rd.readAsDataURL(blob);});
     c.photo=b64;c.photoOrig=b64;
@@ -460,7 +472,7 @@ async function loadPhotoFromLink(id){
     restore();
   }catch(e){
     restore();
-    alert('No se pudo cargar la foto: '+e.message);
+    alert('No se pudo cargar la foto:\n'+e.message);
   }
 }
 async function loadCompPhoto(input,id){
