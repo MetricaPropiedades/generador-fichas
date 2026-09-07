@@ -32,6 +32,14 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .field-calc{font-size:11px;color:rgba(200,148,26,.85);padding:2px 0 1px;font-weight:600;line-height:1.4;}
 .field-hint{font-size:9.5px;color:rgba(255,255,255,.28);line-height:1.5;}
 
+/* ── AUTOCOMPLETE DIRECCIÓN ── */
+.addr-wrap{position:relative;}
+.addr-dropdown{position:absolute;top:100%;left:0;right:0;background:#2a2a2a;border:1px solid #444;border-radius:4px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.5);max-height:220px;overflow-y:auto;}
+.addr-opt{padding:7px 10px;font-size:10px;color:#ddd;cursor:pointer;border-bottom:1px solid #333;line-height:1.4;}
+.addr-opt:last-child{border-bottom:none;}
+.addr-opt:hover,.addr-opt.active{background:rgba(200,148,26,.2);color:#fff;}
+.addr-opt strong{color:#C8941A;}
+
 /* ── FOTO THUMBNAILS SIDEBAR ── */
 .sp-wrap{position:relative;display:inline-block;width:72px;height:54px;margin:2px;}
 .sp-wrap img{width:72px;height:54px;object-fit:cover;border-radius:3px;display:block;}
@@ -572,7 +580,12 @@ function renderSidebar(){
 </div>
 <div class="sb-card-body">
   <div class="field"><label>Dirección / Nombre</label>
-    <input type="text" value="${esc(c.address)}" placeholder="ej: Belgrano 925" oninput="setC(${c.id},'address',this.value)">
+    <div class="addr-wrap" id="aw-${c.id}">
+      <input type="text" id="addr-inp-${c.id}" value="${esc(c.address)}" placeholder="ej: Belgrano 925, CABA" autocomplete="off"
+        oninput="setC(${c.id},'address',this.value);addrTyping(${c.id},this.value)"
+        onkeydown="addrKey(event,${c.id})"
+        onblur="setTimeout(()=>closeAddrDrop(${c.id}),200)">
+    </div>
   </div>
   <div class="field" style="margin-top:2px">
     <label style="color:#C8941A;font-size:9px;letter-spacing:.1em">🔗 LINK PUBLICACIÓN</label>
@@ -739,6 +752,101 @@ function renderPreview(){
 // ══════════════════════════════════════
 
 // ══════════════════════════════════════
+// AUTOCOMPLETE DIRECCIÓN
+// ══════════════════════════════════════
+const addrTimers={};
+const addrResults={};
+let addrCursor={};
+
+function addrTyping(id,val){
+  clearTimeout(addrTimers[id]);
+  closeAddrDrop(id);
+  if(val.trim().length<4)return;
+  addrTimers[id]=setTimeout(()=>fetchAddrSuggestions(id,val),350);
+}
+
+async function fetchAddrSuggestions(id,val){
+  try{
+    const q=encodeURIComponent(val.trim()+', Argentina');
+    const r=await fetch('https://photon.komoot.io/api/?q='+q+'&limit=6&lang=es&bbox=-73,-55,-53,-21');
+    const d=await r.json();
+    const features=(d.features||[]).filter(f=>f.geometry?.coordinates);
+    addrResults[id]=features;
+    addrCursor[id]=-1;
+    showAddrDrop(id,features);
+  }catch(e){}
+}
+
+function showAddrDrop(id,features){
+  closeAddrDrop(id);
+  if(!features.length)return;
+  const wrap=document.getElementById('aw-'+id);
+  if(!wrap)return;
+  const drop=document.createElement('div');
+  drop.className='addr-dropdown';
+  drop.id='addr-drop-'+id;
+  features.forEach((f,i)=>{
+    const p=f.properties||{};
+    const main=[p.name,p.street&&p.housenumber?p.street+' '+p.housenumber:p.street].filter(Boolean).join(', ');
+    const sub=[p.city||p.town||p.village,p.state,p.country].filter(Boolean).join(', ');
+    const div=document.createElement('div');
+    div.className='addr-opt';
+    div.innerHTML='<strong>'+escHtml(main||'Sin nombre')+'</strong>'+(sub?'<br><span style="color:#888;font-size:9px">'+escHtml(sub)+'</span>':'');
+    div.onmousedown=()=>selectAddr(id,f);
+    drop.appendChild(div);
+  });
+  wrap.appendChild(drop);
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function selectAddr(id,f){
+  const p=f.properties||{};
+  const main=[p.name,p.street&&p.housenumber?p.street+' '+p.housenumber:p.street].filter(Boolean).join(', ');
+  const sub=[p.city||p.town||p.village,p.state].filter(Boolean).join(', ');
+  const label=(main+(sub?', '+sub:'')).trim();
+  const [lon,lat]=f.geometry.coordinates;
+  setC(id,'address',label);
+  setC(id,'_lat',lat);
+  setC(id,'_lon',lon);
+  const inp=document.getElementById('addr-inp-'+id);
+  if(inp)inp.value=label;
+  closeAddrDrop(id);
+  // Actualizar título de la card en sidebar
+  const card=document.querySelector('[data-id="'+id+'"] .ctit');
+  if(card)card.textContent=label||'Comparable';
+}
+
+function closeAddrDrop(id){
+  const drop=document.getElementById('addr-drop-'+id);
+  if(drop)drop.remove();
+}
+
+function addrKey(e,id){
+  const drop=document.getElementById('addr-drop-'+id);
+  if(!drop)return;
+  const opts=drop.querySelectorAll('.addr-opt');
+  if(!opts.length)return;
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    addrCursor[id]=Math.min((addrCursor[id]||0)+1,opts.length-1);
+  }else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    addrCursor[id]=Math.max((addrCursor[id]||0)-1,0);
+  }else if(e.key==='Enter'||e.key==='Tab'){
+    const cur=addrCursor[id]||0;
+    if(cur>=0&&addrResults[id]&&addrResults[id][cur]){
+      e.preventDefault();
+      selectAddr(id,addrResults[id][cur]);
+    }
+    return;
+  }else if(e.key==='Escape'){
+    closeAddrDrop(id);return;
+  }
+  opts.forEach((o,i)=>o.classList.toggle('active',i===addrCursor[id]));
+}
+
+// ══════════════════════════════════════
 // MAP (Leaflet + CartoDB)
 // ══════════════════════════════════════
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
@@ -857,7 +965,7 @@ async function triggerMapGen(){
     await delay(400);
     if(c.address&&c.address.trim()){
       if(st)st.textContent='Buscando comp '+(i+1)+'...';
-      const coord=await nominatim(c.address);
+      const coord=(c._lat&&c._lon)?{lat:c._lat,lon:c._lon}:await nominatim(c.address);
       geoCoords.comparables.push({id:c.id,addr:c.address,coord});
       if(st)st.textContent='Comp '+(i+1)+': '+(coord?'✓ encontrado':'✗ no encontrado');
     } else geoCoords.comparables.push({id:c.id,addr:'',coord:null});
