@@ -774,14 +774,17 @@ function addrTyping(id,val){
 
 async function fetchAddrSuggestions(id,val){
   try{
-    const q=encodeURIComponent(val.trim()+', Argentina');
-    const r=await fetch('https://photon.komoot.io/api/?q='+q+'&limit=6&lang=es&bbox=-73,-55,-53,-21');
+    const q=encodeURIComponent(val.trim()+' argentina');
+    const url='https://photon.komoot.io/api/?q='+q+'&limit=6&lang=es';
+    console.log('[autocomplete] fetch',url);
+    const r=await fetch(url);
     const d=await r.json();
+    console.log('[autocomplete] results',d.features?.length,d.features?.map(f=>f.properties?.name||f.properties?.street));
     const features=(d.features||[]).filter(f=>f.geometry?.coordinates);
     addrResults[id]=features;
     addrCursor[id]=-1;
     showAddrDrop(id,features);
-  }catch(e){}
+  }catch(e){console.error('[autocomplete] error',e);}
 }
 
 function addrLabel(f){
