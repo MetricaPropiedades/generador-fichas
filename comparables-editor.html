@@ -417,7 +417,7 @@ async function loadMapPhoto(input){
 }
 async function loadPhotoFromLink(id){
   const c=comparables.find(x=>x.id===id);
-  if(!c||!c.link){alert('Primero agregá el link de la publicación.');return;}
+  if(!c||!c.photoLink){alert('Pegá el link directo de la foto en el campo de foto.');return;}
   const btn=document.getElementById('btn-load-link-'+id);
   if(btn){btn.disabled=true;btn.textContent='⏳ Cargando...';}
   const restore=()=>{if(btn){btn.disabled=false;btn.textContent='🌐 Desde link';}};
@@ -435,8 +435,8 @@ async function loadPhotoFromLink(id){
     return /\.(jpe?g|png|webp|gif|avif)(\?.*)?$/i.test(url);
   }
   try{
-    let imgUrl=c.link;
-    if(!isDirectImageUrl(c.link)){
+    let imgUrl=c.photoLink;
+    if(!isDirectImageUrl(c.photoLink)){
       // Intentar scraping de la página para obtener og:image
       async function fetchPage(url){
         const proxies=[
@@ -534,7 +534,7 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',pcs:0.30,pce:0.70,pc1:0.60,pc2:0.50,frenteRango:'',frenteCustomCoef:'',posicion:'',alturaInterna:'',customFloors:[],notes:'',photo:null,photoOrig:null});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',pcs:0.30,pce:0.70,pc1:0.60,pc2:0.50,frenteRango:'',frenteCustomCoef:'',posicion:'',alturaInterna:'',customFloors:[],notes:'',photo:null,photoOrig:null,photoLink:''});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -688,10 +688,11 @@ function renderSidebar(){
   </div>
   <div class="field">
     <label>Foto del comparable</label>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <label class="file-label">📷 Agregar foto<input type="file" accept="image/*" onchange="loadCompPhoto(this,${c.id})"></label>
-      <button id="btn-load-link-${c.id}" onclick="loadPhotoFromLink(${c.id})" ${c.link?'':'disabled'} style="padding:5px 10px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em;white-space:nowrap">🌐 Desde link</button>
+    <div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">
+      <input type="text" value="${esc(c.photoLink||'')}" placeholder="Link directo de la foto (clic derecho → Copiar dirección)" oninput="setC(${c.id},'photoLink',this.value)" style="font-size:10px;color:#aaa;flex:1;min-width:0">
+      <button id="btn-load-link-${c.id}" onclick="loadPhotoFromLink(${c.id})" ${c.photoLink?'':'disabled'} style="padding:5px 10px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em;white-space:nowrap;flex-shrink:0">🌐 Cargar</button>
     </div>
+    <label class="file-label">📷 Agregar foto<input type="file" accept="image/*" onchange="loadCompPhoto(this,${c.id})"></label>
     <div class="sb-photos" id="sb-cp-${c.id}"></div>
   </div>
   <div class="field"><label>Notas</label><textarea rows="2" oninput="setC(${c.id},'notes',this.value)">${esc(c.notes)}</textarea></div>
