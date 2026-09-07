@@ -415,6 +415,38 @@ async function loadMapPhoto(input){
   mapPhotoOrig=compressed;mapPhoto=compressed;
   renderMapPhotoSb();renderPreview();input.value='';
 }
+async function loadPhotoFromLink(id){
+  const c=comparables.find(x=>x.id===id);
+  if(!c||!c.link){alert('Primero agregá el link de la publicación.');return;}
+  const btn=document.getElementById('btn-load-link-'+id);
+  if(btn){btn.disabled=true;btn.textContent='⏳ Cargando...';}
+  const restore=()=>{if(btn){btn.disabled=false;btn.textContent='🌐 Desde link';}};
+  try{
+    const proxyUrl='https://api.allorigins.win/get?url='+encodeURIComponent(c.link);
+    const r=await fetch(proxyUrl);
+    if(!r.ok)throw new Error('Error al acceder al link ('+r.status+')');
+    const data=await r.json();
+    const pageHtml=data.contents||'';
+    let imgUrl=null;
+    const m1=pageHtml.match(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+    const m2=pageHtml.match(/content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+    if(m1)imgUrl=m1[1];else if(m2)imgUrl=m2[1];
+    if(!imgUrl)throw new Error('No se encontró imagen. El portal puede no ser compatible.');
+    if(imgUrl.startsWith('//'))imgUrl='https:'+imgUrl;
+    else if(imgUrl.startsWith('/')){try{const u=new URL(c.link);imgUrl=u.origin+imgUrl;}catch(e){}}
+    const imgProxy='https://api.allorigins.win/raw?url='+encodeURIComponent(imgUrl);
+    const imgR=await fetch(imgProxy);
+    if(!imgR.ok)throw new Error('No se pudo descargar la imagen ('+imgR.status+')');
+    const blob=await imgR.blob();
+    const b64=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=e=>res(e.target.result);rd.onerror=rej;rd.readAsDataURL(blob);});
+    c.photo=b64;c.photoOrig=b64;
+    renderCompPhotoSb(c);renderPreview();autoSave();
+    restore();
+  }catch(e){
+    restore();
+    alert('No se pudo cargar la foto: '+e.message);
+  }
+}
 async function loadCompPhoto(input,id){
   const file=input.files[0];if(!file)return;
   const compressed=await compressImage(file);
@@ -628,7 +660,10 @@ function renderSidebar(){
   </div>
   <div class="field">
     <label>Foto del comparable</label>
-    <label class="file-label">📷 Agregar foto<input type="file" accept="image/*" onchange="loadCompPhoto(this,${c.id})"></label>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <label class="file-label">📷 Agregar foto<input type="file" accept="image/*" onchange="loadCompPhoto(this,${c.id})"></label>
+      <button id="btn-load-link-${c.id}" onclick="loadPhotoFromLink(${c.id})" ${c.link?'':`disabled title="Primero agregá el link"`} style="padding:5px 10px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em;white-space:nowrap">🌐 Desde link</button>
+    </div>
     <div class="sb-photos" id="sb-cp-${c.id}"></div>
   </div>
   <div class="field"><label>Notas</label><textarea rows="2" oninput="setC(${c.id},'notes',this.value)">${esc(c.notes)}</textarea></div>
