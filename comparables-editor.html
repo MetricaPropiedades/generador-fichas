@@ -1079,6 +1079,10 @@ function applyState(state){
   
   comparables=(state.comparables||[]).map(c=>({...c}));
   nextId=comparables.length?Math.max(...comparables.map(c=>c.id))+1:1;
+  // Restaurar toggle Alquiler/Venta desde el tipo de los comparables (evita mismatch al recargar)
+  const t=(comparables.length&&comparables[0].tipo)||'Alquiler';
+  document.getElementById('st-alq').classList.toggle('on',t==='Alquiler');
+  document.getElementById('st-vta').classList.toggle('on',t==='Venta');
   // Restaurar estado del mapa ANTES de renderPreview para que #leaflet-map exista en el DOM
   const m=state.map||{};
   showMap=m.showMap||false;
