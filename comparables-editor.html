@@ -800,8 +800,9 @@ function addrLabel(f){
   const p=f.properties||{};
   const street=[p.street,p.housenumber].filter(Boolean).join(' ');
   const main=street||p.name||'Sin nombre';
-  const city=p.city==='Ciudad Autónoma de Buenos Aires'||p.city==='Buenos Aires City'?'CABA':p.city;
-  const sub=[city,p.state==='Buenos Aires'&&city==='CABA'?null:p.state].filter(Boolean).join(', ');
+  const isCABA=p.state==='Ciudad Autónoma de Buenos Aires';
+  const city=isCABA?'CABA':p.city;
+  const sub=[city,isCABA?null:p.state].filter(Boolean).join(', ');
   return{main,sub,label:(main+(sub?', '+sub:'')).trim()};
 }
 
