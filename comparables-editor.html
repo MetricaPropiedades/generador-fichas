@@ -110,7 +110,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .icard-datum{flex:0 0 calc(50% - 2.5mm);}
 .icard-datum .lbl{font-size:6.5pt;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;}
 .icard-datum .val{font-size:9pt;font-weight:600;color:var(--dark);}
-.icard-notes{font-size:7.5pt;color:#888;line-height:1.55;border-top:1px solid #f0f0f0;padding-top:2mm;}
+.icard-notes{font-size:7.5pt;color:#888;line-height:1.55;border-top:1px solid #f0f0f0;padding-top:2mm;word-break:break-word;overflow-wrap:break-word;white-space:pre-wrap;max-width:100%;}
 
 .stats-box{display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:4mm;}
 .stats-item{flex:1;padding:3mm 5mm;text-align:center;border-right:1px solid var(--border);}
@@ -130,7 +130,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .ctable .vc.neutral{color:#bbb;text-align:center;}
 .ctable .vc.pos{background:rgba(60,140,60,.07)!important;color:#267326;text-align:center;font-weight:600;}
 .ctable .vc.neg{background:rgba(180,40,40,.07)!important;color:#a82020;text-align:center;font-weight:600;}
-.ctable .vc.notes{text-align:left;font-size:7pt;color:#777;line-height:1.55;}
+.ctable .vc.notes{text-align:left;font-size:7pt;color:#777;line-height:1.55;word-break:break-word;overflow-wrap:break-word;white-space:normal;min-width:0;max-width:0;}
 .ctable .comp-hd{background:var(--g)!important;color:#1c1c1c;font-weight:800;font-size:8pt;}
 
 .concl-box{background:var(--dark);border-radius:5px;padding:6mm 9mm;margin-top:4mm;display:flex;align-items:center;justify-content:space-between;gap:5mm;}
@@ -422,11 +422,19 @@ async function loadPhotoFromLink(id){
   if(btn){btn.disabled=true;btn.textContent='⏳ Cargando...';}
   const restore=()=>{if(btn){btn.disabled=false;btn.textContent='🌐 Desde link';}};
   try{
-    const proxyUrl='https://api.allorigins.win/get?url='+encodeURIComponent(c.link);
-    const r=await fetch(proxyUrl);
-    if(!r.ok)throw new Error('Error al acceder al link ('+r.status+')');
-    const data=await r.json();
-    const pageHtml=data.contents||'';
+    // Intentar con corsproxy.io (más confiable), fallback a allorigins
+    async function fetchViaProxy(url){
+      const proxies=['https://corsproxy.io/?url='+encodeURIComponent(url),'https://api.allorigins.win/get?url='+encodeURIComponent(url)];
+      for(const p of proxies){
+        try{const r=await fetch(p,{signal:AbortSignal.timeout(8000)});if(r.ok)return r;}catch(e){}
+      }
+      throw new Error('No se pudo conectar al portal (todos los proxies fallaron)');
+    }
+    const pageR=await fetchViaProxy(c.link);
+    const ct=pageR.headers.get('content-type')||'';
+    let pageHtml='';
+    if(ct.includes('json')){const d=await pageR.json();pageHtml=d.contents||'';}
+    else{pageHtml=await pageR.text();}
     let imgUrl=null;
     const m1=pageHtml.match(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
     const m2=pageHtml.match(/content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
@@ -434,8 +442,14 @@ async function loadPhotoFromLink(id){
     if(!imgUrl)throw new Error('No se encontró imagen. El portal puede no ser compatible.');
     if(imgUrl.startsWith('//'))imgUrl='https:'+imgUrl;
     else if(imgUrl.startsWith('/')){try{const u=new URL(c.link);imgUrl=u.origin+imgUrl;}catch(e){}}
-    const imgProxy='https://api.allorigins.win/raw?url='+encodeURIComponent(imgUrl);
-    const imgR=await fetch(imgProxy);
+    async function fetchImgViaProxy(url){
+      const proxies=['https://corsproxy.io/?url='+encodeURIComponent(url),'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
+      for(const p of proxies){
+        try{const r=await fetch(p,{signal:AbortSignal.timeout(8000)});if(r.ok)return r;}catch(e){}
+      }
+      throw new Error('No se pudo descargar la imagen');
+    }
+    const imgR=await fetchImgViaProxy(imgUrl);
     if(!imgR.ok)throw new Error('No se pudo descargar la imagen ('+imgR.status+')');
     const blob=await imgR.blob();
     const b64=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=e=>res(e.target.result);rd.onerror=rej;rd.readAsDataURL(blob);});
