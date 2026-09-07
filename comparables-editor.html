@@ -422,31 +422,33 @@ async function loadPhotoFromLink(id){
   if(btn){btn.disabled=true;btn.textContent='⏳ Cargando...';}
   const restore=()=>{if(btn){btn.disabled=false;btn.textContent='🌐 Desde link';}};
   try{
-    // Intentar con corsproxy.io (más confiable), fallback a allorigins
-    async function fetchViaProxy(url){
-      const proxies=['https://corsproxy.io/?url='+encodeURIComponent(url),'https://api.allorigins.win/get?url='+encodeURIComponent(url)];
-      for(const p of proxies){
-        try{const r=await fetch(p,{signal:AbortSignal.timeout(8000)});if(r.ok)return r;}catch(e){}
-      }
-      throw new Error('No se pudo conectar al portal (todos los proxies fallaron)');
+    function fetchWithTimeout(url,ms){
+      return Promise.race([fetch(url),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
     }
-    const pageR=await fetchViaProxy(c.link);
-    const ct=pageR.headers.get('content-type')||'';
-    let pageHtml='';
-    if(ct.includes('json')){const d=await pageR.json();pageHtml=d.contents||'';}
-    else{pageHtml=await pageR.text();}
+    async function fetchViaProxy(url){
+      const proxies=[
+        ()=>fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url),9000).then(r=>{if(!r.ok)throw new Error(r.status);return r.text().then(t=>({html:t}));}),
+        ()=>fetchWithTimeout('https://api.allorigins.win/get?url='+encodeURIComponent(url),9000).then(r=>{if(!r.ok)throw new Error(r.status);return r.json().then(d=>({html:d.contents||''}));}),
+        ()=>fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(url),9000).then(r=>{if(!r.ok)throw new Error(r.status);return r.text().then(t=>({html:t}));}),
+      ];
+      for(const p of proxies){try{return await p();}catch(e){}}
+      throw new Error('No se pudo conectar al portal. Probá pegar el link de la foto directamente.');
+    }
+    const {html:pageHtml}=await fetchViaProxy(c.link);
     let imgUrl=null;
     const m1=pageHtml.match(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
     const m2=pageHtml.match(/content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
     if(m1)imgUrl=m1[1];else if(m2)imgUrl=m2[1];
-    if(!imgUrl)throw new Error('No se encontró imagen. El portal puede no ser compatible.');
+    if(!imgUrl)throw new Error('No se encontró imagen en la publicación. El portal puede requerir JavaScript para cargar las fotos.');
     if(imgUrl.startsWith('//'))imgUrl='https:'+imgUrl;
     else if(imgUrl.startsWith('/')){try{const u=new URL(c.link);imgUrl=u.origin+imgUrl;}catch(e){}}
     async function fetchImgViaProxy(url){
-      const proxies=['https://corsproxy.io/?url='+encodeURIComponent(url),'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
-      for(const p of proxies){
-        try{const r=await fetch(p,{signal:AbortSignal.timeout(8000)});if(r.ok)return r;}catch(e){}
-      }
+      const proxies=[
+        ()=>fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url),9000),
+        ()=>fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(url),9000),
+        ()=>fetchWithTimeout('https://api.allorigins.win/raw?url='+encodeURIComponent(url),9000),
+      ];
+      for(const p of proxies){try{const r=await p();if(r.ok)return r;}catch(e){}}
       throw new Error('No se pudo descargar la imagen');
     }
     const imgR=await fetchImgViaProxy(imgUrl);
@@ -778,12 +780,12 @@ function mkPinSvg(color, label){
   </svg>`;
 }
 function mkRedIcon(){
-  const html='<div style="position:relative;width:36px;height:46px;margin-left:-18px;margin-top:-46px;">'+mkPinSvg('#C8941A','')+'</div>';
-  return L.divIcon({className:'',html,iconSize:[36,46],iconAnchor:[18,46]});
+  const html='<div style="position:absolute;transform:translate(-50%,-100%);width:36px;height:46px;">'+mkPinSvg('#C8941A','')+'</div>';
+  return L.divIcon({className:'',html,iconSize:[0,0]});
 }
 function mkBlueIcon(num){
-  const html='<div style="position:relative;width:36px;height:46px;margin-left:-18px;margin-top:-46px;">'+mkPinSvg('#2471a3',num)+'</div>';
-  return L.divIcon({className:'',html,iconSize:[36,46],iconAnchor:[18,46]});
+  const html='<div style="position:absolute;transform:translate(-50%,-100%);width:36px;height:46px;">'+mkPinSvg('#2471a3',num)+'</div>';
+  return L.divIcon({className:'',html,iconSize:[0,0]});
 }
 
 function initMapFromCache(){
@@ -814,8 +816,8 @@ function initMapFromCache(){
     bounds.push([lat,lon]);
   });
   if(bounds.length===0)leafletMap.setView([-34.603722,-58.381592],13);
-  else if(bounds.length===1)leafletMap.setView(bounds[0],15);
-  else leafletMap.fitBounds(bounds,{padding:[20,20]});
+  else if(bounds.length===1)leafletMap.setView(bounds[0],14);
+  else leafletMap.fitBounds(bounds,{padding:[40,40],maxZoom:15});
 }
 
 async function triggerMapGen(){
@@ -895,7 +897,7 @@ function rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,frente){
 }
 function rMapLegend(){
   return`<div class="map-legend" style="margin-top:2mm">
-    <span><span class="map-legend-dot" style="background:#e74c3c"></span>Propiedad tasada</span>
+    <span><span class="map-legend-dot" style="background:#C8941A"></span>Propiedad tasada</span>
     <span><span class="map-legend-dot" style="background:#2471a3"></span>Comparables</span>
   </div>`;
 }
