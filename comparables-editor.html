@@ -34,11 +34,11 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 
 /* ── AUTOCOMPLETE DIRECCIÓN ── */
 .addr-wrap{position:relative;}
-.addr-dropdown{position:absolute;top:100%;left:0;right:0;background:#2a2a2a;border:1px solid #444;border-radius:4px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.5);max-height:220px;overflow-y:auto;}
-.addr-opt{padding:7px 10px;font-size:10px;color:#ddd;cursor:pointer;border-bottom:1px solid #333;line-height:1.4;}
+.addr-dropdown{position:fixed;background:#2a2a2a;border:1px solid #444;border-radius:4px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.7);max-height:240px;overflow-y:auto;}
+.addr-opt{padding:8px 11px;font-size:10.5px;color:#ddd;cursor:pointer;border-bottom:1px solid #333;line-height:1.4;}
 .addr-opt:last-child{border-bottom:none;}
-.addr-opt:hover,.addr-opt.active{background:rgba(200,148,26,.2);color:#fff;}
-.addr-opt strong{color:#C8941A;}
+.addr-opt:hover,.addr-opt.active{background:rgba(200,148,26,.22);color:#fff;}
+.addr-opt strong{color:#C8941A;font-size:11px;}
 
 /* ── FOTO THUMBNAILS SIDEBAR ── */
 .sp-wrap{position:relative;display:inline-block;width:72px;height:54px;margin:2px;}
@@ -239,7 +239,14 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   </div>
 
   <h2>Propiedad Tasada</h2>
-  <div class="field"><label>Nombre / Dirección</label><input type="text" id="s-nombre" placeholder="ej: Cabildo 2302 y Olazábal, CABA" oninput="renderPreview()"></div>
+  <div class="field"><label>Nombre / Dirección</label>
+    <div class="addr-wrap">
+      <input type="text" id="s-nombre" placeholder="ej: Cabildo 2302 y Olazábal, CABA" autocomplete="off"
+        oninput="renderPreview();addrTyping('subject',this.value)"
+        onkeydown="addrKey(event,'subject')"
+        onblur="setTimeout(()=>closeAddrDrop('subject'),200)">
+    </div>
+  </div>
   <div class="field-row">
     <div class="field"><label>Fecha del informe</label><input type="text" id="s-fecha" placeholder="ej: 12 Junio 2026" oninput="renderPreview()"></div>
     <div class="field"><label>Tasador <small style="font-weight:400;opacity:.55">(dato interno)</small></label><input type="text" id="s-analista" placeholder="ej: Santiago G." oninput="renderPreview()"></div>
@@ -756,12 +763,12 @@ function renderPreview(){
 // ══════════════════════════════════════
 const addrTimers={};
 const addrResults={};
-let addrCursor={};
+const addrCursor={};
 
 function addrTyping(id,val){
   clearTimeout(addrTimers[id]);
   closeAddrDrop(id);
-  if(val.trim().length<4)return;
+  if(!val||val.trim().length<4)return;
   addrTimers[id]=setTimeout(()=>fetchAddrSuggestions(id,val),350);
 }
 
@@ -777,44 +784,55 @@ async function fetchAddrSuggestions(id,val){
   }catch(e){}
 }
 
+function addrLabel(f){
+  const p=f.properties||{};
+  const street=p.street&&p.housenumber?p.street+' '+p.housenumber:p.street;
+  const main=[p.name,street].filter(Boolean).join(', ');
+  const sub=[p.city||p.town||p.village,p.state].filter(Boolean).join(', ');
+  return{main:main||'Sin nombre',sub};
+}
+
 function showAddrDrop(id,features){
   closeAddrDrop(id);
   if(!features.length)return;
-  const wrap=document.getElementById('aw-'+id);
-  if(!wrap)return;
+  const inp=document.getElementById(id==='subject'?'s-nombre':'addr-inp-'+id);
+  if(!inp)return;
+  const rect=inp.getBoundingClientRect();
   const drop=document.createElement('div');
   drop.className='addr-dropdown';
   drop.id='addr-drop-'+id;
-  features.forEach((f,i)=>{
-    const p=f.properties||{};
-    const main=[p.name,p.street&&p.housenumber?p.street+' '+p.housenumber:p.street].filter(Boolean).join(', ');
-    const sub=[p.city||p.town||p.village,p.state,p.country].filter(Boolean).join(', ');
+  drop.style.cssText='left:'+rect.left+'px;top:'+(rect.bottom+2)+'px;width:'+rect.width+'px;';
+  features.forEach((f)=>{
+    const{main,sub}=addrLabel(f);
     const div=document.createElement('div');
     div.className='addr-opt';
-    div.innerHTML='<strong>'+escHtml(main||'Sin nombre')+'</strong>'+(sub?'<br><span style="color:#888;font-size:9px">'+escHtml(sub)+'</span>':'');
-    div.onmousedown=()=>selectAddr(id,f);
+    div.innerHTML='<strong>'+escHtml(main)+'</strong>'+(sub?'<br><span style="color:#999;font-size:9.5px">'+escHtml(sub)+'</span>':'');
+    div.onmousedown=(e)=>{e.preventDefault();selectAddr(id,f);};
     drop.appendChild(div);
   });
-  wrap.appendChild(drop);
+  document.body.appendChild(drop);
 }
 
-function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function selectAddr(id,f){
-  const p=f.properties||{};
-  const main=[p.name,p.street&&p.housenumber?p.street+' '+p.housenumber:p.street].filter(Boolean).join(', ');
-  const sub=[p.city||p.town||p.village,p.state].filter(Boolean).join(', ');
+  const{main,sub}=addrLabel(f);
   const label=(main+(sub?', '+sub:'')).trim();
-  const [lon,lat]=f.geometry.coordinates;
-  setC(id,'address',label);
-  setC(id,'_lat',lat);
-  setC(id,'_lon',lon);
-  const inp=document.getElementById('addr-inp-'+id);
-  if(inp)inp.value=label;
+  const[lon,lat]=f.geometry.coordinates;
+  const inp=document.getElementById(id==='subject'?'s-nombre':'addr-inp-'+id);
   closeAddrDrop(id);
-  // Actualizar título de la card en sidebar
-  const card=document.querySelector('[data-id="'+id+'"] .ctit');
-  if(card)card.textContent=label||'Comparable';
+  if(id==='subject'){
+    if(inp)inp.value=label;
+    window._subjectCoord={lat,lon};
+    renderPreview();
+  }else{
+    setC(id,'address',label);
+    setC(id,'_lat',lat);
+    setC(id,'_lon',lon);
+    if(inp)inp.value=label;
+    const card=document.querySelector('[data-id="'+id+'"] .ctit');
+    if(card)card.textContent=label;
+  }
 }
 
 function closeAddrDrop(id){
@@ -829,13 +847,13 @@ function addrKey(e,id){
   if(!opts.length)return;
   if(e.key==='ArrowDown'){
     e.preventDefault();
-    addrCursor[id]=Math.min((addrCursor[id]||0)+1,opts.length-1);
+    addrCursor[id]=Math.min(((addrCursor[id]??-1))+1,opts.length-1);
   }else if(e.key==='ArrowUp'){
     e.preventDefault();
-    addrCursor[id]=Math.max((addrCursor[id]||0)-1,0);
+    addrCursor[id]=Math.max(((addrCursor[id]??0))-1,0);
   }else if(e.key==='Enter'||e.key==='Tab'){
-    const cur=addrCursor[id]||0;
-    if(cur>=0&&addrResults[id]&&addrResults[id][cur]){
+    const cur=addrCursor[id]??-1;
+    if(cur>=0&&addrResults[id]?.[cur]){
       e.preventDefault();
       selectAddr(id,addrResults[id][cur]);
     }
@@ -845,6 +863,13 @@ function addrKey(e,id){
   }
   opts.forEach((o,i)=>o.classList.toggle('active',i===addrCursor[id]));
 }
+
+// Cerrar dropdown si se hace click fuera
+document.addEventListener('mousedown',e=>{
+  document.querySelectorAll('.addr-dropdown').forEach(d=>{
+    if(!d.contains(e.target))d.remove();
+  });
+});
 
 // ══════════════════════════════════════
 // MAP (Leaflet + CartoDB)
@@ -957,7 +982,7 @@ async function triggerMapGen(){
   await delay(80);
   const subjectAddr=(document.getElementById('s-nombre').value||'').trim();
   if(st)st.textContent='Buscando propiedad tasada...';
-  geoCoords.subject=subjectAddr?await nominatim(subjectAddr):null;
+  geoCoords.subject=subjectAddr?(window._subjectCoord||await nominatim(subjectAddr)):null;
   if(st)st.textContent='Tasada: '+(geoCoords.subject?'✓':'✗ no encontrada - revisá la dirección en Nombre/Dirección');
   geoCoords.comparables=[];
   for(let i=0;i<comparables.length;i++){
