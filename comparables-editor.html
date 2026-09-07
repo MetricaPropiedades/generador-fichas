@@ -769,18 +769,27 @@ function addrTyping(id,val){
   clearTimeout(addrTimers[id]);
   closeAddrDrop(id);
   if(!val||val.trim().length<4)return;
-  addrTimers[id]=setTimeout(()=>fetchAddrSuggestions(id,val),350);
+  addrTimers[id]=setTimeout(()=>fetchAddrSuggestions(id,val),600);
 }
 
 async function fetchAddrSuggestions(id,val){
   try{
-    const q=encodeURIComponent(val.trim()+' argentina');
-    const url='https://photon.komoot.io/api/?q='+q+'&limit=6&lang=es';
-    console.log('[autocomplete] fetch',url);
-    const r=await fetch(url);
-    const d=await r.json();
-    console.log('[autocomplete] results',d.features?.length,d.features?.map(f=>f.properties?.name||f.properties?.street));
-    const features=(d.features||[]).filter(f=>f.geometry?.coordinates);
+    const q=val.trim()+', Argentina';
+    const url='https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&limit=6&countrycodes=ar&addressdetails=1';
+    const r=await fetch(url,{headers:{'Accept-Language':'es','User-Agent':'MetricaPropiedades/1.0'}});
+    const arr=await r.json();
+    // Convertir formato Nominatim → formato interno {geometry:{coordinates:[lon,lat]}, properties:{...}}
+    const features=arr.map(item=>({
+      geometry:{coordinates:[parseFloat(item.lon),parseFloat(item.lat)]},
+      properties:{
+        name:item.address?.road||(item.display_name.split(',')[0]||''),
+        housenumber:item.address?.house_number||'',
+        street:item.address?.road||'',
+        city:item.address?.city||item.address?.town||item.address?.village||'',
+        state:item.address?.state||'',
+        _display:item.display_name
+      }
+    }));
     addrResults[id]=features;
     addrCursor[id]=-1;
     showAddrDrop(id,features);
@@ -789,6 +798,13 @@ async function fetchAddrSuggestions(id,val){
 
 function addrLabel(f){
   const p=f.properties||{};
+  // Nominatim: usar display_name recortado
+  if(p._display){
+    const parts=p._display.split(',').map(s=>s.trim());
+    const main=parts.slice(0,3).join(', ');
+    const sub=parts.slice(3,5).join(', ');
+    return{main,sub};
+  }
   const street=p.street&&p.housenumber?p.street+' '+p.housenumber:p.street;
   const main=[p.name,street].filter(Boolean).join(', ');
   const sub=[p.city||p.town||p.village,p.state].filter(Boolean).join(', ');
