@@ -454,7 +454,7 @@ async function loadPhotoFromLink(id){
         }
         return '';
       }
-      const pageHtml=await fetchPage(c.link);
+      const pageHtml=await fetchPage(c.photoLink);
       const m1=pageHtml.match(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
       const m2=pageHtml.match(/content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
       const m3=pageHtml.match(/"og:image","content":"([^"]+)"/i);
@@ -575,8 +575,18 @@ function renderSidebar(){
     <input type="text" value="${esc(c.address)}" placeholder="ej: Belgrano 925" oninput="setC(${c.id},'address',this.value)">
   </div>
   <div class="field" style="margin-top:2px">
-    <label style="color:#C8941A;font-size:9px;letter-spacing:.1em">🔗 LINK (interno)</label>
-    <input type="text" value="${esc(c.link||'')}" placeholder="ej: zonaprop.com.ar/..." oninput="setC(${c.id},'link',this.value)" style="font-size:10px;color:#aaa">
+    <label style="color:#C8941A;font-size:9px;letter-spacing:.1em">🔗 LINK PUBLICACIÓN</label>
+    <div style="display:flex;gap:4px;align-items:center">
+      <input type="text" value="${esc(c.link||'')}" placeholder="ej: zonaprop.com.ar/..." oninput="setC(${c.id},'link',this.value)" style="font-size:10px;color:#aaa;flex:1;min-width:0">
+      <button onclick="if('${esc(c.link||'')}'){window.open('${esc(c.link||'')}'.startsWith('http')?'${esc(c.link||'')}':'https://'+'${esc(c.link||'')}','_blank')}" ${c.link?'':'disabled'} style="padding:4px 8px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:13px;flex-shrink:0;line-height:1">↗</button>
+    </div>
+  </div>
+  <div class="field" style="margin-top:2px">
+    <label style="color:#888;font-size:9px;letter-spacing:.1em">🖼 LINK FOTO (directo)</label>
+    <div style="display:flex;gap:4px;align-items:center">
+      <input type="text" value="${esc(c.photoLink||'')}" placeholder="clic derecho en la foto → Copiar dirección de imagen" oninput="setC(${c.id},'photoLink',this.value)" style="font-size:10px;color:#aaa;flex:1;min-width:0">
+      <button id="btn-load-link-${c.id}" onclick="loadPhotoFromLink(${c.id})" ${c.photoLink?'':'disabled'} style="padding:4px 8px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em;white-space:nowrap;flex-shrink:0">🌐 Cargar</button>
+    </div>
   </div>
   
   <div class="field"><label>Tipo operación</label>
@@ -688,10 +698,6 @@ function renderSidebar(){
   </div>
   <div class="field">
     <label>Foto del comparable</label>
-    <div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">
-      <input type="text" value="${esc(c.photoLink||'')}" placeholder="Link directo de la foto (clic derecho → Copiar dirección)" oninput="setC(${c.id},'photoLink',this.value)" style="font-size:10px;color:#aaa;flex:1;min-width:0">
-      <button id="btn-load-link-${c.id}" onclick="loadPhotoFromLink(${c.id})" ${c.photoLink?'':'disabled'} style="padding:5px 10px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em;white-space:nowrap;flex-shrink:0">🌐 Cargar</button>
-    </div>
     <label class="file-label">📷 Agregar foto<input type="file" accept="image/*" onchange="loadCompPhoto(this,${c.id})"></label>
     <div class="sb-photos" id="sb-cp-${c.id}"></div>
   </div>
