@@ -798,17 +798,11 @@ async function fetchAddrSuggestions(id,val){
 
 function addrLabel(f){
   const p=f.properties||{};
-  // Nominatim: usar display_name recortado
-  if(p._display){
-    const parts=p._display.split(',').map(s=>s.trim());
-    const main=parts.slice(0,3).join(', ');
-    const sub=parts.slice(3,5).join(', ');
-    return{main,sub};
-  }
-  const street=p.street&&p.housenumber?p.street+' '+p.housenumber:p.street;
-  const main=[p.name,street].filter(Boolean).join(', ');
-  const sub=[p.city||p.town||p.village,p.state].filter(Boolean).join(', ');
-  return{main:main||'Sin nombre',sub};
+  const street=[p.street,p.housenumber].filter(Boolean).join(' ');
+  const main=street||p.name||'Sin nombre';
+  const city=p.city==='Ciudad Autónoma de Buenos Aires'||p.city==='Buenos Aires City'?'CABA':p.city;
+  const sub=[city,p.state==='Buenos Aires'&&city==='CABA'?null:p.state].filter(Boolean).join(', ');
+  return{main,sub,label:(main+(sub?', '+sub:'')).trim()};
 }
 
 function showAddrDrop(id,features){
@@ -835,8 +829,7 @@ function showAddrDrop(id,features){
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function selectAddr(id,f){
-  const{main,sub}=addrLabel(f);
-  const label=(main+(sub?', '+sub:'')).trim();
+  const{main,sub,label}=addrLabel(f);
   const[lon,lat]=f.geometry.coordinates;
   const inp=document.getElementById(id==='subject'?'s-nombre':'addr-inp-'+id);
   closeAddrDrop(id);
