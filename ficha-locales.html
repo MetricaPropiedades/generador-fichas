@@ -104,6 +104,8 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .photos-grid-2 img{width:100%;height:auto;border-radius:3px;display:block;}
 .photos-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm;margin-bottom:4mm;}
 .photos-grid-3 img{width:100%;height:auto;border-radius:3px;display:block;}
+.ph-cover{width:100%;aspect-ratio:4/3;background-size:cover;background-position:center;background-repeat:no-repeat;border-radius:3px;}
+.photos-grid-1 .ph-cover{aspect-ratio:16/9;}
 .planos-section{margin-bottom:4mm;}
 .plano-full{margin-bottom:3mm;}
 .plano-full img{width:100%;height:auto;border-radius:3px;display:block;}
@@ -588,9 +590,10 @@ function rLocal(l,idx){
   let photosHtml='';
   if(l.photos.length){
     /* la primera es la principal, a todo el ancho; las demás van abajo, más chicas */
-    photosHtml='<div class="photos-grid-1"><img src="'+l.photos[0].photo+'" alt=""></div>';
+    const cuadro=p=>'<div class="ph-cover" style="background-image:url(\''+p.photo+'\')"></div>';
+    photosHtml='<div class="photos-grid-1">'+cuadro(l.photos[0])+'</div>';
     const resto=l.photos.slice(1);
-    if(resto.length)photosHtml+='<div class="photos-grid-'+(resto.length===2?2:3)+'">'+resto.map(p=>'<img src="'+p.photo+'" alt="">').join('')+'</div>';
+    if(resto.length)photosHtml+='<div class="photos-grid-'+(resto.length===2?2:3)+'">'+resto.map(cuadro).join('')+'</div>';
   }else{
     photosHtml='<div class="placeholder-slot">📷 Imagen del local</div>';
   }
