@@ -25,6 +25,14 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .sb-title{font-family:'Big Shoulders Display',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;}
 .sb-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
 .sb-extra-btns{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.sb-import{margin-top:10px;padding-top:10px;border-top:1px solid var(--sb-border);}
+.sb-import input{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--sb-border);color:#fff;border-radius:var(--radius);padding:7px 9px;font-size:11px;font-family:'Inter',sans-serif;}
+.sb-import input::placeholder{color:rgba(255,255,255,.35);}
+.sb-import .fila{display:flex;gap:6px;margin-top:6px;}
+.sb-import .estado{font-size:10px;color:rgba(255,255,255,.45);margin-top:5px;min-height:13px;}
+.sb-import .estado.mal{color:#E8A49A;}
+.sb-import .rueda{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--gold);border-radius:50%;animation:giraf .7s linear infinite;}
+@keyframes giraf{to{transform:rotate(360deg);}}
 .btn-add{background:var(--gold);color:#1a1a1a;border:none;padding:7px 12px;border-radius:var(--radius);font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
 .btn-add:hover{filter:brightness(1.1);}
 .btn-sec{background:rgba(255,255,255,.07);color:rgba(255,255,255,.7);border:1px solid var(--sb-border);padding:7px 12px;border-radius:var(--radius);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
@@ -153,6 +161,17 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
       <label class="btn-sec" style="cursor:pointer">📂 Abrir<input type="file" accept=".json" style="display:none" onchange="loadJSON(this)"></label>
     </div>
     <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:13px;"></div>
+    <div class="sb-import">
+      <input id="imp-url" type="url" placeholder="Pegá el link del aviso (ZonaProp, Argenprop o Mercado Libre)"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();importarAviso();}">
+      <div class="fila">
+        <button class="btn-add" id="imp-btn" onclick="importarAviso()">Traer datos del aviso</button>
+        <label class="btn-sec" style="cursor:pointer;display:flex;align-items:center;gap:5px">
+          <input type="checkbox" id="imp-fotos" checked style="width:auto;margin:0"> Fotos
+        </label>
+      </div>
+      <div id="imp-estado" class="estado"></div>
+    </div>
   </div>
   <div id="locals-container"></div>
 </aside>
@@ -210,6 +229,59 @@ function setTipo(t){
   renderPreview();autoSave();
 }
 function addLocal(){locals.push(defaultLocal());renderSidebar();renderPreview();}
+
+/* ---- cargar un local desde el aviso de un portal ----
+   La página no puede leer los portales por su cuenta, así que le pide los datos a la app del buscador,
+   que ya sabe entrar a ZonaProp, Argenprop y Mercado Libre. */
+const API_FICHAS='https://web-production-9a60eb.up.railway.app/api/publico';
+
+function impEstado(txt,mal){
+  const el=document.getElementById('imp-estado');
+  el.className='estado'+(mal?' mal':'');
+  el.innerHTML=txt;
+}
+async function fotoComoDato(url){
+  const r=await fetch(API_FICHAS+'/foto?u='+encodeURIComponent(url));
+  if(!r.ok)throw new Error('foto');
+  const blob=await r.blob();
+  return await new Promise(res=>{const fr=new FileReader();fr.onload=e=>res(e.target.result);fr.readAsDataURL(blob);});
+}
+async function importarAviso(){
+  const url=(document.getElementById('imp-url').value||'').trim();
+  if(!url){impEstado('Pegá primero el link del aviso.',true);return;}
+  const btn=document.getElementById('imp-btn');
+  btn.disabled=true;
+  impEstado('<span class="rueda"></span>Leyendo el aviso…');
+  try{
+    const r=await fetch(API_FICHAS+'/aviso?url='+encodeURIComponent(url));
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'No se pudo leer el aviso');
+    /* si el último local está vacío se completa ese, y si no se agrega uno nuevo */
+    let l=locals[locals.length-1];
+    if(!l||l.address||l.supCubierta||l.precio){l=defaultLocal();locals.push(l);}
+    ['address','supCubierta','supPB','supPA','supSS','supTerreno','frente','fondo','posicion','currency','precio','comentarios','disponibilidad']
+      .forEach(function(k){ if(d[k]!==undefined&&d[k]!=='') l[k]=d[k]; });
+    if(d.precio&&d.currency==='ARS')tipoOperacion=tipoOperacion;   /* el tipo de operación lo elige el broker */
+    renderSidebar();renderPreview();
+    const fotos=(d.fotos||[]).slice(0,12);
+    if(document.getElementById('imp-fotos').checked&&fotos.length){
+      impEstado('<span class="rueda"></span>Trayendo '+fotos.length+' fotos…');
+      let listas=0;
+      for(const f of fotos){
+        try{const dato=await fotoComoDato(f);l.photos.push({photo:dato,photoOrig:dato});listas++;}catch(e){}
+      }
+      renderSidebar();renderPreview();
+      impEstado('Listo: datos cargados y '+listas+' fotos. Revisá y corregí lo que haga falta.');
+    }else{
+      impEstado('Listo: datos cargados. Revisá y corregí lo que haga falta.');
+    }
+    autoSave();
+    document.getElementById('imp-url').value='';
+  }catch(e){
+    impEstado((e.message||'No se pudo leer el aviso')+'.',true);
+  }
+  btn.disabled=false;
+}
 function removeLocal(id){locals=locals.filter(l=>l.id!==id);renderSidebar();renderPreview();}
 function setL(id,field,value){
   const l=locals.find(l=>l.id===id);if(!l)return;
