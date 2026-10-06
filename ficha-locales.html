@@ -63,6 +63,10 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .photo-thumb-wrap{position:relative;width:64px;height:56px;}
 .photo-thumb-wrap img{width:64px;height:56px;object-fit:cover;border-radius:3px;display:block;}
 .ph-del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;}
+.ph-star{position:absolute;top:2px;left:2px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ph-star:hover{background:var(--gold);}
+.ph-main{position:absolute;left:2px;bottom:2px;background:var(--gold);color:#1a1a1a;font-size:7px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:1px 4px;border-radius:2px;}
+.photo-thumb-wrap:first-child{outline:2px solid var(--gold);outline-offset:-2px;}
 .ph-crop{position:absolute;bottom:2px;right:2px;background:rgba(200,148,26,.8);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
 .ph-order{display:flex;flex-direction:column;gap:2px;position:absolute;top:2px;left:2px;}
 .ph-order button{background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:2px;width:14px;height:12px;font-size:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
@@ -166,9 +170,6 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
              onkeydown="if(event.key==='Enter'){event.preventDefault();importarAviso();}">
       <div class="fila">
         <button class="btn-add" id="imp-btn" onclick="importarAviso()">Traer datos del aviso</button>
-        <label class="btn-sec" style="cursor:pointer;display:flex;align-items:center;gap:5px">
-          <input type="checkbox" id="imp-fotos" checked style="width:auto;margin:0"> Fotos
-        </label>
       </div>
       <div id="imp-estado" class="estado"></div>
     </div>
@@ -219,7 +220,7 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
@@ -259,12 +260,13 @@ async function importarAviso(){
     /* si el último local está vacío se completa ese, y si no se agrega uno nuevo */
     let l=locals[locals.length-1];
     if(!l||l.address||l.supCubierta||l.precio){l=defaultLocal();locals.push(l);}
-    ['address','supCubierta','supPB','supPA','supSS','supTerreno','frente','fondo','posicion','currency','precio','comentarios','disponibilidad']
+    ['address','supCubierta','supPB','supPA','supSS','supTerreno','frente','fondo','posicion','currency','precio','comentarios',
+     'disponibilidad','banos','toilettes','cocheras','antiguedad','expensas']
       .forEach(function(k){ if(d[k]!==undefined&&d[k]!=='') l[k]=d[k]; });
-    if(d.precio&&d.currency==='ARS')tipoOperacion=tipoOperacion;   /* el tipo de operación lo elige el broker */
+    if(d.caracteristicas&&d.caracteristicas.length)l.caracteristicas=d.caracteristicas.join(' · ');
     renderSidebar();renderPreview();
     const fotos=(d.fotos||[]).slice(0,12);
-    if(document.getElementById('imp-fotos').checked&&fotos.length){
+    if(fotos.length){
       impEstado('<span class="rueda"></span>Trayendo '+fotos.length+' fotos…');
       let listas=0;
       for(const f of fotos){
@@ -316,6 +318,12 @@ function movePhoto(id,idx,dir){
   [l.photos[idx],l.photos[to]]=[l.photos[to],l.photos[idx]];
   renderPhotosSb(id);renderPreview();autoSave();
 }
+function setPrincipal(id,idx){
+  const l=locals.find(l=>l.id===id);if(!l||!l.photos[idx])return;
+  const elegida=l.photos.splice(idx,1)[0];
+  l.photos.unshift(elegida);
+  renderPhotosSb(id);renderPreview();autoSave();
+}
 function renderPhotosSb(id){
   const l=locals.find(l=>l.id===id);
   const wrap=document.getElementById('photos-sb-'+id);
@@ -326,6 +334,7 @@ function renderPhotosSb(id){
       ' ondragover="dragOver(event)"'+
       ' ondrop="dragDrop(event,'+id+','+i+',\x27photo\x27)">'+
       '<img src="'+p.photo+'" alt="">'+
+      (i===0?'<span class="ph-main">Principal</span>':'<button class="ph-star" title="Usar como foto principal" onclick="setPrincipal('+id+','+i+')">★</button>')+
       '<button class="ph-del" onclick="removePhoto('+id+','+i+')">×</button>'+
       '<button class="ph-crop" onclick="openCropper(0,'+id+','+i+')">✂</button>'+
     '</div>'
@@ -466,6 +475,30 @@ function renderSidebar(){
           '</div>'+
         '</div>'+
         '<div class="field-row">'+
+          '<div class="field"><label>Baños</label>'+
+            '<input type="text" value="'+esc(l.banos)+'" data-id="'+l.id+'" data-f="banos" oninput="sLev(this)">'+
+          '</div>'+
+          '<div class="field"><label>Toilettes</label>'+
+            '<input type="text" value="'+esc(l.toilettes)+'" data-id="'+l.id+'" data-f="toilettes" oninput="sLev(this)">'+
+          '</div>'+
+        '</div>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Cocheras</label>'+
+            '<input type="text" value="'+esc(l.cocheras)+'" data-id="'+l.id+'" data-f="cocheras" oninput="sLev(this)">'+
+          '</div>'+
+          '<div class="field"><label>Antigüedad</label>'+
+            '<input type="text" value="'+esc(l.antiguedad)+'" placeholder="A estrenar / 10 años" data-id="'+l.id+'" data-f="antiguedad" oninput="sLev(this)">'+
+          '</div>'+
+        '</div>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Expensas</label>'+
+            '<input type="text" value="'+esc(l.expensas)+'" data-id="'+l.id+'" data-f="expensas" oninput="sLev(this)">'+
+          '</div>'+
+          '<div class="field"><label>Características</label>'+
+            '<input type="text" value="'+esc(l.caracteristicas)+'" placeholder="Luminoso · Aire acond." data-id="'+l.id+'" data-f="caracteristicas" oninput="sLev(this)">'+
+          '</div>'+
+        '</div>'+
+        '<div class="field-row">'+
           '<div class="field"><label>Posición relativa</label>'+
             '<select data-id="'+l.id+'" data-f="posicion" onchange="sLev(this)">'+posOptions+'</select>'+
           '</div>'+
@@ -528,17 +561,22 @@ function rLocal(l,idx){
   if(l.fondo)rows.push(['Fondo',fN(l.fondo)+' m']);
   if(l.espAereo)rows.push(['Espacio A\u00e9reo Propio',esc(l.espAereo)]);
   if(l.posicion)rows.push(['Posici\u00f3n Relativa',esc(l.posicion)]);
+  if(l.banos)rows.push(['Ba\u00f1os',esc(l.banos)]);
+  if(l.toilettes)rows.push(['Toilettes',esc(l.toilettes)]);
+  if(l.cocheras)rows.push(['Cocheras',esc(l.cocheras)]);
+  if(l.antiguedad)rows.push(['Antig\u00fcedad',esc(l.antiguedad)]);
+  if(l.expensas)rows.push(['Expensas',esc(l.expensas)]);
+  if(l.caracteristicas)rows.push(['Caracter\u00edsticas',esc(l.caracteristicas)]);
   const tableRows=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
   const precioRow='<tr class="precio-row"><td>Precio de '+tipoOperacion.toLowerCase()+'</td><td>'+(l.precio?esc(l.currency)+' '+esc(l.precio):dash)+'</td></tr>';
   const tableHtml='<table class="prop-table"><tbody>'+tableRows+precioRow+'</tbody></table>';
 
   let photosHtml='';
-  if(l.photos.length===1){
+  if(l.photos.length){
+    /* la primera es la principal, a todo el ancho; las demás van abajo, más chicas */
     photosHtml='<div class="photos-grid-1"><img src="'+l.photos[0].photo+'" alt=""></div>';
-  }else if(l.photos.length===2){
-    photosHtml='<div class="photos-grid-2">'+l.photos.map(p=>'<img src="'+p.photo+'" alt="">').join('')+'</div>';
-  }else if(l.photos.length>=3){
-    photosHtml='<div class="photos-grid-3">'+l.photos.map(p=>'<img src="'+p.photo+'" alt="">').join('')+'</div>';
+    const resto=l.photos.slice(1);
+    if(resto.length)photosHtml+='<div class="photos-grid-'+(resto.length===2?2:3)+'">'+resto.map(p=>'<img src="'+p.photo+'" alt="">').join('')+'</div>';
   }else{
     photosHtml='<div class="placeholder-slot">📷 Imagen del local</div>';
   }
