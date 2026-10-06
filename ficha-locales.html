@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 <style>
 :root{--gold:#C8941A;--dark:#2B2B2B;--sb-bg:#1a1a1a;--sb-card:#242424;--sb-border:rgba(255,255,255,.08);--g:#C8941A;--border:#e5e5e5;--radius:4px;}
@@ -163,8 +164,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
     </div>
     <div class="sb-extra-btns">
       <button class="btn-sec" onclick="exportPDF()">⬇ PDF</button>
-      <button class="btn-sec" onclick="saveJSON()">💾 Guardar</button>
-      <label class="btn-sec" style="cursor:pointer">📂 Abrir<input type="file" accept=".json" style="display:none" onchange="loadJSON(this)"></label>
+      <label class="btn-sec" style="cursor:pointer" title="Abrí un PDF hecho con este generador para seguir editándolo">📂 Abrir PDF<input type="file" accept=".pdf,.json" style="display:none" onchange="loadJSON(this)"></label>
     </div>
     <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:13px;"></div>
     <div class="sb-import">
@@ -765,10 +765,32 @@ async function saveJSON(){
   const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([json],{type:'application/json'})),download:name});a.click();URL.revokeObjectURL(a.href);
 }
 function loadJSON(input){
-  if(!input.files[0])return;
+  const archivo=input.files[0];
+  if(!archivo)return;
+  input.value='';
+  if(/\.pdf$/i.test(archivo.name)||archivo.type==='application/pdf'){abrirPDF(archivo);return;}
   const reader=new FileReader();
   reader.onload=e=>{try{applyState(JSON.parse(e.target.result));}catch(err){alert('Archivo inválido');}};
-  reader.readAsText(input.files[0]);input.value='';
+  reader.readAsText(archivo);
+}
+/* Los PDF que arma este generador llevan adentro los datos de la ficha (fotos incluidas).
+   Abrir el PDF devuelve la ficha tal cual estaba, lista para seguir editando: no hace falta otro archivo. */
+const CLAVE_DATOS_PDF='MetricaFicha';
+async function abrirPDF(archivo){
+  try{
+    const bytes=new Uint8Array(await archivo.arrayBuffer());
+    const pdf=await PDFLib.PDFDocument.load(bytes,{updateMetadata:false});
+    const ref=pdf.catalog.get(PDFLib.PDFName.of(CLAVE_DATOS_PDF));
+    if(!ref){alert('Este PDF no tiene los datos de la ficha guardados (se hizo antes de este cambio o con otro programa).');return;}
+    const stream=pdf.context.lookup(ref);
+    const datos=PDFLib.decodePDFRawStream(stream).decode();
+    applyState(JSON.parse(new TextDecoder().decode(datos)));
+    autoSave();
+  }catch(e){alert('No se pudo abrir el PDF: '+(e.message||e));}
+}
+function nombreArchivo(){
+  const dir=(locals[0]&&locals[0].address)||'local';
+  return ('Ficha '+tipoOperacion+' - '+dir).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)+'.pdf';
 }
 async function exportPDF(){
   if(showMap&&leafletMap){
@@ -795,11 +817,21 @@ async function exportPDF(){
   const wMm=210;
   const hMm=Math.round(wMm*cvs.height/cvs.width);
   docEl.style.minHeight='';
-  const win=window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html><head><style>*{margin:0;padding:0;}@page{size:'+wMm+'mm '+hMm+'mm;margin:0;}body{margin:0;}img{width:'+wMm+'mm;display:block;}</style></head><body><img src="'+img+'"></body></html>');
-  win.document.close();
-  win.focus();
-  setTimeout(()=>{win.print();},600);
+  const pt=mm=>mm*72/25.4;
+  const pdf=await PDFLib.PDFDocument.create();
+  pdf.setTitle(nombreArchivo().replace(/\.pdf$/,''));
+  pdf.setAuthor('Métrica Propiedades');
+  pdf.setProducer('Métrica Propiedades · generador de fichas');
+  const jpg=await pdf.embedJpg(await (await fetch(img)).arrayBuffer());
+  const page=pdf.addPage([pt(wMm),pt(hMm)]);
+  page.drawImage(jpg,{x:0,y:0,width:pt(wMm),height:pt(hMm)});
+  /* los datos de la ficha van guardados adentro del PDF, comprimidos e invisibles al leerlo */
+  const datos=new TextEncoder().encode(JSON.stringify(getState()));
+  pdf.catalog.set(PDFLib.PDFName.of(CLAVE_DATOS_PDF),pdf.context.register(pdf.context.flateStream(datos)));
+  const salida=await pdf.save();
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([salida],{type:'application/pdf'})),download:nombreArchivo()});
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
 
 
