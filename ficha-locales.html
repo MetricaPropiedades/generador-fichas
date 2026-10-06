@@ -222,7 +222,7 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',servicios:'',condicion:'',plantas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',servicios:'',condicion:'',plantas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
@@ -477,6 +477,11 @@ function renderSidebar(){
           '</div>'+
         '</div>'+
         '<div class="field-row">'+
+          '<div class="field"><label>Sup. descubierta m²</label>'+
+            '<input type="number" value="'+esc(l.supDescubierta)+'" step="0.01" data-id="'+l.id+'" data-f="supDescubierta" oninput="sLev(this)">'+
+          '</div>'+
+        '</div>'+
+        '<div class="field-row">'+
           '<div class="field"><label>Baños</label>'+
             '<input type="text" value="'+esc(l.banos)+'" data-id="'+l.id+'" data-f="banos" oninput="sLev(this)">'+
           '</div>'+
@@ -569,6 +574,7 @@ function rLocal(l,idx){
   if(l.supPB)rows.push(['Superficie PB',fN(l.supPB)+' m\u00b2']);
   if(l.supPA)rows.push(['Superficie PA',fN(l.supPA)+' m\u00b2']);
   if(l.supSS)rows.push(['Superficie Subsuelo',fN(l.supSS)+' m\u00b2']);
+  if(l.supDescubierta)rows.push(['Superficie Descubierta',fN(l.supDescubierta)+' m\u00b2']);
   if(l.supTerreno)rows.push(['Terreno',fN(l.supTerreno)+' m\u00b2']);
   if(l.frente)rows.push(['Frente',fN(l.frente)+' m']);
   if(l.fondo)rows.push(['Fondo',fN(l.fondo)+' m']);
