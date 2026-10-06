@@ -166,7 +166,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
     </div>
     <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:13px;"></div>
     <div class="sb-import">
-      <input id="imp-url" type="url" placeholder="Pegá el link del aviso (ZonaProp, Argenprop o Mercado Libre)"
+      <input id="imp-url" type="url" placeholder="Pegá el link: ZonaProp, Argenprop, Mercado Libre o ficha de Tokko (ficha.info)"
              onkeydown="if(event.key==='Enter'){event.preventDefault();importarAviso();}">
       <div class="fila">
         <button class="btn-add" id="imp-btn" onclick="importarAviso()">Traer datos del aviso</button>
@@ -220,7 +220,7 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',servicios:'',condicion:'',plantas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
@@ -261,7 +261,7 @@ async function importarAviso(){
     let l=locals[locals.length-1];
     if(!l||l.address||l.supCubierta||l.precio){l=defaultLocal();locals.push(l);}
     ['address','supCubierta','supPB','supPA','supSS','supTerreno','frente','fondo','posicion','currency','precio','comentarios',
-     'disponibilidad','banos','toilettes','cocheras','antiguedad','expensas']
+     'disponibilidad','banos','toilettes','cocheras','antiguedad','expensas','servicios','condicion','plantas']
       .forEach(function(k){ if(d[k]!==undefined&&d[k]!=='') l[k]=d[k]; });
     if(d.caracteristicas&&d.caracteristicas.length)l.caracteristicas=d.caracteristicas.join(' · ');
     renderSidebar();renderPreview();
@@ -499,6 +499,17 @@ function renderSidebar(){
           '</div>'+
         '</div>'+
         '<div class="field-row">'+
+          '<div class="field"><label>Condición</label>'+
+            '<input type="text" value="'+esc(l.condicion)+'" placeholder="Excelente / Muy bueno" data-id="'+l.id+'" data-f="condicion" oninput="sLev(this)">'+
+          '</div>'+
+          '<div class="field"><label>Plantas</label>'+
+            '<input type="text" value="'+esc(l.plantas)+'" data-id="'+l.id+'" data-f="plantas" oninput="sLev(this)">'+
+          '</div>'+
+        '</div>'+
+        '<div class="field"><label>Servicios</label>'+
+          '<input type="text" value="'+esc(l.servicios)+'" placeholder="Agua corriente · Gas natural · Cloaca" data-id="'+l.id+'" data-f="servicios" oninput="sLev(this)">'+
+        '</div>'+
+        '<div class="field-row">'+
           '<div class="field"><label>Posición relativa</label>'+
             '<select data-id="'+l.id+'" data-f="posicion" onchange="sLev(this)">'+posOptions+'</select>'+
           '</div>'+
@@ -566,7 +577,10 @@ function rLocal(l,idx){
   if(l.cocheras)rows.push(['Cocheras',esc(l.cocheras)]);
   if(l.antiguedad)rows.push(['Antig\u00fcedad',esc(l.antiguedad)]);
   if(l.expensas)rows.push(['Expensas',esc(l.expensas)]);
+  if(l.plantas)rows.push(['Plantas',esc(l.plantas)]);
+  if(l.condicion)rows.push(['Condici\u00f3n',esc(l.condicion)]);
   if(l.caracteristicas)rows.push(['Caracter\u00edsticas',esc(l.caracteristicas)]);
+  if(l.servicios)rows.push(['Servicios',esc(l.servicios)]);
   const tableRows=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
   const precioRow='<tr class="precio-row"><td>Precio de '+tipoOperacion.toLowerCase()+'</td><td>'+(l.precio?esc(l.currency)+' '+esc(l.precio):dash)+'</td></tr>';
   const tableHtml='<table class="prop-table"><tbody>'+tableRows+precioRow+'</tbody></table>';
