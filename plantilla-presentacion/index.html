@@ -599,7 +599,7 @@ function sUbicacion(){const u=P.ubicacion;return `
 function sInversion(){return `
 <section class="slide s-paper" id="sl-inv"><div class="stage pad vcenter">
   <div>${E("inversion.kicker","span","kicker")}${E("inversion.titulo","h2","title")}${E("inversion.subtitulo","p","sub")}</div>
-  <div class="edit-hint"><span class="pen">✎</span> Los valores destacados se pueden modificar; el resto se recalcula automáticamente. <button type="button" class="reset" id="reset">Restablecer valores</button></div>
+  <div class="edit-hint"><span class="pen">✎</span> Los valores destacados se pueden modificar; el resto se recalcula automáticamente. <button type="button" class="reset" id="reset">Restablecer valores</button><div class="seg-ctl" role="group" aria-label="Forma de pago" style="margin-left:auto"><button type="button" data-mode="cuotas" class="on">En cuotas</button><button type="button" data-mode="contado">Pago de contado</button></div></div>
   <div class="kpis">
     <div class="kpi"><div class="v" data-b="compraM"></div><div class="k">Compra del edificio</div></div>
     <div class="kpi"><div class="v" data-b="totalM"></div><div class="k">Inversión total</div></div>
@@ -703,6 +703,7 @@ function renderModel(){
   document.querySelectorAll("[data-b]").forEach(n=>{const v=B[n.dataset.b];if(v!==undefined)n.innerHTML=v});
   const setIn=(id,v)=>{const e=document.getElementById(id);if(e&&document.activeElement!==e)e.value=v};
   setIn("in-ret",nf(st.ret,1));setIn("in-ini",st.inicio);setIn("in-cuo",st.cuotas);setIn("in-esc",nf(st.contado?c.compra:st.esc));setIn("in-sal",nf(st.saldo));setIn("in-obra",nf(st.obra));
+  ["in-esc","in-sal","in-obra"].forEach(id=>{const e=document.getElementById(id);if(e)e.style.width=(e.value.length+0.8)+"ch"});
   const buy=$("#comp-buy"),ob=$("#comp-obra"),se=$("#seg-esc"),ss=$("#seg-sal");
   buy.style.flex=c.compra+" 1 0";ob.style.flex=st.obra+" 1 0";se.style.flex=Math.max(st.esc,1)+" 1 0";ss.style.flex=Math.max(st.saldo,1)+" 1 0";
   ss.style.display=st.contado||st.saldo<=0?"none":"";se.querySelector(".sl").textContent=st.contado?"Pago de contado al escriturar":"Pago al escriturar";
