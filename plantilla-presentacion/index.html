@@ -690,9 +690,7 @@ function renderModel(){
   const cov=c.fin?[...Array(c.N)].map((_,i)=>i+1).filter(k=>c.rentIn(12*(k-1),12*k)>=c.cuota):[];
   const lst=a=>a.length===1?String(a[0]):a.slice(0,-1).join(", ")+" y "+a[a.length-1];
   if(!c.fin){B.chartsTitle="Pago de contado";B.chartsTitle2="Análisis de la renta y amortización de la inversión"}
-  else if(cov.length===c.N){B.chartsTitle="La renta sería superior al total";B.chartsTitle2=c.N===1?"de la cuota de la compra":"de todas las cuotas de la compra"}
-  else if(cov.length){B.chartsTitle="La renta sería superior al total";B.chartsTitle2=(cov.length===1?"de la cuota ":"de las cuotas ")+lst(cov)+" de la compra"}
-  else{B.chartsTitle="El alquiler cubre parte de las cuotas";B.chartsTitle2="de la compra"}
+  else{B.chartsTitle="Pago en cuotas";B.chartsTitle2="Análisis de la renta, las cuotas y la amortización de la inversión"}
   B.c1Title=c.fin?"Cuota contra alquiler cobrado":"Alquiler cobrado por año";
   B.tlEsc=usd(c.escEff);B.tlEscP=c.fin?"Pago al escriturar. El saldo de "+usd(st.saldo)+" queda en "+(c.N===1?"1 cuota anual.":c.N+" cuotas anuales."):"Pago total del inmueble al escriturar.";
   B.tlObraWhen=c.obraM?(c.obraM===1?"Mes 1":"Meses 1 a "+c.obraM):"Mes 0";B.tlObra=usd(st.obra);
