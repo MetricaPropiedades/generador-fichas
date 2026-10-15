@@ -635,7 +635,7 @@ function render(){
   B.obraMeses=c.obraM?mesesTxt(c.obraM):"al escriturar";
   const cov=c.fin?[...Array(c.N)].map((_,i)=>i+1).filter(k=>c.rentIn(12*(k-1),12*k)>=c.cuota):[];
   const lst=a=>a.length===1?String(a[0]):a.slice(0,-1).join(", ")+" y "+a[a.length-1];
-  if(!c.fin){B.chartsTitle="Pago de contado";B.chartsTitle2="La renta se cobra completa desde la apertura"}
+  if(!c.fin){B.chartsTitle="Pago de contado";B.chartsTitle2="Análisis de la renta y amortización de la inversión"}
   else if(cov.length===c.N){B.chartsTitle="La renta sería superior al total";B.chartsTitle2=c.N===1?"de la cuota de la compra":"de todas las cuotas de la compra"}
   else if(cov.length){B.chartsTitle="La renta sería superior al total";B.chartsTitle2=(cov.length===1?"de la cuota ":"de las cuotas ")+lst(cov)+" de la compra"}
   else{B.chartsTitle="El alquiler cubre parte de las cuotas";B.chartsTitle2="de la compra"}
