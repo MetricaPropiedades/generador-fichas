@@ -465,7 +465,7 @@ a.fl:hover{color:var(--gold);text-decoration:underline;text-underline-offset:3px
       <p class="sub" style="max-width:900px">El inversor compra el inmueble y, en el mismo acto, firma el contrato de alquiler con nuestro cliente. Una vez terminada la puesta en valor, el locatario realiza las terminaciones finales e inaugura su nuevo local.</p>
     </div>
   </div>
-  <div class="edit-hint rv"><span class="pen">✎</span> Los valores destacados se pueden modificar; el resto se recalcula automáticamente. <button type="button" class="reset" id="reset">Restablecer valores</button></div>
+  <div class="edit-hint rv"><span class="pen">✎</span> Los valores destacados se pueden modificar; el resto se recalcula automáticamente. <button type="button" class="reset" id="reset">Restablecer valores</button><div class="seg-ctl" role="group" aria-label="Forma de pago" style="margin-left:auto"><button type="button" data-mode="cuotas" class="on">En cuotas</button><button type="button" data-mode="contado">Pago de contado</button></div></div>
   <div class="kpis rv">
     <div class="kpi"><div class="v" data-b="compraM"></div><div class="k">Compra del edificio</div></div>
     <div class="kpi"><div class="v" data-b="totalM"></div><div class="k">Inversión total</div></div>
@@ -653,6 +653,7 @@ function render(){
   // inputs (skip the one being edited)
   const setIn=(id,v)=>{const e=document.getElementById(id);if(e&&document.activeElement!==e)e.value=v};
   setIn("in-ret",nf(st.ret,1));setIn("in-ini",st.inicio);setIn("in-cuo",st.cuotas);setIn("in-esc",nf(st.esc));setIn("in-sal",nf(st.saldo));
+  ["in-esc","in-sal","in-obra"].forEach(id=>{const e=document.getElementById(id);if(e)e.style.width=(e.value.length+0.8)+"ch"});
   // composition widths: purchase vs works, then escritura vs saldo inside purchase
   const buy=document.getElementById("comp-buy"),ob=document.getElementById("comp-obra"),se=document.getElementById("seg-esc"),ss=document.getElementById("seg-sal");
   buy.style.flex=c.compra+" 1 0";ob.style.flex=st.obra+" 1 0";
