@@ -103,8 +103,15 @@ html.static{scroll-snap-type:none}
 /* ficha: fotos y planos */
 .fotos{display:grid;grid-template-columns:280px 1fr;gap:44px;height:682px}
 .fotos-copy{display:flex;flex-direction:column;justify-content:center}
-.gallery{display:grid;gap:10px;height:682px;min-width:0}
-.gallery figure{position:relative;overflow:hidden;background:#333;min-height:0}
+.gallery{display:flex;flex-direction:column;gap:10px;height:682px;min-width:0}
+.grow{display:flex;gap:10px}
+.gallery figure{flex:none;cursor:zoom-in}
+.zoom{position:absolute;right:10px;bottom:10px;z-index:4;width:34px;height:34px;border-radius:50%;background:rgba(17,18,19,.7);display:grid;place-items:center;opacity:0;transition:opacity .2s}
+.zoom svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
+.gallery figure:hover .zoom,.ficha-r:hover .zoom{opacity:1}
+.static .zoom{display:none}
+.ficha-r{cursor:zoom-in}
+.gallery figure{position:relative;overflow:hidden;background:#333}
 .gallery img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .gallery figure.plano{background:#fff;cursor:zoom-in}
 .gallery figure.plano img{object-fit:contain;padding:14px 14px 40px}
@@ -223,6 +230,7 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 .lb-top b span{color:var(--gold);margin-left:12px}
 .lb-x{background:none;border:0;color:#fff;font:800 20px/1 var(--display);letter-spacing:.14em;cursor:pointer}
 .lb-body{min-height:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#fff;margin:16px 0}
+.lb-body.dark{background:transparent;padding:0}
 .lb-body img{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
 .lb-nav{display:flex;justify-content:center;gap:12px}
 .lb-nav button{background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:999px;padding:10px 18px;font:600 13px/1 var(--body);cursor:pointer}
@@ -255,6 +263,10 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 .panel button{background:var(--ink);color:#fff;border:0;border-radius:6px;padding:11px 16px;font:600 13px/1 var(--body);cursor:pointer}
 .panel button.gold{background:var(--gold);color:var(--ink)}
 .panel button:disabled{opacity:.5;cursor:wait}
+.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:16px;max-height:60vh;overflow:auto}
+.ch-grid button{padding:0;border:3px solid transparent;border-radius:4px;background:none;cursor:pointer;aspect-ratio:4/3;overflow:hidden}
+.ch-grid button.on{border-color:var(--gold)}
+.ch-grid img{width:100%;height:100%;object-fit:cover}
 .imp-status{margin-top:14px;font-size:14px;min-height:20px}
 .imp-status.bad{color:#b0291b}
 .edit-panel{position:fixed;inset:0;z-index:210;background:rgba(10,10,11,.92);display:none;grid-template-columns:1fr 360px}
@@ -311,6 +323,14 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
     <button type="button" class="gold" id="ep-add">+ Agregar punto</button>
     <p class="help">Cada punto nuevo aparece en el centro del mapa: arrastralo hasta su lugar y escribile el nombre.</p>
     <p style="margin-top:22px"><button type="button" id="ep-ok">Listo</button></p>
+  </div>
+</div>
+<div class="panel" id="chooser" role="dialog" aria-modal="true" aria-label="Elegir la foto de la ficha">
+  <div class="card" style="width:min(1100px,94vw)">
+    <h3>Foto de la ficha</h3>
+    <p>Elegí la foto que acompaña los datos de la propiedad. Lo ideal es la fachada vista desde la calle. La foto de portada no aparece acá.</p>
+    <div class="ch-grid" id="ch-grid"></div>
+    <div class="row"><button type="button" onclick="document.getElementById(chooser).classList.remove(open)">Cancelar</button></div>
   </div>
 </div>
 <div id="tip"></div>
@@ -527,7 +547,7 @@ function sFicha(){const f=P.ficha;return `
       ${f.caracteristicas.length?`<div class="chips">${f.caracteristicas.map((c,i)=>`<span class="chip">${E(`ficha.caracteristicas.${i}`)}<button type="button" class="ebtn inline" data-del="ficha.caracteristicas" data-i="${i}">×</button></span>`).join("")}</div>`:""}
       <div>${ADD("stat","+ Dato")}${ADD("chip","+ Característica")}</div>
     </div>
-    <div class="ficha-r">${f.fotos.length?I("ficha.fotos."+fichaIdx(),"Foto de la propiedad")+(f.fotos.length>2?`<div class="pick"><button type="button" data-pick="-1">◀ Otra foto</button><button type="button" data-pick="1">Otra foto ▶</button></div>`:""):ADD("fotos","+ Fotos")}</div>
+    <div class="ficha-r" data-zoom="foto:${fichaIdx()}">${f.fotos.length?I("ficha.fotos."+fichaIdx(),"Foto de la propiedad")+ZOOM+(f.fotos.length>2?`<div class="pick"><button type="button" data-pick="-1">◀</button><button type="button" data-choose="1">Elegir foto</button><button type="button" data-pick="1">▶</button></div>`:""):ADD("fotos","+ Fotos")}</div>
   </div>
 </div></section>`}
 
@@ -544,26 +564,63 @@ function sDescMapa(){const f=P.ficha;if(!f.descripcion&&!f.mapa.lat&&!EDIT)retur
   </div>
 </div></section>`}
 
-/* ---------- ficha 3: fotos y planos (se reparten en las diapositivas necesarias) ---------- */
-const LAYOUT={ // columnas, filas y celdas que ocupan dos lugares, según la cantidad de imágenes
-  1:{c:1,r:1},2:{c:2,r:1},3:{c:3,r:1},4:{c:2,r:2},5:{c:3,r:2,t:[0]},6:{c:3,r:2},7:{c:4,r:2,w:[0]},8:{c:4,r:2}};
-function galeriaItems(){
-  const f=P.ficha,fi=fichaIdx(),items=f.fotos.map((src,i)=>({t:"foto",i})).filter(x=>x.i!==0&&x.i!==fi);
-  if(f.planos.length&&f.planos.length<=2)f.planos.forEach((p,i)=>items.push({t:"plano",i}));
-  const pages=[];for(let k=0;k<items.length;k+=8)pages.push(items.slice(k,k+8));
-  // si la última página queda casi vacía, se equilibra con la anterior
-  if(pages.length>1&&pages.at(-1).length<3){const prev=pages.at(-2),move=Math.ceil((prev.length-pages.at(-1).length)/2);pages[pages.length-1]=prev.splice(prev.length-move,move).concat(pages.at(-1))}
+/* ---------- ficha 3: fotos y planos ----------
+   Las fotos se arman en filas respetando la forma de cada una (horizontal o vertical), así casi no se recortan.
+   Cada diapositiva lleva entre 3 y 8 imágenes; se elige el reparto que menos recorta. */
+const GW=940,GH=682,GAP=10;           // tamaño del área de fotos dentro de la diapositiva
+const ASPECT=new Map();               // proporción ancho/alto de cada imagen, medida al cargar
+const aspectOf=src=>ASPECT.get(src)||1.5;
+function measureImages(){
+  const srcs=[...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].filter(x=>x&&!ASPECT.has(x));
+  return Promise.all(srcs.map(src=>new Promise(res=>{const im=new Image();im.onload=()=>{ASPECT.set(src,im.naturalWidth/im.naturalHeight||1.5);res()};im.onerror=()=>{ASPECT.set(src,1.5);res()};im.src=src})));
+}
+// todas las formas de partir k imágenes seguidas en r filas de 1 a 4 imágenes
+function splits(k,r){if(r===1)return k>=1&&k<=4?[[k]]:[];const out=[];for(let a=1;a<=4&&a<k;a++)splits(k-a,r-1).forEach(rest=>out.push([a,...rest]));return out}
+function bestLayout(asp){
+  let best=null;
+  for(let r=1;r<=3;r++)for(const sp of splits(asp.length,r)){
+    let i=0;const rows=sp.map(n=>{const a=asp.slice(i,i+n);i+=n;return{n,h:(GW-GAP*(n-1))/a.reduce((x,y)=>x+y,0)}});
+    const nat=rows.reduce((x,y)=>x+y.h,0),sc=(GH-GAP*(r-1))/nat;
+    const heights=rows.map(x=>x.h*sc);
+    let cost=Math.abs(Math.log(sc))*2;                          // cuánto se recorta
+    if(Math.min(...heights)<170)cost+=2;                         // filas demasiado bajas
+    const spread=Math.max(...sp)-Math.min(...sp);cost+=spread*.08; // filas parejas
+    if(!best||cost<best.cost)best={cost,rows:sp,heights};
+  }
+  return best;
+}
+function paginate(items){
+  const asp=items.map(it=>aspectOf(it.src)),pages=[];let i=0;
+  while(i<items.length){
+    const rem=items.length-i;
+    if(rem<=8&&rem>=3||rem<3){pages.push({items:items.slice(i),lay:bestLayout(asp.slice(i))});break}
+    let pick=null;
+    for(let k=8;k>=3;k--){if(rem-k>0&&rem-k<3)continue;const lay=bestLayout(asp.slice(i,i+k));const cost=lay.cost+.07*(8-k);if(!pick||cost<pick.cost)pick={k,lay,cost}}
+    pages.push({items:items.slice(i,i+pick.k),lay:pick.lay});i+=pick.k;
+  }
   return pages;
 }
+function galeriaItems(){
+  const f=P.ficha,fi=fichaIdx();
+  let items=f.fotos.map((src,i)=>({t:"foto",i,src})).filter(x=>x.i!==0&&x.i!==fi);
+  if(f.planos.length&&f.planos.length<=2)f.planos.forEach((p,i)=>items.push({t:"plano",i,src:p.img}));
+  // con muy pocas fotos, se suma la de portada para que la diapositiva quede ordenada
+  if(items.length>0&&items.length<3&&f.fotos[0]&&fi!==0)items.unshift({t:"foto",i:0,src:f.fotos[0]});
+  return items;
+}
+const ZOOM='<span class="zoom" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg></span>';
 function sGalerias(){
-  const f=P.ficha,pages=galeriaItems();
-  if(!pages.length)return EDIT?`<section class="slide s-gray grain"><div class="stage pad vcenter"><span class="kicker">Fotos</span><h2 class="title">Sin fotos adicionales</h2><div>${ADD("fotos","+ Fotos")}${ADD("plano","+ Plano")}${ADD("video","+ Video")}</div></div></section>`:"";
-  const hasPl=f.planos.length&&f.planos.length<=2,vid=f.video;
-  return pages.map((items,pi)=>{const L=LAYOUT[items.length];
-    const cells=items.map((it,k)=>{const span=(L.w||[]).includes(k)?"grid-column:span 2;":(L.t||[]).includes(k)?"grid-row:span 2;":"";
-      if(it.t==="plano")return `<figure class="plano" style="${span}" data-plano="${it.i}">${I(`ficha.planos.${it.i}.img`,"Plano")}<figcaption>${E(`ficha.planos.${it.i}.nombre`)}${E(`ficha.planos.${it.i}.m2`)}</figcaption>${X("ficha.planos",it.i)}</figure>`;
-      const play=(pi===0&&k===0&&vid)?`<a class="play" href="${esc(vid)}" target="_blank" rel="noopener" data-video="${esc(vid.replace(/\/view.*$/,"/preview"))}"><span class="btn"><svg width="30" height="34" viewBox="0 0 30 34"><path d="M0 0l30 17L0 34z" fill="#17181A"/></svg></span><span class="lbl">Ver recorrido en video</span></a>`:"";
-      return `<figure style="${span}">${I(`ficha.fotos.${it.i}`,"Foto")}${play}${X("ficha.fotos",it.i)}</figure>`}).join("");
+  const f=P.ficha,items=galeriaItems();
+  if(!items.length)return EDIT?`<section class="slide s-gray grain"><div class="stage pad vcenter"><span class="kicker">Fotos</span><h2 class="title">Sin fotos adicionales</h2><div>${ADD("fotos","+ Fotos")}${ADD("plano","+ Plano")}${ADD("video","+ Video")}</div></div></section>`:"";
+  const pages=paginate(items),hasPl=f.planos.length&&f.planos.length<=2,vid=f.video;
+  return pages.map((pg,pi)=>{let k=0;
+    const rows=pg.lay.rows.map((n,ri)=>{const h=pg.lay.heights[ri];const its=pg.items.slice(k,k+n);k+=n;
+      const sumA=its.reduce((x,y)=>x+aspectOf(y.src),0),avail=GW-GAP*(n-1);
+      const cells=its.map((it,j)=>{const w=avail*aspectOf(it.src)/sumA;const first=pi===0&&ri===0&&j===0;
+        if(it.t==="plano")return `<figure class="plano" style="width:${w}px" data-zoom="plano:${it.i}">${I(`ficha.planos.${it.i}.img`,"Plano")}<figcaption>${E(`ficha.planos.${it.i}.nombre`)}${E(`ficha.planos.${it.i}.m2`)}</figcaption>${ZOOM}${X("ficha.planos",it.i)}</figure>`;
+        const play=(first&&vid)?`<a class="play" href="${esc(vid)}" target="_blank" rel="noopener" data-video="${esc(vid.replace(/\/view.*$/,"/preview"))}"><span class="btn"><svg width="30" height="34" viewBox="0 0 30 34"><path d="M0 0l30 17L0 34z" fill="#17181A"/></svg></span><span class="lbl">Ver recorrido en video</span></a>`:"";
+        return `<figure style="width:${w}px" data-zoom="foto:${it.i}">${I(`ficha.fotos.${it.i}`,"Foto")}${play}${ZOOM}${X("ficha.fotos",it.i)}</figure>`}).join("");
+      return `<div class="grow" style="height:${h}px">${cells}</div>`}).join("");
     const titulo=pi>0?"Más fotos":hasPl?"Fotos y planos":"Fotos";
     return `
 <section class="slide s-gray grain"><div class="stage pad">
@@ -573,9 +630,10 @@ function sGalerias(){
       <h2 class="title">${titulo}</h2>
       ${pi===0&&(f.fotosTexto||EDIT)?E("ficha.fotosTexto","p","sub"):""}
       ${(pi===0&&vid)?`<p class="video-note">Recorrido completo en video:<br><a href="${esc(vid)}" target="_blank" rel="noopener" data-video="${esc(vid.replace(/\/view.*$/,"/preview"))}">Ver el video ▸</a></p>`:""}
+      <p class="tap-hint video-note">Tocá una foto para verla en grande.</p>
       ${pi===0?`<div>${ADD("fotos","+ Fotos")}${ADD("plano","+ Plano")}${ADD("video",vid?"Cambiar video":"+ Video")}</div>`:""}
     </div>
-    <div class="gallery" style="grid-template-columns:repeat(${L.c},1fr);grid-template-rows:repeat(${L.r},1fr)">${cells}</div>
+    <div class="gallery">${rows}</div>
   </div>
 </div></section>`}).join("");
 }
@@ -583,7 +641,7 @@ function sPlanos(){const pl=P.ficha.planos;if(pl.length<=2)return "";const out=[
   for(let k=0;k<pl.length;k+=6){const chunk=pl.slice(k,k+6);out.push(`
 <section class="slide s-paper"><div class="stage pad">
   <div class="head-row"><div><span class="kicker">Planos</span>${k===0?E("ficha.planosTitulo","h2","title"):`<h2 class="title">Más planos</h2>`}</div><p class="sub tap-hint" style="margin:0;text-align:right">Tocá cada plano para verlo en grande.</p></div>
-  <div class="pgrid">${chunk.map((p,j)=>{const i=k+j;return `<div class="pcard" data-plano="${i}">${X("ficha.planos",i)}<span class="pimg">${I(`ficha.planos.${i}.img`,"Plano")}</span><span class="pl">${E(`ficha.planos.${i}.nombre`,"b")}${E(`ficha.planos.${i}.m2`)}</span></div>`}).join("")}</div>
+  <div class="pgrid">${chunk.map((p,j)=>{const i=k+j;return `<div class="pcard" data-zoom="plano:${i}">${X("ficha.planos",i)}<span class="pimg">${I(`ficha.planos.${i}.img`,"Plano")}</span><span class="pl">${E(`ficha.planos.${i}.nombre`,"b")}${E(`ficha.planos.${i}.m2`)}</span></div>`}).join("")}</div>
   ${k===0?ADD("plano","+ Plano"):""}
 </div></section>`)}return out.join("")}
 
@@ -832,7 +890,7 @@ async function importarAviso(url){
     f.descripcion=(d.comentarios||"").trim();
     f.mapaLeyenda="Ubicación · "+(d.address||"");
     f.planos=[];f.video="";
-    const fotos=(d.fotos||[]).slice(0,17);f.fotos=[];
+    const fotos=(d.fotos||[]).slice(0,40);f.fotos=[];
     for(let i=0;i<fotos.length;i++){say(`Trayendo fotos (${i+1} de ${fotos.length})…`);try{f.fotos.push(await fotoComoDato(fotos[i]))}catch(e){}}
     f.fotoFicha=f.fotos.length>1?await elegirFachada(f.fotos):0;
     say("Ubicando la dirección en el mapa…");
@@ -853,7 +911,9 @@ $("#imp-url").addEventListener("keydown",e=>{if(e.key==="Enter"){const u=e.targe
 
 /* ---------- render all ---------- */
 function fitDescription(){const b=document.querySelector(".desc-box");if(!b)return;let fs=16;b.style.fontSize=fs+"px";while(b.scrollHeight>b.clientHeight+1&&fs>11){fs-=.5;b.style.fontSize=fs+"px"}}
+let MEASURING=false;
 function render(){
+  if(!MEASURING&&[...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].some(x=>x&&!ASPECT.has(x))){MEASURING=true;measureImages().then(()=>{MEASURING=false;render()});return}
   document.title=String(P.meta.tituloPestana||"Presentación Métrica").replace(/<[^>]+>/g,"");
   $("#deck").innerHTML=[sPortada(),sFicha(),sDescMapa(),sGalerias(),sPlanos(),sInversion(),sGraficos(),sResumen(),sCierre()].join("");
   bindModel();renderModel();drawMap();fitDescription();bindViewers();if(EDIT)enableEditing();
@@ -862,14 +922,23 @@ function fit(){if(STATIC)return;document.documentElement.style.setProperty("--s"
 addEventListener("resize",fit);
 
 function bindViewers(){
-  const cards=[...document.querySelectorAll("[data-plano]")],lb=$("#lb"),body=$("#lb-b"),t=$("#lb-t");let cur=0;
-  const show=i=>{cur=(i+cards.length)%cards.length;const p=P.ficha.planos[+cards[cur].dataset.plano];body.innerHTML=`<img src="${p.img}" alt="">`;t.innerHTML=esc(p.nombre)+"<span>"+esc(p.m2)+"</span>";lb.classList.add("open")};
-  cards.forEach((c,i)=>c.addEventListener("click",()=>{if(EDIT)return;show(i)}));
+  const lb=$("#lb"),body=$("#lb-b"),t=$("#lb-t");
+  // fotos y planos en el orden en que aparecen en la presentación
+  const list=[...document.querySelectorAll("[data-zoom]")].map(n=>n.dataset.zoom).filter((v,i,a)=>a.indexOf(v)===i);let cur=0;
+  const show=i=>{cur=(i+list.length)%list.length;const[tp,ix]=list[cur].split(":");const f=P.ficha;
+    if(tp==="plano"){const p=f.planos[+ix];body.className="lb-body";body.innerHTML=`<img src="${p.img}" alt="">`;t.innerHTML=esc(p.nombre)+"<span>"+esc(p.m2)+"</span>"}
+    else{body.className="lb-body dark";body.innerHTML=`<img src="${f.fotos[+ix]}" alt="">`;const fotos=list.filter(x=>x.startsWith("foto"));t.innerHTML="Foto<span>"+(fotos.indexOf(list[cur])+1)+" de "+fotos.length+"</span>"}
+    lb.classList.add("open")};
+  document.querySelectorAll("[data-zoom]").forEach(n=>n.addEventListener("click",e=>{if(EDIT||e.target.closest(".play,.ebtn,.pick"))return;show(list.indexOf(n.dataset.zoom))}));
   $("#lb-x").onclick=()=>lb.classList.remove("open");$("#lb-p").onclick=()=>show(cur-1);$("#lb-n").onclick=()=>show(cur+1);
-  document.querySelectorAll("[data-video]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();if(EDIT)return;$("#mf").src=a.dataset.video;$("#modal").classList.add("open")}));
+  document.querySelectorAll("[data-video]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(EDIT)return;$("#mf").src=a.dataset.video;$("#modal").classList.add("open")}));
 }
 $("#mx").onclick=()=>{$("#modal").classList.remove("open");$("#mf").src=""};
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("#lb").classList.remove("open");$("#modal").classList.remove("open");$("#mf").src=""}});
+document.addEventListener("keydown",e=>{if($("#lb").classList.contains("open")){if(e.key==="ArrowRight")$("#lb-n").click();if(e.key==="ArrowLeft")$("#lb-p").click()}if(e.key==="Escape"){$("#chooser").classList.remove("open");$("#lb").classList.remove("open");$("#modal").classList.remove("open");$("#mf").src=""}});
+
+/* ---------- elegir la foto de la ficha ---------- */
+function openChooser(){const box=$("#ch-grid"),f=P.ficha;box.innerHTML=f.fotos.map((src,i)=>i===0?"":`<button type="button" data-i="${i}" class="${i===fichaIdx()?"on":""}"><img src="${src}" alt="Foto ${i}"></button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{f.fotoFicha=+b.dataset.i;$("#chooser").classList.remove("open");render()}));$("#chooser").classList.add("open")}
 
 /* ---------- editing ---------- */
 function enableEditing(){
@@ -877,6 +946,7 @@ function enableEditing(){
   document.querySelectorAll("[data-img]").forEach(n=>n.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();pickImage(src=>{set(P,n.dataset.img,src);render()})}));
   document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();get(P,b.dataset.del).splice(+b.dataset.i,1);render()}));
   document.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const f=P.ficha,n=f.fotos.length;let i=fichaIdx()+(+b.dataset.pick);if(i<1)i=n-1;if(i>n-1)i=1;f.fotoFicha=i;render()}));
+  document.querySelectorAll("[data-choose]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();openChooser()}));
   document.querySelectorAll("[data-icon]").forEach(n=>n.addEventListener("click",()=>{const s=P.ficha.stats[+n.dataset.icon];s.icono=ICON_KEYS[(ICON_KEYS.indexOf(s.icono)+1)%ICON_KEYS.length];render()}));
   document.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.add,f=P.ficha;
     if(k==="chip"){f.caracteristicas.push("Nueva característica");render()}
