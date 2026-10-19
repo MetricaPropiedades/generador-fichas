@@ -82,6 +82,9 @@ html.static{scroll-snap-type:none}
 .chip::before{content:"";width:12px;height:7px;border-left:2px solid var(--gold-deep);border-bottom:2px solid var(--gold-deep);transform:rotate(-45deg) translateY(-2px)}
 .ficha-r{position:relative;height:682px;background:#ddd}
 .ficha-r img{width:100%;height:100%;object-fit:cover}
+.pick{position:absolute;z-index:31;bottom:14px;left:50%;transform:translateX(-50%);display:none;gap:6px}
+.editing .pick{display:flex}
+.pick button{background:rgba(17,18,19,.85);color:#fff;border:0;border-radius:999px;padding:9px 13px;font:600 12px/1 var(--body);cursor:pointer;white-space:nowrap}
 
 /* ficha: descripción + mapa */
 .dm{display:grid;grid-template-columns:1fr 520px;gap:56px;height:682px}
@@ -98,9 +101,12 @@ html.static{scroll-snap-type:none}
 .leaflet-control-attribution{font-size:9px!important}
 
 /* ficha: fotos y planos */
-.fotos{display:grid;grid-template-columns:280px 1fr;gap:44px;height:682px}
-.fotos-copy{display:flex;flex-direction:column;justify-content:center}
-.gallery{display:grid;gap:10px;height:682px;min-width:0}
+.fotos{display:flex;flex-direction:column;height:682px}
+.fotos-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:22px}
+.fotos-head .kicker{margin-bottom:10px}
+.fotos-head .title{font-size:54px}
+.fotos-head .video-note{margin:0;text-align:right}
+.gallery{display:grid;gap:10px;flex:1;min-height:0;min-width:0}
 .gallery figure{position:relative;overflow:hidden;background:#333;min-height:0}
 .gallery img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .gallery figure.plano{background:#fff;cursor:zoom-in}
@@ -509,6 +515,8 @@ function sPortada(){return `
 </div></section>`}
 
 /* ---------- ficha 1: datos ---------- */
+// la foto de la ficha es distinta de la de portada (fotos[0]); al importar se elige la que más parece tomada desde afuera
+function fichaIdx(){const f=P.ficha,n=f.fotos.length;if(n<2)return 0;const i=+f.fotoFicha;return i>=1&&i<n?i:1}
 function sFicha(){const f=P.ficha;return `
 <section class="slide s-paper" id="sl-ficha"><div class="stage pad">
   <div class="ficha">
@@ -522,7 +530,7 @@ function sFicha(){const f=P.ficha;return `
       ${f.caracteristicas.length?`<div class="chips">${f.caracteristicas.map((c,i)=>`<span class="chip">${E(`ficha.caracteristicas.${i}`)}<button type="button" class="ebtn inline" data-del="ficha.caracteristicas" data-i="${i}">×</button></span>`).join("")}</div>`:""}
       <div>${ADD("stat","+ Dato")}${ADD("chip","+ Característica")}</div>
     </div>
-    <div class="ficha-r">${f.fotos[0]?I("ficha.fotos.0","Foto principal"):ADD("fotos","+ Fotos")}</div>
+    <div class="ficha-r">${f.fotos.length?I("ficha.fotos."+fichaIdx(),"Foto de la propiedad")+(f.fotos.length>2?`<div class="pick"><button type="button" data-pick="-1">◀ Otra foto</button><button type="button" data-pick="1">Otra foto ▶</button></div>`:""):ADD("fotos","+ Fotos")}</div>
   </div>
 </div></section>`}
 
@@ -540,12 +548,12 @@ function sDescMapa(){const f=P.ficha;if(!f.descripcion&&!f.mapa.lat&&!EDIT)retur
 </div></section>`}
 
 /* ---------- ficha 3: fotos y planos (se reparten en las diapositivas necesarias) ---------- */
-const LAYOUT={ // columnas, filas y celdas que ocupan dos lugares, según la cantidad de imágenes
-  1:{c:1,r:1},2:{c:2,r:1},3:{c:3,r:1},4:{c:2,r:2},5:{c:3,r:2,t:[0]},6:{c:3,r:2},7:{c:4,r:2,w:[0]},8:{c:4,r:2}};
+const LAYOUT={ // columnas, filas y celdas que ocupan dos filas, según la cantidad de imágenes (máximo 6 por diapositiva)
+  1:{c:1,r:1},2:{c:2,r:1},3:{c:2,r:2,t:[0]},4:{c:2,r:2},5:{c:3,r:2,t:[0]},6:{c:3,r:2}};
 function galeriaItems(){
-  const f=P.ficha,items=f.fotos.slice(1).map((src,i)=>({t:"foto",i:i+1}));
+  const f=P.ficha,fi=fichaIdx(),items=f.fotos.map((src,i)=>({t:"foto",i})).filter(x=>x.i!==0&&x.i!==fi);
   if(f.planos.length&&f.planos.length<=2)f.planos.forEach((p,i)=>items.push({t:"plano",i}));
-  const pages=[];for(let k=0;k<items.length;k+=8)pages.push(items.slice(k,k+8));
+  const pages=[];for(let k=0;k<items.length;k+=6)pages.push(items.slice(k,k+6));
   // si la última página queda casi vacía, se equilibra con la anterior
   if(pages.length>1&&pages.at(-1).length<3){const prev=pages.at(-2),move=Math.ceil((prev.length-pages.at(-1).length)/2);pages[pages.length-1]=prev.splice(prev.length-move,move).concat(pages.at(-1))}
   return pages;
@@ -563,12 +571,10 @@ function sGalerias(){
     return `
 <section class="slide s-gray grain"><div class="stage pad">
   <div class="fotos">
-    <div class="fotos-copy">
-      <span class="kicker">${get(P,"ficha.kicker")}</span>
-      <h2 class="title">${titulo}</h2>
-      ${pi===0&&(f.fotosTexto||EDIT)?E("ficha.fotosTexto","p","sub"):""}
+    <div class="fotos-head">
+      <div><span class="kicker">${get(P,"ficha.kicker")}</span><h2 class="title">${titulo}</h2>
+        ${pi===0?`<div>${ADD("fotos","+ Fotos")}${ADD("plano","+ Plano")}${ADD("video",vid?"Cambiar video":"+ Video")}</div>`:""}</div>
       ${(pi===0&&vid)?`<p class="video-note">Recorrido completo en video:<br><a href="${esc(vid)}" target="_blank" rel="noopener" data-video="${esc(vid.replace(/\/view.*$/,"/preview"))}">Ver el video ▸</a></p>`:""}
-      ${pi===0?`<div>${ADD("fotos","+ Fotos")}${ADD("plano","+ Plano")}${ADD("video",vid?"Cambiar video":"+ Video")}</div>`:""}
     </div>
     <div class="gallery" style="grid-template-columns:repeat(${L.c},1fr);grid-template-rows:repeat(${L.r},1fr)">${cells}</div>
   </div>
@@ -793,6 +799,10 @@ $("#ep-ok").addEventListener("click",()=>{$("#ep").classList.remove("open");rend
 /* ---------- importar aviso ---------- */
 function fotoComoDato(url){return fetch(API+"/foto?u="+encodeURIComponent(url)).then(r=>{if(!r.ok)throw 0;return r.blob()}).then(b=>new Promise((res,rej)=>{
   const img=new Image(),u=URL.createObjectURL(b);img.onload=()=>{const m=1600,s=Math.min(1,m/Math.max(img.width,img.height)),cv=document.createElement("canvas");cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv.toDataURL("image/jpeg",.84))};img.onerror=rej;img.src=u}))}
+// cuánto "cielo" tiene la parte de arriba de una foto: sirve para elegir la toma de la fachada desde afuera
+function puntajeExterior(src){return new Promise(res=>{const img=new Image();img.onload=()=>{const w=60,h=40,cv=document.createElement("canvas");cv.width=w;cv.height=h;const cx=cv.getContext("2d");cx.drawImage(img,0,0,w,h);
+  const d=cx.getImageData(0,0,w,Math.round(h/3)).data;let sky=0,n=0;for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];n++;if((b>r+18&&b>110)||(r>205&&g>205&&b>205))sky++}res(sky/n)};img.onerror=()=>res(0);img.src=src})}
+async function elegirFachada(fotos){let best=1,score=-1;for(let i=1;i<fotos.length;i++){const s=await puntajeExterior(fotos[i]);if(s>score){score=s;best=i}}return score>.25?best:1}
 function statsDesdeAviso(d){
   const s=[],add=(icono,valor,unidad,etiqueta)=>{if(valor!==undefined&&valor!==null&&String(valor).trim()!=="")s.push({icono,valor:String(valor),unidad,etiqueta})};
   const porPlanta=d.supPB&&(d.supPA||d.supSS);
@@ -825,6 +835,7 @@ async function importarAviso(url){
     f.planos=[];f.video="";
     const fotos=(d.fotos||[]).slice(0,17);f.fotos=[];
     for(let i=0;i<fotos.length;i++){say(`Trayendo fotos (${i+1} de ${fotos.length})…`);try{f.fotos.push(await fotoComoDato(fotos[i]))}catch(e){}}
+    f.fotoFicha=f.fotos.length>1?await elegirFachada(f.fotos):0;
     say("Ubicando la dirección en el mapa…");
     f.mapa={lat:null,lon:null,centro:null,zoom:16,puntos:[]};
     try{const g=await geocode(d.address||f.titulo);if(g){f.mapa.lat=+g.lat.toFixed(6);f.mapa.lon=+g.lon.toFixed(6)}}catch(e){}
@@ -866,6 +877,7 @@ function enableEditing(){
   document.querySelectorAll("[data-k]").forEach(n=>{n.contentEditable="true";n.addEventListener("blur",()=>{set(P,n.dataset.k,n.innerHTML.replace(/&nbsp;/g," ").trim())})});
   document.querySelectorAll("[data-img]").forEach(n=>n.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();pickImage(src=>{set(P,n.dataset.img,src);render()})}));
   document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();get(P,b.dataset.del).splice(+b.dataset.i,1);render()}));
+  document.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const f=P.ficha,n=f.fotos.length;let i=fichaIdx()+(+b.dataset.pick);if(i<1)i=n-1;if(i>n-1)i=1;f.fotoFicha=i;render()}));
   document.querySelectorAll("[data-icon]").forEach(n=>n.addEventListener("click",()=>{const s=P.ficha.stats[+n.dataset.icon];s.icono=ICON_KEYS[(ICON_KEYS.indexOf(s.icono)+1)%ICON_KEYS.length];render()}));
   document.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.add,f=P.ficha;
     if(k==="chip"){f.caracteristicas.push("Nueva característica");render()}
