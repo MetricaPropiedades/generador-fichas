@@ -1020,10 +1020,16 @@ async function leerFichaImpresa(pdfjsDoc){
   const lp=lines.find(L=>/\b(ALQUILER|VENTA)\b/.test(L.t)&&/(USD|U\$S|\$)\s?[\d.]+/.test(L.t));
   const precio=lp?(lp.t.match(/(USD|U\$S|\$)\s?[\d.,]+/)||[""])[0].replace(/^U\$S/,"USD"):"";
   // título: los renglones con la letra más grande cerca del comienzo
-  const top=lines.slice(0,25),maxFs=Math.max(...top.map(L=>L.fs));const ti=top.map((L,i)=>L.fs>=maxFs*.8?i:-1).filter(i=>i>=0);
-  const tituloTxt=ti.map(i=>norm(joinItems(top[i].items.filter(x=>x.fs>=maxFs*.8)))).join(" ").replace(/\s*\.\s*$/,"");
+  // se arma con los textos sueltos (no con renglones) para no mezclar la columna del agente (nombre, mail, teléfono)
+  const topIt=items.filter(i=>i.y<10000).slice(0,60),maxFs=Math.max(...topIt.map(i=>i.fs)),big=topIt.filter(i=>i.fs>=maxFs*.8&&!/^\$|^USD/.test(i.s));
+  const tx=Math.min(...big.map(i=>i.x)),tRows=[];big.forEach(i=>{const r=tRows.find(r=>Math.abs(r.y-i.y)<3);r?r.its.push(i):tRows.push({y:i.y,its:[i]})});
+  const tituloTxt=tRows.map(r=>norm(joinItems(r.its.sort((a,b)=>a.x-b.x)))).join(" ").replace(/\s*\.\s*$/,"");
   const partesT=tituloTxt.split(",").map(x=>x.trim().replace(/\.$/,"")).filter(x=>x&&!(/\b(alquiler|venta|local|galp[oó]n|oficina|dep[oó]sito)\b/i.test(x)&&!/\d/.test(x)));
-  const ubicacion=ti.length?(top[ti.at(-1)+1]||{}).t||"":"";
+  // ubicación: el renglón que sigue al título, alineado con él a la izquierda
+  const yT=Math.max(...big.map(i=>i.y)),esContacto=t=>/@|^\+?[\d\s()-]{7,}$/.test(t);
+  const u0=topIt.filter(i=>i.y>yT+2&&i.y<yT+maxFs*2.5&&Math.abs(i.x-tx)<12&&i.fs<maxFs*.8&&!esContacto(norm(i.s))).sort((a,b)=>a.y-b.y)[0];
+  let ubicacion="";if(u0){const row=items.filter(i=>Math.abs(i.y-u0.y)<3&&i.x>=u0.x).sort((a,b)=>a.x-b.x),its=[row[0]];
+    for(let k=1;k<row.length&&row[k].x-(row[k-1].x+row[k-1].w)<row[k].fs*2;k++)its.push(row[k]);ubicacion=norm(joinItems(its))}
   // datos con rótulo: el valor está justo arriba del rótulo, en la misma columna
   const stats=[],used=new Set();
   items.forEach((it,k)=>{let lab=norm(it.s).toUpperCase();if(!ROTULOS[lab]&&lab!=="SUPERFICIE")return;
@@ -1037,9 +1043,9 @@ async function leerFichaImpresa(pdfjsDoc){
   const iDesc=lines.findIndex(L=>/^DESCRIPCI[OÓ]N$/i.test(L.t));const lastStat=Math.max(-1,...lines.map((L,i)=>L.items.some(x=>used.has(x))?i:-1));
   const chips=[];if(iDesc>0)for(let i=lastStat+1;i<iDesc;i++)lines[i].items.forEach(x=>{const t=norm(x.s);if(t&&t.length<40&&!used.has(x))chips.push(t)});
   // descripción: hasta el próximo rótulo, sin el texto legal del portal
-  let desc="";if(iDesc>=0){const out=[];for(let i=iDesc+1;i<lines.length;i++){const t=lines[i].t;if(/^(FOTOS|UBICACI[OÓ]N EN MAPA|PLANOS)$/i.test(t))break;out.push(t)}
+  let desc="";if(iDesc>=0){const out=[];for(let i=iDesc+1;i<lines.length;i++){const t=lines[i].t;if(/^(FOTOS|UBICACI[OÓ]NENMAPA|PLANOS)/i.test(t.replace(/\s/g,"")))break;out.push(t)}
     desc=out.join(" ").replace(/\s+/g," ");const cut=desc.search(/(Las fotograf[ií]as son|La informaci[oó]n gr[aá]fica|En cumplimiento de la ley|Todas las Operaciones Inmobiliarias)/i);if(cut>0)desc=desc.slice(0,cut);
-    desc=desc.replace(/ -\s?(?=[A-ZÁÉÍÓÚ])/g,"\n- ").trim()}
+    desc=desc.replace(/\s*(Leaflet|©\s*(Thunderforest|OpenStreetMap)).*$/,"").replace(/ -\s?(?=[A-ZÁÉÍÓÚ])/g,"\n- ").replace(/\s*•\s*/g,"\n- ").trim()}
   return{op,codigo,tipo:tituloTxt,titulo:partesT[0]||tituloTxt||"Propiedad",ubicacion:ubicacion.replace(/\s*\.\s*$/,""),address:[partesT[0],ubicacion].filter(Boolean).join(", "),
     precio,stats:stats.slice(0,8),caracteristicas:[...new Set(chips)].slice(0,8),descripcion:desc,fotos,planos:[],coord:null};
 }
