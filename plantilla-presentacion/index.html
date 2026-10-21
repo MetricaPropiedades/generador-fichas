@@ -82,6 +82,10 @@ html.static{scroll-snap-type:none}
 .chip::before{content:"";width:12px;height:7px;border-left:2px solid var(--gold-deep);border-bottom:2px solid var(--gold-deep);transform:rotate(-45deg) translateY(-2px)}
 .ficha-r{position:relative;height:682px;background:#ddd}
 .ficha-r img{width:100%;height:100%;object-fit:cover}
+.ficha-r.fmap{cursor:default;background:#e8e4da}
+.dm.solo{grid-template-columns:1fr}
+.dm.solo .desc-box{columns:2;column-gap:64px}
+.ch-grid button.ch-map{display:grid;place-items:center;background:#e8e4da;font:800 22px/1 var(--display);text-transform:uppercase;color:#2B2B2B}
 .pick{position:absolute;z-index:31;bottom:14px;left:50%;transform:translateX(-50%);display:none;gap:6px}
 .editing .pick{display:flex}
 .pick button{background:rgba(17,18,19,.85);color:#fff;border:0;border-radius:999px;padding:9px 13px;font:600 12px/1 var(--body);cursor:pointer;white-space:nowrap}
@@ -539,9 +543,19 @@ function sPortada(){return `
 /* ---------- ficha 1: datos ---------- */
 // la foto de la ficha es distinta de la de portada (fotos[0]); al importar se elige la que más parece tomada desde afuera
 function fichaIdx(){const f=P.ficha,n=f.fotos.length;if(n<2)return 0;const i=+f.fotoFicha;return i>=1&&i<n?i:1}
-function sFicha(){const f=P.ficha;return `
+// con una sola foto (la de portada) la ficha muestra el mapa en vez de repetirla; también se puede elegir "Mapa" a mano
+function fichaMapa(){const f=P.ficha;if(!f.mapa.lat)return false;if(f.fotoFicha==="mapa")return true;return f.fotos.length<2&&f.fotoFicha!=="foto"}
+// el recuadro de la foto toma la forma de la foto: ancho si es horizontal, alto si es vertical
+function fichaCaja(){const f=P.ficha;if(fichaMapa())return{w:540,h:682};if(!f.fotos.length)return{w:470,h:682};
+  const a=Math.min(2.2,Math.max(.5,ASPECT.get(f.fotos[fichaIdx()])||.69)),w=a>=1.15?600:Math.min(470,Math.round(682*a));return{w,h:Math.min(682,Math.round(w/a))}}
+function sFicha(){const f=P.ficha,fm=fichaMapa(),cj=fichaCaja();
+  const pick=f.fotos.length&&(f.fotos.length>2||f.mapa.lat)?`<div class="pick">${!fm&&f.fotos.length>2?'<button type="button" data-pick="-1">◀</button>':""}<button type="button" data-choose="1">Elegir foto</button>${!fm&&f.fotos.length>2?'<button type="button" data-pick="1">▶</button>':""}</div>`:"";
+  const der=fm?`<div class="ficha-r fmap mapwrap" style="height:${cj.h}px;align-self:center"><div class="map"></div>${E("ficha.mapaLeyenda","p","map-cap")}
+      <button type="button" class="ebtn add" data-add="mapa" style="position:absolute;z-index:600;top:10px;left:10px;margin:0">Editar ubicación y puntos</button>${pick}</div>`
+    :`<div class="ficha-r" data-zoom="foto:${fichaIdx()}" style="height:${cj.h}px;align-self:center">${f.fotos.length?I("ficha.fotos."+fichaIdx(),"Foto de la propiedad")+ZOOM+pick:ADD("fotos","+ Fotos")}</div>`;
+  return `
 <section class="slide s-paper" id="sl-ficha"><div class="stage pad">
-  <div class="ficha">
+  <div class="ficha" style="grid-template-columns:1fr ${cj.w}px">
     <div class="ficha-l">
       ${E("ficha.kicker","span","kicker")}
       ${(f.codigo||EDIT)?E("ficha.codigo","div","codigo"):""}
@@ -552,20 +566,20 @@ function sFicha(){const f=P.ficha;return `
       ${f.caracteristicas.length?`<div class="chips">${f.caracteristicas.map((c,i)=>`<span class="chip">${E(`ficha.caracteristicas.${i}`)}<button type="button" class="ebtn inline" data-del="ficha.caracteristicas" data-i="${i}">×</button></span>`).join("")}</div>`:""}
       <div>${ADD("stat","+ Dato")}${ADD("chip","+ Característica")}</div>
     </div>
-    <div class="ficha-r" data-zoom="foto:${fichaIdx()}">${f.fotos.length?I("ficha.fotos."+fichaIdx(),"Foto de la propiedad")+ZOOM+(f.fotos.length>2?`<div class="pick"><button type="button" data-pick="-1">◀</button><button type="button" data-choose="1">Elegir foto</button><button type="button" data-pick="1">▶</button></div>`:""):ADD("fotos","+ Fotos")}</div>
+    ${der}
   </div>
 </div></section>`}
 
 /* ---------- ficha 2: descripción + mapa ---------- */
-function sDescMapa(){const f=P.ficha;if(!f.descripcion&&!f.mapa.lat&&!EDIT)return "";return `
+function sDescMapa(){const f=P.ficha,fm=fichaMapa();if(!f.descripcion&&(!f.mapa.lat||fm)&&!EDIT)return "";return `
 <section class="slide s-black grain" id="sl-desc"><div class="stage pad">
-  <div class="dm">
+  <div class="dm${fm?" solo":""}">
     <div class="dm-l">
       ${E("ficha.descTitulo","span","kicker")}
       ${E("ficha.descripcion","div","desc-box")}
     </div>
-    <div class="mapwrap"><div class="map" id="map"></div>${E("ficha.mapaLeyenda","p","map-cap")}
-      <button type="button" class="ebtn add" data-add="mapa" style="position:absolute;z-index:600;top:10px;left:10px;margin:0">Editar ubicación y puntos</button></div>
+    ${fm?"":`<div class="mapwrap"><div class="map"></div>${E("ficha.mapaLeyenda","p","map-cap")}
+      <button type="button" class="ebtn add" data-add="mapa" style="position:absolute;z-index:600;top:10px;left:10px;margin:0">Editar ubicación y puntos</button></div>`}
   </div>
 </div></section>`}
 
@@ -606,7 +620,7 @@ function paginate(items){
   return pages;
 }
 function galeriaItems(){
-  const f=P.ficha,fi=fichaIdx();
+  const f=P.ficha,fi=fichaMapa()?-1:fichaIdx();
   let items=f.fotos.map((src,i)=>({t:"foto",i,src})).filter(x=>x.i!==0&&x.i!==fi);
   if(f.planos.length&&f.planos.length<=2)f.planos.forEach((p,i)=>items.push({t:"plano",i,src:p.img}));
   // con muy pocas fotos, se suma la de portada para que la diapositiva quede ordenada
@@ -815,17 +829,17 @@ function bindModel(){
 }
 
 /* ---------- map ---------- */
-let MAP=null;
+let MAPS=[];
 const poiIcon=name=>L.divIcon({className:"",html:`<div class="mk-poi"><i></i><em>${esc(name)}</em></div>`,iconSize:[0,0]});
 const pinIcon=()=>L.divIcon({className:"",html:PIN,iconSize:[0,0]});
 function drawMap(){
-  const u=P.ficha.mapa,box=document.getElementById("map");if(!box||!window.L)return;
-  if(MAP){MAP.remove();MAP=null}
+  MAPS.forEach(m=>m.remove());MAPS=[];if(!window.L)return;
+  document.querySelectorAll(".map").forEach(box=>{const u=P.ficha.mapa;
   if(!u.lat){box.innerHTML='<p style="padding:30px;color:#6E6A63">Sin ubicación cargada.</p>';return}
-  MAP=L.map(box,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,zoomSnap:.1}).setView(u.centro||[u.lat,u.lon],u.zoom||16);
+  const MAP=L.map(box,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,zoomSnap:.1}).setView(u.centro||[u.lat,u.lon],u.zoom||16);
   L.tileLayer(TILES,{attribution:ATTR,maxZoom:19,crossOrigin:true}).addTo(MAP);L.control.attribution({position:"topright",prefix:false}).addTo(MAP);
   (u.puntos||[]).forEach(p=>L.marker([p.lat,p.lon],{icon:poiIcon(p.nombre),interactive:false}).addTo(MAP));
-  L.marker([u.lat,u.lon],{icon:pinIcon(),interactive:false,zIndexOffset:1000}).addTo(MAP);
+  L.marker([u.lat,u.lon],{icon:pinIcon(),interactive:false,zIndexOffset:1000}).addTo(MAP);MAPS.push(MAP)});
 }
 let EM=null,EMpin=null,EMpois=[];
 function openMapEditor(){
@@ -1100,7 +1114,7 @@ function aplicarFicha(d){
 }
 
 /* ---------- render all ---------- */
-function fitDescription(){const b=document.querySelector(".desc-box");if(!b)return;let fs=16;b.style.fontSize=fs+"px";while(b.scrollHeight>b.clientHeight+1&&fs>11){fs-=.5;b.style.fontSize=fs+"px"}}
+function fitDescription(){const b=document.querySelector(".desc-box");if(!b)return;let fs=b.closest(".solo")?20:16;b.style.fontSize=fs+"px";while((b.scrollHeight>b.clientHeight+1||b.scrollWidth>b.clientWidth+1)&&fs>11){fs-=.5;b.style.fontSize=fs+"px"}}
 let MEASURING=false;
 function render(){
   if(!MEASURING&&[...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].some(x=>x&&!ASPECT.has(x))){MEASURING=true;measureImages().then(()=>{MEASURING=false;render()});return}
@@ -1127,8 +1141,9 @@ $("#mx").onclick=()=>{$("#modal").classList.remove("open");$("#mf").src=""};
 document.addEventListener("keydown",e=>{if($("#lb").classList.contains("open")){if(e.key==="ArrowRight")$("#lb-n").click();if(e.key==="ArrowLeft")$("#lb-p").click()}if(e.key==="Escape"){$("#chooser").classList.remove("open");$("#lb").classList.remove("open");$("#modal").classList.remove("open");$("#mf").src=""}});
 
 /* ---------- elegir la foto de la ficha ---------- */
-function openChooser(){const box=$("#ch-grid"),f=P.ficha;box.innerHTML=f.fotos.map((src,i)=>i===0?"":`<button type="button" data-i="${i}" class="${i===fichaIdx()?"on":""}"><img src="${src}" alt="Foto ${i}"></button>`).join("");
-  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{f.fotoFicha=+b.dataset.i;$("#chooser").classList.remove("open");render()}));$("#chooser").classList.add("open")}
+function openChooser(){const box=$("#ch-grid"),f=P.ficha,fm=fichaMapa(),uno=f.fotos.length<2;
+  box.innerHTML=(f.mapa.lat?`<button type="button" data-i="mapa" class="ch-map${fm?" on":""}">Mapa</button>`:"")+f.fotos.map((src,i)=>i===0&&!uno?"":`<button type="button" data-i="${uno?"foto":i}" class="${!fm&&i===fichaIdx()?"on":""}"><img src="${src}" alt="Foto ${i}"></button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.i;f.fotoFicha=/^d+$/.test(v)?+v:v;$("#chooser").classList.remove("open");render()}));$("#chooser").classList.add("open")}
 
 /* ---------- editing ---------- */
 function enableEditing(){
