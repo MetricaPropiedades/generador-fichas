@@ -267,6 +267,10 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 .ch-grid button{padding:0;border:3px solid transparent;border-radius:4px;background:none;cursor:pointer;aspect-ratio:4/3;overflow:hidden}
 .ch-grid button.on{border-color:var(--gold)}
 .ch-grid img{width:100%;height:100%;object-fit:cover}
+.imp-or{display:flex;align-items:center;gap:12px;margin:14px 0 4px;color:var(--muted);font-size:13px}
+.imp-or::before,.imp-or::after{content:"";flex:1;border-top:1px solid var(--line)}
+.imp-file{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:11px 16px;border:1.5px dashed var(--gold-deep);border-radius:6px;color:var(--gold-deep);font-weight:600;font-size:14px;cursor:pointer}
+.imp-file:hover{background:rgba(210,156,30,.1)}
 .imp-status{margin-top:14px;font-size:14px;min-height:20px}
 .imp-status.bad{color:#b0291b}
 .edit-panel{position:fixed;inset:0;z-index:210;background:rgba(10,10,11,.92);display:none;grid-template-columns:1fr 360px}
@@ -290,7 +294,7 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
   <button type="button" class="fmt" id="t-bold" title="Negrita"><b>B</b></button>
   <button type="button" class="fmt" id="t-gold" title="Resaltar en mostaza">Mostaza</button>
   <button type="button" class="fmt" id="t-plain" title="Quitar formato">Quitar formato</button>
-  <button type="button" id="t-import">⤓ Importar aviso</button>
+  <button type="button" id="t-import">⤓ Importar ficha</button>
   <button type="button" id="t-edit">✎ Editar</button>
   <button type="button" class="primary" id="t-save">Guardar copia</button>
 </div>
@@ -304,9 +308,11 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 </div>
 <div class="panel" id="imp" role="dialog" aria-modal="true" aria-label="Importar aviso">
   <div class="card">
-    <h3>Importar aviso</h3>
-    <p>Pegá el link de ZonaProp, Argenprop, Mercado Libre o una ficha de Tokko. Se cargan los datos, la descripción, las fotos y la ubicación en el mapa. La portada, la inversión y el cierre no se tocan.</p>
+    <h3>Importar ficha</h3>
+    <p>Pegá el link de ZonaProp, Argenprop, Mercado Libre o una ficha de Tokko, o subí el PDF de una ficha de Métrica. Se cargan los datos, la descripción, las fotos y la ubicación en el mapa. La portada solo cambia la dirección y la foto; la inversión y el cierre no se tocan.</p>
     <input type="text" id="imp-url" placeholder="https://www.zonaprop.com.ar/propiedades/...">
+    <div class="imp-or"><span>o</span></div>
+    <label class="imp-file"><input type="file" id="imp-pdf" accept="application/pdf,.pdf" hidden><span>Subir PDF de una ficha</span></label>
     <div class="imp-status" id="imp-st"></div>
     <div class="row"><button type="button" id="imp-cancel">Cancelar</button><button type="button" class="gold" id="imp-go">Importar</button></div>
   </div>
@@ -543,7 +549,7 @@ function sFicha(){const f=P.ficha;return `
       ${E("ficha.titulo","h2","title")}
       ${E("ficha.ubicacion","p","addr")}
       ${(f.precio||EDIT)?`<div class="price">${E("ficha.operacion","span","op")}${E("ficha.precio","b")}</div>`:""}
-      ${f.stats.length?`<div class="stats">${f.stats.map((s,i)=>`<div class="stat">${X("ficha.stats",i)}<span data-icon="${i}">${icon(s.icono)}</span><div class="v">${E(`ficha.stats.${i}.valor`)}${(s.unidad||EDIT)?`<small>${E(`ficha.stats.${i}.unidad`)}</small>`:""}</div>${E(`ficha.stats.${i}.etiqueta`,"div","k")}</div>`).join("")}</div>`:""}
+      ${f.stats.length?`<div class="stats" style="grid-template-columns:repeat(${f.stats.length<=3?f.stats.length:f.stats.length<=6&&f.stats.length!==4?3:4},1fr)">${f.stats.map((s,i)=>`<div class="stat">${X("ficha.stats",i)}<span data-icon="${i}">${icon(s.icono)}</span><div class="v">${E(`ficha.stats.${i}.valor`)}${(s.unidad||EDIT)?`<small>${E(`ficha.stats.${i}.unidad`)}</small>`:""}</div>${E(`ficha.stats.${i}.etiqueta`,"div","k")}</div>`).join("")}</div>`:""}
       ${f.caracteristicas.length?`<div class="chips">${f.caracteristicas.map((c,i)=>`<span class="chip">${E(`ficha.caracteristicas.${i}`)}<button type="button" class="ebtn inline" data-del="ficha.caracteristicas" data-i="${i}">×</button></span>`).join("")}</div>`:""}
       <div>${ADD("stat","+ Dato")}${ADD("chip","+ Característica")}</div>
     </div>
@@ -844,10 +850,25 @@ function renderPoiList(){const box=$("#ep-pois");box.innerHTML="";
     row.querySelector("input").addEventListener("input",e=>{p.nombre=e.target.value;EMpois[i].setIcon(poiIcon(p.nombre))});
     row.querySelector("button").addEventListener("click",()=>{EM.removeLayer(EMpois[i]);P.ficha.mapa.puntos.splice(i,1);EMpois.splice(i,1);renderPoiList()});
     box.appendChild(row)})}
-async function geocode(q){
-  const r=await fetch("https://photon.komoot.io/api/?limit=1&lang=es&lat=-34.6&lon=-58.45&q="+encodeURIComponent(q));const j=await r.json();
-  const f=j.features&&j.features[0];return f?{lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]}:null;
+const enArgentina=g=>g&&g.lat<-21&&g.lat>-56&&g.lon<-53&&g.lon>-74;
+async function geocode1(q){
+  try{const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q="+encodeURIComponent(q));const j=await r.json();
+    if(j[0]){const g={lat:+j[0].lat,lon:+j[0].lon};if(enArgentina(g))return g}}catch(e){}
+  // si Nominatim no responde, se prueba con Photon
+  try{const r=await fetch("https://photon.komoot.io/api/?limit=1&lat=-34.6&lon=-58.45&q="+encodeURIComponent(q));const j=await r.json();
+    const f=j.features&&j.features[0];if(f){const g={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]};if(enArgentina(g))return g}}catch(e){}
+  return null;
 }
+// las direcciones de los portales traen cosas que los buscadores de mapas no entienden ("Capital Federal", "GBA Sur", "895 al 4400")
+function variantesDireccion(addr){
+  const limpia=String(addr||"").replace(/<[^>]+>/g," ").replace(/\bCapital Federal\b/gi,"Ciudad Autónoma de Buenos Aires").replace(/\bCABA\b/g,"Ciudad Autónoma de Buenos Aires")
+    .replace(/,?\s*\bG\.?B\.?A\.?\s*(Sur|Norte|Oeste)?\b/gi,"").replace(/\b(\d+)\s+al\s+(\d+)\b/g,"$1 $2").replace(/\s+al\s+(\d+)/g," $1").replace(/\s+/g," ");
+  const p=limpia.split(",").map(x=>x.trim()).filter(Boolean),v=[];
+  if(p.length){v.push(p.join(", "));if(p.length>2)v.push(p[0]+", "+p[1]);if(p.length>2)v.push(p[0]+", "+p.at(-1));if(p.length>1)v.push(p[0]+", "+p[1]+", Buenos Aires");
+    if(/^\d+ \d+$/.test(p[0]))v.push("Calle "+p[0]+(p[1]?", "+p[1]:""));v.push(p[0]+", Buenos Aires")}
+  return [...new Set(v)];
+}
+async function geocode(q){for(const v of variantesDireccion(q)){const g=await geocode1(v);if(g)return g}return null}
 $("#ep-add").addEventListener("click",()=>{const c=EM.getCenter();P.ficha.mapa.puntos.push({nombre:"Nuevo punto",lat:+c.lat.toFixed(6),lon:+c.lng.toFixed(6)});addPoiMarker(P.ficha.mapa.puntos.length-1);renderPoiList()});
 $("#ep-go").addEventListener("click",async()=>{const q=$("#ep-q").value.trim();if(!q)return;
   try{const g=await geocode(q);if(g){EM.setView([g.lat,g.lon],17);EMpin.setLatLng([g.lat,g.lon]);P.ficha.mapa.lat=+g.lat.toFixed(6);P.ficha.mapa.lon=+g.lon.toFixed(6)}else alert("No encontré esa dirección. Probá con calle, altura y localidad.")}catch(e){alert("No pude buscar la dirección. Revisá la conexión a internet.")}});
@@ -858,7 +879,9 @@ function fotoComoDato(url){return fetch(API+"/foto?u="+encodeURIComponent(url)).
   const img=new Image(),u=URL.createObjectURL(b);img.onload=()=>{const m=1600,s=Math.min(1,m/Math.max(img.width,img.height)),cv=document.createElement("canvas");cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv.toDataURL("image/jpeg",.84))};img.onerror=rej;img.src=u}))}
 // cuánto "cielo" tiene la parte de arriba de una foto: sirve para elegir la toma de la fachada desde afuera
 function puntajeExterior(src){return new Promise(res=>{const img=new Image();img.onload=()=>{const w=60,h=40,cv=document.createElement("canvas");cv.width=w;cv.height=h;const cx=cv.getContext("2d");cx.drawImage(img,0,0,w,h);
-  const d=cx.getImageData(0,0,w,Math.round(h/3)).data;let sky=0,n=0;for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];n++;if((b>r+18&&b>110)||(r>205&&g>205&&b>205))sky++}res(sky/n)};img.onerror=()=>res(0);img.src=src})}
+  // cielo celeste arriba (las paredes gris azulado de baños y oficinas quedan afuera) y contraste alto, propio de una toma de calle
+  const d=cx.getImageData(0,0,w,Math.round(h/3)).data;let sky=0,n=0;for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];n++;if(b>r+25&&b>g+3&&b>130)sky++}
+  const a=cx.getImageData(0,0,w,h).data;let m=0,q=0,k=0;for(let i=0;i<a.length;i+=4){const l=(a[i]+a[i+1]+a[i+2])/3;m+=l;q+=l*l;k++}m/=k;res(sky/n*Math.sqrt(Math.max(0,q/k-m*m))/50)};img.onerror=()=>res(0);img.src=src})}
 async function elegirFachada(fotos){let best=1,score=-1;for(let i=1;i<fotos.length;i++){const s=await puntajeExterior(fotos[i]);if(s>score){score=s;best=i}}return score>.25?best:1}
 function statsDesdeAviso(d){
   const s=[],add=(icono,valor,unidad,etiqueta)=>{if(valor!==undefined&&valor!==null&&String(valor).trim()!=="")s.push({icono,valor:String(valor),unidad,etiqueta})};
@@ -871,6 +894,18 @@ function statsDesdeAviso(d){
   add("antiguedad",d.antiguedad,"","Antigüedad");add("disponible",d.disponibilidad,"","Disponibilidad");add("precio",d.expensas,"","Expensas");
   if(d.posicion)add("esquina",d.posicion,"","Ubicación");
   return s.slice(0,8);
+}
+// portada: tipo de propiedad + localidad en dorado, y un bajado con los m² cubiertos
+function tipoPropiedad(txt){txt=String(txt||"");return /galp[oó]n/i.test(txt)?"Galpón":/dep[oó]sito/i.test(txt)?"Depósito":/oficina/i.test(txt)?"Oficina":/terreno|lote/i.test(txt)?"Terreno":"Local comercial"}
+function portadaDesde(tipo,localidad,stats){
+  const lugar=String(localidad||"").trim(),pal=lugar.split(" ");
+  const lugarHtml=pal.length>2?`<span class="gold">${esc(pal.slice(0,Math.ceil(pal.length/2)).join(" "))}</span><br><span class="gold">${esc(pal.slice(Math.ceil(pal.length/2)).join(" "))}</span>`:`<span class="gold">${esc(lugar)}</span>`;
+  P.portada.titulo=esc(tipo)+(lugar?"<br>en "+lugarHtml:"");
+  const sup=(stats||[]).find(s=>s.icono==="cubierta"&&s.unidad==="m²")||(stats||[]).find(s=>s.unidad==="m²");
+  const pl=(stats||[]).filter(s=>/planta|subsuelo/i.test(s.etiqueta)).length;
+  P.portada.subtitulo=`Propuesta de inversión para <b>empresa multinacional</b> en expansión: ${tipo==="Local comercial"?"un local":"un "+tipo.toLowerCase()}`+
+    (sup?` de <b>${esc(sup.valor)} m²${sup.icono==="cubierta"?" cubiertos":""}</b>`:"")+(pl>1?` en ${pl} plantas`:"")+(lugar?`, en ${esc(lugar)}`:"")+".";
+  P.portada.fotoLeyenda="El "+(tipo==="Local comercial"?"local":tipo.toLowerCase())+" hoy";
 }
 function codigoAviso(url,fuente){const m=String(url).match(/(\d{7,})/);if(!m)return "";const pre={zonaprop:"ZP",argenprop:"AP",mercadolibre:"ML",tokko:"TK"}[String(fuente||"").toLowerCase()]||"";return (pre?pre+"-":"")+m[1]}
 async function importarAviso(url){
@@ -895,11 +930,16 @@ async function importarAviso(url){
     f.fotoFicha=f.fotos.length>1?await elegirFachada(f.fotos):0;
     say("Ubicando la dirección en el mapa…");
     f.mapa={lat:null,lon:null,centro:null,zoom:16,puntos:[]};
-    try{const g=await geocode(d.address||f.titulo);if(g){f.mapa.lat=+g.lat.toFixed(6);f.mapa.lon=+g.lon.toFixed(6)}}catch(e){}
+    const lat=+d.lat,lng=+(d.lng??d.lon);
+    if(d.lat&&enArgentina({lat,lon:lng})){f.mapa.lat=+lat.toFixed(6);f.mapa.lon=+lng.toFixed(6)}
+    else try{const g=await geocode(d.address||f.titulo);if(g){f.mapa.lat=+g.lat.toFixed(6);f.mapa.lon=+g.lon.toFixed(6)}}catch(e){}
     P.portada.direccion=f.titulo;P.portada.localidad=partes[1]||P.portada.localidad;
+    portadaDesde(tipoPropiedad(d.titulo),partes[1]||"",f.stats);f.kicker="Ficha de "+op.toLowerCase()+" · "+tipoPropiedad(d.titulo);
     if(f.fotos[0]){P.portada.foto=f.fotos[0];P.cierre.foto=f.fotos[0]}
     P.meta.tituloPestana=f.titulo;
-    render();say(`Listo: datos y ${f.fotos.length} fotos cargados. Revisá los textos y la ubicación con ✎ Editar, y después Guardar copia.`);
+    render();
+    if(!f.mapa.lat){say(`Listo: datos y ${f.fotos.length} fotos cargados, pero no encontré la dirección en el mapa. Ubicala con ✎ Editar → "Editar ubicación y puntos".`,true);return void(btn.disabled=false)}
+    say(`Listo: datos y ${f.fotos.length} fotos cargados. Revisá los textos y la ubicación con ✎ Editar, y después Guardar copia.`);
     setTimeout(()=>{$("#imp").classList.remove("open");document.getElementById("sl-ficha").scrollIntoView()},1600);
   }catch(e){say((e.message||"No se pudo leer el aviso")+".",true)}
   btn.disabled=false;
@@ -907,7 +947,130 @@ async function importarAviso(url){
 $("#t-import").addEventListener("click",()=>{$("#imp").classList.add("open");$("#imp-st").textContent="";$("#imp-url").focus()});
 $("#imp-cancel").addEventListener("click",()=>$("#imp").classList.remove("open"));
 $("#imp-go").addEventListener("click",()=>{const u=$("#imp-url").value.trim();if(u)importarAviso(u)});
+$("#imp-pdf").addEventListener("change",e=>{const fl=e.target.files[0];e.target.value="";if(fl)importarPDF(fl)});
 $("#imp-url").addEventListener("keydown",e=>{if(e.key==="Enter"){const u=e.target.value.trim();if(u)importarAviso(u)}});
+
+/* ---------- importar una ficha en PDF ----------
+   Acepta dos tipos de PDF:
+   1) los del generador de fichas, que llevan adentro los datos completos (fotos y planos incluidos);
+   2) las fichas del buscador (o cualquier ficha con el mismo armado): se leen el texto y las fotos del PDF. */
+function loadScript(src){return new Promise((res,rej)=>{if([...document.scripts].some(s=>s.src===src))return res();const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("No se pudo cargar "+src));document.head.appendChild(s)})}
+const PDFJS="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+async function libsPDF(){
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js");
+  await loadScript(PDFJS+"pdf.min.js");
+  pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+"pdf.worker.min.js";
+}
+const unspace=t=>t.replace(/(?:^|(?<=\s))(?:[A-ZÁÉÍÓÚÑ0-9·\-] ){2,}[A-ZÁÉÍÓÚÑ0-9](?=\s|$)/g,m=>m.replace(/ /g,"")); // "A L Q U I L E R" -> "ALQUILER"
+const norm=t=>unspace(String(t||"").replace(/\s+/g," ").trim());
+
+/* 1) datos incrustados por el generador de fichas */
+async function datosIncrustados(bytes){
+  try{const pdf=await PDFLib.PDFDocument.load(bytes,{updateMetadata:false});const ref=pdf.catalog.get(PDFLib.PDFName.of("MetricaFicha"));if(!ref)return null;
+    const raw=PDFLib.decodePDFRawStream(pdf.context.lookup(ref)).decode();return JSON.parse(new TextDecoder().decode(raw))}catch(e){return null}
+}
+function desdeGenerador(state){
+  const l=(state.locals||[])[0];if(!l)throw new Error("El PDF no tiene ningún local cargado");
+  const op=state.tipoOperacion||"Alquiler",partes=String(l.address||"").split(",").map(x=>x.trim()).filter(Boolean);
+  const g=((state.map||{}).geoCoords||{}).locals||[],gc=(g.find(x=>x.id===l.id)||g[0]||{}).coord;
+  const coord=Array.isArray(gc)?{lat:+gc[0],lon:+gc[1]}:gc&&gc.lat?{lat:+gc.lat,lon:+(gc.lon??gc.lng)}:null;
+  return{op,titulo:partes[0]||"Propiedad",ubicacion:partes.slice(1).join(", "),address:l.address||"",
+    precio:l.precio?((l.currency==="USD"?"USD ":"$ ")+l.precio):"",stats:statsDesdeAviso(l),
+    caracteristicas:String(l.caracteristicas||"").split(/\s*·\s*|\n/).map(x=>x.trim()).filter(Boolean).slice(0,8),
+    descripcion:(l.comentarios||"").trim(),fotos:(l.photos||[]).map(p=>p.photo||p.photoOrig).filter(Boolean),
+    planos:(l.planos||[]).map((p,i)=>({nombre:"Plano"+(l.planos.length>1?" "+(i+1):""),m2:"",img:p.plano||p.planoOrig||p.photo})).filter(p=>p.img),coord,codigo:""};
+}
+
+/* 2) leer el texto y las fotos de una ficha impresa */
+async function imagenesDePDF(page){
+  const ops=await page.getOperatorList(),O=pdfjsLib.OPS,out=[];let ctm=[1,0,0,1,0,0];const stack=[];
+  const mul=(m,n)=>[m[0]*n[0]+m[2]*n[1],m[1]*n[0]+m[3]*n[1],m[0]*n[2]+m[2]*n[3],m[1]*n[2]+m[3]*n[3],m[0]*n[4]+m[2]*n[5]+m[4],m[1]*n[4]+m[3]*n[5]+m[5]];
+  for(let i=0;i<ops.fnArray.length;i++){const fn=ops.fnArray[i],a=ops.argsArray[i];
+    if(fn===O.save)stack.push(ctm.slice());else if(fn===O.restore)ctm=stack.pop()||[1,0,0,1,0,0];else if(fn===O.transform)ctm=mul(ctm,a);
+    else if(fn===O.paintImageXObject||fn===O.paintJpegXObject){out.push({id:a[0],y:ctm[5]+ctm[3],x:ctm[4],w:Math.abs(ctm[0]),h:Math.abs(ctm[3])})}}
+  const imgs=[];
+  for(const it of out){
+    const obj=await new Promise(r=>{const store=it.id.startsWith("g_")?page.commonObjs:page.objs;try{store.get(it.id,r)}catch(e){r(null)}});
+    if(!obj)continue;const W=obj.width||obj.bitmap?.width,H=obj.height||obj.bitmap?.height;
+    if(!W||!H||W<300||H<200||W/H>4||it.w<120)continue;          // descarta logos, encabezados y mosaicos del mapa
+    const cv=document.createElement("canvas");cv.width=W;cv.height=H;const cx=cv.getContext("2d");
+    if(obj.bitmap)cx.drawImage(obj.bitmap,0,0);
+    else{const id=cx.createImageData(W,H),d=obj.data;if(d.length===W*H*4)id.data.set(d);else if(d.length===W*H*3){for(let p=0,q=0;p<W*H;p++){id.data[q++]=d[p*3];id.data[q++]=d[p*3+1];id.data[q++]=d[p*3+2];id.data[q++]=255}}else continue;cx.putImageData(id,0,0)}
+    imgs.push({y:it.y,x:it.x,src:cv.toDataURL("image/jpeg",.86)});
+  }
+  return imgs.sort((a,b)=>b.y-a.y||a.x-b.x).map(x=>x.src);
+}
+const ROTULOS={"SUPERFICIE TOTAL":["superficie","Superficie total"],"SUPERFICIE":["superficie","Superficie"],"CUBIERTA":["cubierta","Cubierta"],"SEMICUBIERTA":["cubierta","Semicubierta"],"DESCUBIERTA":["terreno","Descubierta"],
+  "TERRENO":["terreno","Terreno"],"BAÑOS":["bano","Baños"],"BAÑO":["bano","Baño"],"TOILETTE":["toilette","Toilette"],"TOILETTES":["toilette","Toilettes"],"ANTIGÜEDAD":["antiguedad","Antigüedad"],"POR M²":["precio","Por m²"],"POR M2":["precio","Por m²"],
+  "COCHERAS":["cochera","Cocheras"],"COCHERA":["cochera","Cochera"],"AMBIENTES":["cubierta","Ambientes"],"FRENTE":["frente","Frente"],"FONDO":["frente","Fondo"],"PLANTAS":["plantas","Plantas"],"EXPENSAS":["precio","Expensas"],"DISPONIBILIDAD":["disponible","Disponibilidad"]};
+async function leerFichaImpresa(pdfjsDoc){
+  const items=[],fotos=[];
+  for(let n=1;n<=pdfjsDoc.numPages;n++){const page=await pdfjsDoc.getPage(n);const vh=page.view[3];
+    const tc=await page.getTextContent();tc.items.forEach(t=>{if(!t.str.trim())return;const fs=Math.hypot(t.transform[2],t.transform[3])||t.height;items.push({s:unspace(t.str),x:t.transform[4],y:(n-1)*10000+(vh-t.transform[5]),w:t.width,fs})});
+    fotos.push(...await imagenesDePDF(page));}
+  // renglones: textos a la misma altura
+  items.sort((a,b)=>a.y-b.y||a.x-b.x);const lines=[];
+  for(const it of items){const L=lines.at(-1);if(L&&Math.abs(L.y-it.y)<Math.max(3,Math.max(L.fs0,it.fs)*.5)){L.items.push(it)}else lines.push({y:it.y,fs0:it.fs,items:[it]})}
+  // une los pedazos de un renglón: sin espacio si vienen pegados ("44"+"00"), con espacio si hay separación
+  const joinItems=its=>its.reduce((acc,i,k)=>{if(!k)return i.s;const p=its[k-1],gap=i.x-(p.x+p.w);return acc+(gap>Math.min(p.fs,i.fs)*.2&&!/\s$/.test(acc)&&!/^\s/.test(i.s)?" ":"")+i.s},"");
+  lines.forEach(L=>{L.items.sort((a,b)=>a.x-b.x);L.t=norm(joinItems(L.items));L.fs=Math.max(...L.items.map(i=>i.fs))});
+  const all=lines.map(L=>L.t).join("\n");
+  const codigo=(all.match(/\b([A-Z]{2,3}-\d{5,})\b/)||[])[1]||"";
+  const op=/\bVENTA\b/.test(all.toUpperCase())&&!/\bALQUILER\b/.test(all.toUpperCase().split("\n").find(t=>/(USD|\$)\s?[\d.]/.test(t))||"")?"Venta":"Alquiler";
+  const lp=lines.find(L=>/\b(ALQUILER|VENTA)\b/.test(L.t)&&/(USD|U\$S|\$)\s?[\d.]+/.test(L.t));
+  const precio=lp?(lp.t.match(/(USD|U\$S|\$)\s?[\d.,]+/)||[""])[0].replace(/^U\$S/,"USD"):"";
+  // título: los renglones con la letra más grande cerca del comienzo
+  const top=lines.slice(0,25),maxFs=Math.max(...top.map(L=>L.fs));const ti=top.map((L,i)=>L.fs>=maxFs*.8?i:-1).filter(i=>i>=0);
+  const tituloTxt=ti.map(i=>norm(joinItems(top[i].items.filter(x=>x.fs>=maxFs*.8)))).join(" ").replace(/\s*\.\s*$/,"");
+  const partesT=tituloTxt.split(",").map(x=>x.trim().replace(/\.$/,"")).filter(x=>x&&!(/\b(alquiler|venta|local|galp[oó]n|oficina|dep[oó]sito)\b/i.test(x)&&!/\d/.test(x)));
+  const ubicacion=ti.length?(top[ti.at(-1)+1]||{}).t||"":"";
+  // datos con rótulo: el valor está justo arriba del rótulo, en la misma columna
+  const stats=[],used=new Set();
+  items.forEach((it,k)=>{let lab=norm(it.s).toUpperCase();if(!ROTULOS[lab]&&lab!=="SUPERFICIE")return;
+    const cx=it.x+it.w/2;const below=items.find(o=>o!==it&&Math.abs(o.x+o.w/2-cx)<30&&o.y>it.y&&o.y-it.y<16&&/^TOTAL$/i.test(norm(o.s)));if(below){lab+=" TOTAL";used.add(below)}
+    const val=items.filter(o=>o!==it&&Math.abs(o.x+o.w/2-cx)<45&&it.y-o.y>4&&it.y-o.y<34&&!ROTULOS[norm(o.s).toUpperCase()]).sort((a,b)=>b.y-a.y)[0];
+    if(!val||!ROTULOS[lab])return;used.add(val);used.add(it);
+    const m=norm(val.s).match(/^(.*?)\s*(m²|m2|m)$/i);const[icono,etq]=ROTULOS[lab];stats.push({icono,valor:m?m[1]:norm(val.s),unidad:m?"m²":"",etiqueta:etq,_y:it.y,_x:it.x});
+  });
+  stats.sort((a,b)=>a._y-b._y||a._x-b._x);stats.forEach(s=>{delete s._y;delete s._x});
+  // características: textos sueltos entre los datos y la descripción
+  const iDesc=lines.findIndex(L=>/^DESCRIPCI[OÓ]N$/i.test(L.t));const lastStat=Math.max(-1,...lines.map((L,i)=>L.items.some(x=>used.has(x))?i:-1));
+  const chips=[];if(iDesc>0)for(let i=lastStat+1;i<iDesc;i++)lines[i].items.forEach(x=>{const t=norm(x.s);if(t&&t.length<40&&!used.has(x))chips.push(t)});
+  // descripción: hasta el próximo rótulo, sin el texto legal del portal
+  let desc="";if(iDesc>=0){const out=[];for(let i=iDesc+1;i<lines.length;i++){const t=lines[i].t;if(/^(FOTOS|UBICACI[OÓ]N EN MAPA|PLANOS)$/i.test(t))break;out.push(t)}
+    desc=out.join(" ").replace(/\s+/g," ");const cut=desc.search(/(Las fotograf[ií]as son|La informaci[oó]n gr[aá]fica|En cumplimiento de la ley|Todas las Operaciones Inmobiliarias)/i);if(cut>0)desc=desc.slice(0,cut);
+    desc=desc.replace(/ -\s?(?=[A-ZÁÉÍÓÚ])/g,"\n- ").trim()}
+  return{op,codigo,tipo:tituloTxt,titulo:partesT[0]||tituloTxt||"Propiedad",ubicacion:ubicacion.replace(/\s*\.\s*$/,""),address:[partesT[0],ubicacion].filter(Boolean).join(", "),
+    precio,stats:stats.slice(0,8),caracteristicas:[...new Set(chips)].slice(0,8),descripcion:desc,fotos,planos:[],coord:null};
+}
+async function importarPDF(file){
+  const stEl=$("#imp-st");const say=(t,bad)=>{stEl.textContent=t;stEl.className="imp-status"+(bad?" bad":"")};
+  try{
+    say("Abriendo el PDF…");await libsPDF();
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    let d=null;const st=await datosIncrustados(bytes);
+    if(st){say("Leyendo los datos de la ficha…");d=desdeGenerador(st)}
+    else{say("Leyendo el texto y las fotos de la ficha…");const doc=await pdfjsLib.getDocument({data:bytes.slice()}).promise;d=await leerFichaImpresa(doc)}
+    aplicarFicha(d);
+    if(!d.coord){say("Ubicando la dirección en el mapa…");try{const g=await geocode(d.address||d.titulo);if(g)P.ficha.mapa={lat:+g.lat.toFixed(6),lon:+g.lon.toFixed(6),centro:null,zoom:16,puntos:[]}}catch(e){}}
+    P.ficha.fotoFicha=P.ficha.fotos.length>1?await elegirFachada(P.ficha.fotos):0;
+    render();
+    if(!P.ficha.mapa.lat)return say(`Listo: datos y ${P.ficha.fotos.length} fotos cargados, pero no encontré la dirección en el mapa. Ubicala con ✎ Editar → "Editar ubicación y puntos".`,true);
+    say(`Listo: datos y ${P.ficha.fotos.length} fotos cargados desde el PDF. Revisá los textos con ✎ Editar.`);
+    setTimeout(()=>{$("#imp").classList.remove("open");document.getElementById("sl-ficha").scrollIntoView()},1600);
+  }catch(e){say((e.message||"No se pudo leer el PDF")+".",true)}
+}
+function aplicarFicha(d){
+  const f=P.ficha;
+  f.operacion=d.op;f.kicker="Ficha de "+d.op.toLowerCase()+" · Local comercial";f.codigo=d.codigo||"";
+  f.titulo=d.titulo;f.ubicacion=d.ubicacion;f.precio=d.precio;f.stats=d.stats;f.caracteristicas=d.caracteristicas;
+  f.descripcion=d.descripcion;f.mapaLeyenda="Ubicación · "+(d.address||d.titulo);f.fotos=d.fotos;f.planos=d.planos;f.video="";
+  f.mapa=d.coord?{lat:+d.coord.lat.toFixed(6),lon:+d.coord.lon.toFixed(6),centro:null,zoom:16,puntos:[]}:{lat:null,lon:null,centro:null,zoom:16,puntos:[]};
+  P.portada.direccion=d.titulo;P.portada.localidad=(d.ubicacion.split(",")[0]||P.portada.localidad).trim();
+  const tipo=tipoPropiedad(d.tipo||d.descripcion.slice(0,200));f.kicker="Ficha de "+d.op.toLowerCase()+" · "+tipo;portadaDesde(tipo,d.ubicacion.split(",")[0],d.stats);
+  if(f.fotos[0]){P.portada.foto=f.fotos[0];P.cierre.foto=f.fotos[0]}
+  P.meta.tituloPestana=d.titulo;
+}
 
 /* ---------- render all ---------- */
 function fitDescription(){const b=document.querySelector(".desc-box");if(!b)return;let fs=16;b.style.fontSize=fs+"px";while(b.scrollHeight>b.clientHeight+1&&fs>11){fs-=.5;b.style.fontSize=fs+"px"}}
