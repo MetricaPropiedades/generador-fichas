@@ -808,12 +808,161 @@ async function abrirPDF(archivo){
     const bytes=new Uint8Array(await archivo.arrayBuffer());
     const pdf=await PDFLib.PDFDocument.load(bytes,{updateMetadata:false});
     const ref=pdf.catalog.get(PDFLib.PDFName.of(CLAVE_DATOS_PDF));
-    if(!ref){alert('Este PDF no tiene los datos de la ficha guardados (se hizo antes de este cambio o con otro programa).');return;}
+    if(!ref){await importarPdfAjeno(pdf,bytes);return;}
     const stream=pdf.context.lookup(ref);
     const datos=PDFLib.decodePDFRawStream(stream).decode();
     applyState(JSON.parse(new TextDecoder().decode(datos)));
     autoSave();
   }catch(e){alert('No se pudo abrir el PDF: '+(e.message||e));}
+}
+/* ---- cargar un local desde el PDF de otro programa (fichas de Tokko, ZonaProp...) ----
+   Esos PDF dibujan las letras como formas, así que el texto se lee con OCR en el propio navegador
+   (sin servidor ni costo). Las fotos sí vienen adentro como JPG y se sacan tal cual. */
+const LIB_PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const LIB_PDFJS_WORKER='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const LIB_OCR='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+function cargarScript(src){
+  return new Promise((ok,mal)=>{
+    if(document.querySelector('script[src="'+src+'"]'))return ok();
+    const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>mal(new Error('No se pudo cargar el lector de PDF'));
+    document.head.appendChild(s);
+  });
+}
+function fotosDelPdf(pdf){
+  const N=n=>PDFLib.PDFName.of(n), vistos=new Set(), out=[];
+  for(const page of pdf.getPages()){
+    const res=page.node.Resources();const xo=res&&res.lookup(N('XObject'));
+    if(!xo)continue;
+    for(const [,ref] of xo.entries()){
+      const st=pdf.context.lookup(ref);
+      if(!(st instanceof PDFLib.PDFRawStream))continue;
+      const d=st.dict, num=k=>{const v=pdf.context.lookup(d.get(N(k)));return v&&v.asNumber?v.asNumber():0;};
+      if(String(d.get(N('Subtype')))!=='/Image'||!String(d.get(N('Filter'))||'').includes('DCTDecode'))continue;
+      if(num('Width')<700||num('Height')<450)continue;   /* afuera logos, íconos y el mapa */
+      const clave=String(ref);if(vistos.has(clave))continue;vistos.add(clave);
+      out.push(st.contents);
+    }
+  }
+  return out;
+}
+function jpgADato(bytes){
+  return new Promise((ok,mal)=>{
+    const url=URL.createObjectURL(new Blob([bytes],{type:'image/jpeg'}));
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=1920;let w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      /* los logos de la inmobiliaria vienen como imagen grande dibujada chiquita: se reconocen porque
+         casi toda la imagen es de un mismo color plano, cosa que en una foto no pasa */
+      const px=ctx.getImageData(0,0,w,h).data, cuenta={};let total=0,max=0;
+      for(let i=0;i<px.length;i+=4*97){const k=(px[i]>>4)+'-'+(px[i+1]>>4)+'-'+(px[i+2]>>4);cuenta[k]=(cuenta[k]||0)+1;total++;if(cuenta[k]>max)max=cuenta[k];}
+      if(max/total>0.5)return ok(null);
+      ok(c.toDataURL('image/jpeg',0.85));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);mal(new Error('foto'));};
+    img.src=url;
+  });
+}
+async function textoDelPdf(bytes,avisar){
+  await cargarScript(LIB_PDFJS);await cargarScript(LIB_OCR);
+  pdfjsLib.GlobalWorkerOptions.workerSrc=LIB_PDFJS_WORKER;
+  const doc=await pdfjsLib.getDocument({data:bytes}).promise;
+  const worker=await Tesseract.createWorker('spa');
+  let texto='';
+  try{
+    for(let i=1;i<=doc.numPages;i++){
+      avisar('<span class="rueda"></span>Leyendo el texto del PDF (página '+i+' de '+doc.numPages+')…');
+      const page=await doc.getPage(i), vp=page.getViewport({scale:2.5});
+      const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+      await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+      texto+=(await worker.recognize(c)).data.text+'\n';
+    }
+  }finally{await worker.terminate();}
+  return texto;
+}
+/* Pasa el texto de la ficha a los campos del generador. Está pensado para el formato de Tokko
+   ("Etiqueta: valor", título con la dirección, "Argentina | Capital Federal | Barrio") y lo que no reconoce lo deja vacío. */
+function datosDeTextoPdf(t){
+  const d={}, limpio=t.replace(/[ \t]+/g,' ');
+  const lineas=limpio.split('\n').map(s=>s.trim()).filter(Boolean);
+  const numero=s=>{const m=String(s||'').match(/\d+(?:[.,]\d+)?/);return m?m[0].replace(',','.'):'';};
+  /* "Etiqueta: valor" — varias por renglón; el valor termina donde arranca la próxima etiqueta (palabra con mayúscula + ":") */
+  const valor=et=>{
+    const m=limpio.match(new RegExp('(?:^|[\\s|])'+et+'\\s*:\\s*([^\\n]*)','i'));if(!m)return'';
+    const corte=m[1].search(/\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ.]+(?:\s[a-záéíóúñ]+){0,2}\s*:/);
+    return (corte>=0?m[1].slice(0,corte):m[1]).trim();
+  };
+  /* dirección: el título que sigue a la línea "REF | Tipo", más el barrio */
+  const iRef=lineas.findIndex(s=>/\|\s*(local|departamento|oficina|casa|ph|terreno|lote|galp|dep[oó]sito|cochera|edificio|fondo)/i.test(s));
+  if(iRef>=0&&lineas[iRef+1]){
+    let dir=lineas[iRef+1].replace(/\s+al\s+(?=\d)/i,' ');
+    const lugar=(lineas[iRef+2]||'').split('|').map(s=>s.trim()).filter(Boolean);
+    if(lugar.length>1){
+      const barrio=lugar[lugar.length-1], prov=lugar[lugar.length-2]||'';
+      dir+=', '+(/capital federal|caba|ciudad aut/i.test(prov)?barrio+', CABA':barrio);
+    }
+    d.address=dir;
+  }
+  /* precio: el primero que aparezca antes de los datos (el cartel ALQUILER/VENTA a veces el OCR no lo lee) */
+  const cabecera=limpio.split(/\n(?:OPERACI[OÓ]N|INFORMACI[OÓ]N GENERAL|SUPERFICIES)/i)[0];
+  const pr=cabecera.match(/(USD|U\$S|\$)\s*(\d{1,3}(?:[.,]\d{3})+|\d{4,})/i);
+  if(pr){d.currency=pr[1]==='$'?'ARS':'USD';d.precio=pr[2].replace(/,/g,'.');}
+  const op=cabecera.match(/\b(ALQUILER|VENTA)\b/i);
+  if(op)d.operacion=/^vent/i.test(op[1])?'Venta':'Alquiler';
+  else if(/\balquil/i.test(limpio))d.operacion='Alquiler';
+  const sup=k=>numero(valor(k));
+  d.supCubierta=sup('Superficie cubierta')||sup('Total construido')||sup('Superficie total');
+  d.supDescubierta=sup('Superficie descubierta');
+  d.supTerreno=sup('Superficie del terreno')||sup('Terreno');
+  d.frente=sup('Frente');d.fondo=sup('Fondo');
+  d.banos=numero(valor('Ba[ñn]os'));d.toilettes=numero(valor('Toilettes?'));d.cocheras=numero(valor('Cocheras'));d.plantas=numero(valor('Plantas'));
+  const ant=valor('Antig[uü]edad');if(ant)d.antiguedad=/estrenar/i.test(ant)?'A estrenar':(numero(ant)?numero(ant)+' años':'');
+  const exp=valor('Expensas');if(exp&&numero(exp))d.expensas=exp.replace(/[^\d.,$USD ]/gi,'').trim();
+  d.condicion=valor('Condici[oó]n')||valor('Estado');
+  /* descripción: desde DESCRIPCION hasta el próximo título o hasta la primera línea que no es texto
+     (las fotos de abajo el OCR las lee como letras sueltas) */
+  const esTexto=s=>{const ok=(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/g)||[]).length;return ok/s.length>=0.6&&/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{4,}/.test(s);};
+  const todas=t.split('\n').map(s=>s.trim());
+  const iDesc=todas.findIndex(s=>/^DESCRIPCI[OÓ]N$/i.test(s));
+  if(iDesc>=0){
+    const desc=[];
+    for(const s of todas.slice(iDesc+1)){
+      if(!s){desc.push('');continue;}
+      if(/^(FOTOS|UBICACI[OÓ]N|PLANOS|Nota importante)\b/i.test(s)||!esTexto(s))break;
+      desc.push(s.replace(/(\d)\s?m\?/g,'$1 m²'));
+    }
+    d.comentarios=desc.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  /* planta baja: si el texto dice que es todo en PB, o no hay otras plantas, va la cubierta */
+  if(d.supCubierta&&(/todo\s+(desarrollado\s+)?en\s+planta\s+baja/i.test(t)||d.plantas==='1'))d.supPB=d.supCubierta;
+  return d;
+}
+async function importarPdfAjeno(pdf,bytes){
+  const btnEstado=document.getElementById('imp-estado');
+  if(btnEstado)btnEstado.scrollIntoView({block:'nearest'});
+  try{
+    impEstado('<span class="rueda"></span>Abriendo el PDF…');
+    const texto=await textoDelPdf(bytes.slice(),impEstado);
+    const d=datosDeTextoPdf(texto);
+    if(!d.address&&!d.supCubierta&&!d.precio)throw new Error('No se pudieron leer datos en este PDF (puede ser un escaneo o un formato distinto)');
+    let l=locals[locals.length-1];
+    if(!l||l.address||l.supCubierta||l.precio){l=defaultLocal();locals.push(l);}
+    ['address','supCubierta','supPB','supDescubierta','supTerreno','frente','fondo','currency','precio','comentarios',
+     'banos','toilettes','cocheras','antiguedad','expensas','condicion','plantas'].forEach(k=>{if(d[k])l[k]=d[k];});
+    if(d.operacion&&d.operacion!==tipoOperacion)setTipo(d.operacion);
+    const fotos=fotosDelPdf(pdf);
+    impEstado('<span class="rueda"></span>Sacando las fotos del PDF…');
+    for(const f of fotos){
+      if(l.photos.length>=12)break;
+      try{const dato=await jpgADato(f);if(dato)l.photos.push({photo:dato,photoOrig:dato});}catch(e){}
+    }
+    renderSidebar();renderPreview();autoSave();
+    impEstado('Listo: datos y '+l.photos.length+' fotos tomados del PDF. Revisá y corregí lo que haga falta.');
+  }catch(e){
+    impEstado((e.message||'No se pudo leer el PDF')+'.',true);
+  }
 }
 function nombreArchivo(){
   const dir=(locals[0]&&locals[0].address)||'local';
