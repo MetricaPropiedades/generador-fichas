@@ -40,6 +40,26 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .sp-crop{position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.75);border:none;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .sp-crop:hover{background:var(--g);color:#000;}
 .sb-photos{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;}
+/* fotos del inmueble tasado: 3 por fila, grandes y ordenables */
+#sb-subject-photo{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+#sb-subject-photo .sp-wrap{width:auto;height:auto;margin:0;aspect-ratio:4/3;cursor:grab;}
+#sb-subject-photo .sp-wrap img{width:100%;height:100%;}
+#sb-subject-photo .sp-wrap.arrastrando{opacity:.35;}
+#sb-subject-photo .sp-wrap.destino{outline:2px solid var(--g);outline-offset:1px;border-radius:3px;}
+#sb-subject-photo .sp-del,#sb-subject-photo .sp-crop{width:22px;height:22px;font-size:13px;}
+.sp-num{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.75);color:#fff;border-radius:3px;font-size:11px;font-weight:700;padding:1px 6px;}
+.sp-wrap .sp-num.principal{background:var(--g);color:#1c1c1c;}
+.sp-mv{position:absolute;bottom:3px;width:22px;height:22px;background:rgba(0,0,0,.75);border:none;color:#fff;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.sp-mv:hover{background:var(--g);color:#000;}
+.sp-mv.izq{left:3px;}
+.sp-mv.der{left:28px;}
+.sp-mv:disabled{opacity:.25;cursor:default;background:rgba(0,0,0,.75);color:#fff;}
+/* carga desde ficha / aviso */
+.imp-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:5px;padding:9px;display:flex;flex-direction:column;gap:6px;}
+.imp-estado{font-size:10.5px;color:rgba(255,255,255,.55);line-height:1.45;min-height:0;}
+.imp-estado.mal{color:#e88;}
+.rueda{display:inline-block;width:10px;height:10px;border:2px solid rgba(200,148,26,.3);border-top-color:var(--g);border-radius:50%;animation:gira .8s linear infinite;vertical-align:-1px;margin-right:5px;}
+@keyframes gira{to{transform:rotate(360deg)}}
 
 .sb-card{background:#4e4e4e;border:1px solid rgba(255,255,255,.09);border-radius:6px;overflow:hidden;margin-bottom:4px;}
 .sb-card-hd{display:flex;align-items:center;gap:7px;padding:8px 10px;cursor:pointer;}
@@ -110,7 +130,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .icard-datum{flex:0 0 calc(50% - 2.5mm);}
 .icard-datum .lbl{font-size:6.5pt;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;}
 .icard-datum .val{font-size:9pt;font-weight:600;color:var(--dark);}
-.icard-notes{font-size:7.5pt;color:#888;line-height:1.55;border-top:1px solid #f0f0f0;padding-top:2mm;}
+.icard-notes{font-size:7.5pt;color:#888;line-height:1.55;border-top:1px solid #f0f0f0;padding-top:2mm;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}
 
 .stats-box{display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:4mm;}
 .stats-item{flex:1;padding:3mm 5mm;text-align:center;border-right:1px solid var(--border);}
@@ -231,6 +251,15 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   </div>
 
   <h2>Propiedad Tasada</h2>
+  <div class="imp-box">
+    <div class="field-hint" style="color:rgba(255,255,255,.45)">Cargá los datos del inmueble desde un aviso o una ficha que ya exista (solo completa la propiedad tasada).</div>
+    <div class="field"><input type="text" id="s-imp-url" placeholder="Pegá el link: ZonaProp, Argenprop, Mercado Libre o ficha de Tokko" onkeydown="if(event.key==='Enter')importarSujetoLink()"></div>
+    <div class="btn-row">
+      <button class="btn btn-g" id="s-imp-btn" style="flex:1" onclick="importarSujetoLink()">Traer datos del aviso</button>
+      <label class="btn btn-o" style="cursor:pointer;flex:1;text-align:center">📄 Cargar ficha PDF<input type="file" accept="application/pdf,.pdf" onchange="importarSujetoPdf(this)" style="display:none"></label>
+    </div>
+    <div class="imp-estado" id="s-imp-estado"></div>
+  </div>
   <div class="field"><label>Nombre / Dirección</label><input type="text" id="s-nombre" placeholder="ej: Cabildo 2302 y Olazábal, CABA" oninput="renderPreview()"></div>
   <div class="field-row">
     <div class="field"><label>Fecha del informe</label><input type="text" id="s-fecha" placeholder="ej: 12 Junio 2026" oninput="renderPreview()"></div>
@@ -262,6 +291,37 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field-calc" id="s-calc">Sup. considerada: —</div>
   <div id="s-extras-list"></div>
   <button onclick="addSubjectExtra()" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
+
+  <h2>Características de la Propiedad Tasada</h2>
+  <div class="field-hint">Con estos datos se compara cada comparable contra la propiedad tasada: si una característica es igual el factor es 1.00, si el comparable es mejor el factor es mayor a 1.00 y si es peor, menor.</div>
+  <div class="field-row">
+    <div class="field"><label>Ubicación</label>
+      <select id="s-ubicacion" onchange="renderPreview()"><option value="">—</option><option>Muy buena</option><option>Buena</option><option>Media</option><option>Baja</option></select></div>
+    <div class="field"><label>Calidad constructiva</label>
+      <select id="s-calidad" onchange="renderPreview()"><option value="">—</option><option>Muy buena</option><option>Buena</option><option>Media</option><option>Baja</option></select></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>Posición en el edificio</label>
+      <select id="s-posicion" onchange="renderPreview()"><option value="">—</option><option>Frente</option><option>Lateral</option><option>Contrafrente</option></select></div>
+    <div class="field"><label>Luminosidad</label>
+      <select id="s-luminosidad" onchange="renderPreview()"><option value="">—</option><option>Muy buena</option><option>Estándar</option><option>Mala</option></select></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>Tipo de edificio</label>
+      <select id="s-edificio" onchange="renderPreview()"><option value="">—</option><option>Torre</option><option>Sobre linderos</option></select></div>
+    <div class="field"><label>Antigüedad</label>
+      <select id="s-antiguedad" onchange="renderPreview()"><option value="">—</option><option value="0-5">0–5 años</option><option value="5-10">5–10 años</option><option value="10-20">10–20 años</option><option value="20-50">20–50 años</option><option value="50+">50+ años</option></select></div>
+  </div>
+  <div class="field"><label>Altura interna</label>
+    <select id="s-altura" onchange="renderPreview()"><option value="">—</option><option value="1">Estándar</option><option value="1.05">Alta</option></select></div>
+  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Amenities</div>
+  <div class="field-row" style="align-items:center;gap:12px">
+    <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" id="s-pileta" onchange="renderPreview()"> Pileta</label>
+    <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" id="s-sum" onchange="renderPreview()"> SUM</label>
+    <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" id="s-baulera" onchange="renderPreview()"> Baulera</label>
+  </div>
+  <div class="field"><label>Otros amenities</label>
+    <input type="text" id="s-amen-otros" placeholder="ej: Gimnasio, Sauna..." oninput="renderPreview()"></div>
 
   <h2>Coeficientes de Homogeneización</h2>
   <div class="field-hint">Factor de reducción de superficie respecto a cubierta. Semicubierta: 0.50. Descubierta: 0.25. Terraza: 0.25.</div>
@@ -306,47 +366,53 @@ function cSup(c){const w=W();let s=(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
 const CALIDAD_COEF={'Muy buena':1.00,'Buena':0.90,'Media':0.75,'Baja':0.60};
-function getCalidadAdj(c){
-  if(!c.calidad)return 1;
-  const cc=CALIDAD_COEF[c.calidad]||1.00;
-  return 1.00/cc;
-}
 const POSICION_DEPTO_COEF={'Frente':1.00,'Lateral':0.96,'Contrafrente':0.93};
-function getPosicionDeptoAdj(c){
-  if(!c.posicionDepto)return 1;
-  const cc=POSICION_DEPTO_COEF[c.posicionDepto]||1.00;
-  return 1.00/cc;
-}
-const ORIENTACION_COEF={'Norte':1.00,'NE':0.97,'NO':0.97,'Este':0.93,'Oeste':0.93,'SE':0.90,'SO':0.90,'Sur':0.85};
-function getOrientacionAdj(c){
-  if(!c.orientacion)return 1;
-  const cc=ORIENTACION_COEF[c.orientacion]||1.00;
-  return 1.00/cc;
-}
 const LUMINOSIDAD_COEF={'Muy buena':1.00,'Estándar':0.93,'Mala':0.85};
-function getLuminosidadAdj(c){
-  if(!c.luminosidad)return 1;
-  const cc=LUMINOSIDAD_COEF[c.luminosidad]||1.00;
-  return 1.00/cc;
-}
 const EDIFICIO_COEF={'Torre':1.00,'Sobre linderos':0.94};
-function getEdificioAdj(c){
-  if(!c.edificio)return 1;
-  const cc=EDIFICIO_COEF[c.edificio]||1.00;
-  return 1.00/cc;
-}
 const ANTIGUEDAD_COEF={'0-5':1.00,'5-10':0.95,'10-20':0.88,'20-50':0.82,'50+':0.76};
-function getAntiguedadAdj(c){
-  if(!c.antiguedad)return 1;
-  const cc=ANTIGUEDAD_COEF[c.antiguedad]||1.00;
-  return 1.00/cc;
+const ALTURA_COEF={'1':1.00,'1.05':1.05};
+const UBICACION_COEF={'Muy buena':1.00,'Buena':0.93,'Media':0.85,'Baja':0.75};
+/* amenities: cada uno suma al valor del edificio (pileta 4%, SUM 2%, baulera 2%, cada otro amenity 1%) */
+function amenCoef(o){
+  const otros=String(o.amenitiesOtros||'').split(/[,;·\/]+|\sy\s/).map(s=>s.trim()).filter(Boolean).length;
+  return 1+(o.pileta?0.04:0)+(o.sum?0.02:0)+(o.baulera?0.02:0)+0.01*otros;
+}
+function vS(id){const e=document.getElementById(id);return e?(e.type==='checkbox'?e.checked:e.value):'';}
+/* características de la propiedad tasada, con las mismas claves que los comparables */
+function sujeto(){
+  return{ubicacion:vS('s-ubicacion'),calidad:vS('s-calidad'),posicionDepto:vS('s-posicion'),luminosidad:vS('s-luminosidad'),
+    edificio:vS('s-edificio'),antiguedad:vS('s-antiguedad'),alturaInterna:vS('s-altura'),
+    pileta:vS('s-pileta'),sum:vS('s-sum'),baulera:vS('s-baulera'),amenitiesOtros:vS('s-amen-otros')};
+}
+function numArg(v){const n=parseFloat(String(v==null?'':v).replace(',','.'));return isNaN(n)?null:n;}
+/* Factor = comparable / propiedad tasada: 1.00 si son iguales, >1 si el comparable es superior, <1 si es inferior.
+   Si falta el dato en alguno de los dos, no se ajusta (null). */
+function relF(tabla,a,b){const x=tabla[a],y=tabla[b];return(x&&y)?x/y:null;}
+function factoresC(c){
+  const s=sujeto();
+  const ubic=c.ubicSel==='Personalizado'?numArg(c.ubicacion):relF(UBICACION_COEF,c.ubicSel,s.ubicacion);
+  const amenTiene=o=>o.pileta||o.sum||o.baulera||String(o.amenitiesOtros||'').trim();
+  return{
+    ubicacion:ubic,
+    estado:numArg(c.estado),
+    calidad:relF(CALIDAD_COEF,c.calidad,s.calidad),
+    posicion:relF(POSICION_DEPTO_COEF,c.posicionDepto,s.posicionDepto),
+    luminosidad:relF(LUMINOSIDAD_COEF,c.luminosidad,s.luminosidad),
+    edificio:relF(EDIFICIO_COEF,c.edificio,s.edificio),
+    antiguedad:relF(ANTIGUEDAD_COEF,c.antiguedad,s.antiguedad),
+    altura:relF(ALTURA_COEF,c.alturaInterna,s.alturaInterna),
+    amenities:(amenTiene(c)||amenTiene(s))?amenCoef(c)/amenCoef(s):null
+  };
 }
 function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
   const ss=subSup(),autoSF=(sup>0&&ss>0)?Math.pow(sup/ss,0.2):1;
   const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
-  const calidadAdj=getCalidadAdj(c);const posDeptoAdj=getPosicionDeptoAdj(c);const orientAdj=getOrientacionAdj(c);const lumiAdj=getLuminosidadAdj(c);const edificioAdj=getEdificioAdj(c);const antiguedadAdj=getAntiguedadAdj(c);const alturaAdj=c.alturaInterna?parseFloat(c.alturaInterna)||1:1;const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*calidadAdj*posDeptoAdj*orientAdj*lumiAdj*edificioAdj*antiguedadAdj*alturaAdj;
-  return{sup,pm2,autoSF,sf,hom};
+  const f=factoresC(c);
+  /* un comparable superior vale más que la propiedad tasada: su valor/m² se divide por el factor */
+  const caract=Object.values(f).reduce((p,v)=>p*(v&&v>0?v:1),1);
+  const hom=pm2*(numArg(c.oferta)||1)*(numArg(c.superficie)||1)/caract;
+  return{sup,pm2,autoSF,sf,hom,f};
 }
 
 // ══════════════════════════════════════
@@ -423,17 +489,35 @@ async function loadCompPhoto(input,id){
 }
 
 // ── Sidebar thumbnail renders ──
+/* fotos del inmueble tasado: se ordenan arrastrando o con las flechas; la 1 es la principal */
+let _arrastraFoto=null;
+function moverFotoSujeto(de,a){
+  if(a<0||a>=subjectPhotos.length||de===a)return;
+  const [f]=subjectPhotos.splice(de,1);subjectPhotos.splice(a,0,f);
+  renderSubjectPhotoSb();renderPreview();
+}
 function renderSubjectPhotoSb(){
   const sb=document.getElementById('sb-subject-photo');if(!sb)return;
   sb.innerHTML='';
   subjectPhotos.forEach((p,i)=>{
-    const wrap=document.createElement('div');wrap.className='sp-wrap';
-    const img=document.createElement('img');img.src=p.photo;
-    const del=document.createElement('button');del.className='sp-del';del.textContent='×';
+    const wrap=document.createElement('div');wrap.className='sp-wrap';wrap.draggable=true;
+    wrap.title='Arrastrá para cambiar el orden';
+    wrap.ondragstart=e=>{_arrastraFoto=i;wrap.classList.add('arrastrando');e.dataTransfer.effectAllowed='move';};
+    wrap.ondragend=()=>{wrap.classList.remove('arrastrando');sb.querySelectorAll('.destino').forEach(x=>x.classList.remove('destino'));};
+    wrap.ondragover=e=>{e.preventDefault();wrap.classList.add('destino');};
+    wrap.ondragleave=()=>wrap.classList.remove('destino');
+    wrap.ondrop=e=>{e.preventDefault();if(_arrastraFoto!==null)moverFotoSujeto(_arrastraFoto,i);_arrastraFoto=null;};
+    const img=document.createElement('img');img.src=p.photo;img.draggable=false;
+    const num=document.createElement('span');num.className='sp-num'+(i===0?' principal':'');num.textContent=i===0?'1 · Principal':String(i+1);
+    const del=document.createElement('button');del.className='sp-del';del.textContent='×';del.title='Quitar';
     del.onclick=()=>{subjectPhotos.splice(i,1);renderSubjectPhotoSb();renderPreview();};
     const crop=document.createElement('button');crop.className='sp-crop';crop.textContent='✂';crop.title='Recortar';
     crop.onclick=()=>openCrop(p.photoOrig||p.photo,r=>{subjectPhotos[i]={photo:r,photoOrig:p.photoOrig||p.photo};renderSubjectPhotoSb();renderPreview();});
-    wrap.appendChild(img);wrap.appendChild(del);wrap.appendChild(crop);sb.appendChild(wrap);
+    const izq=document.createElement('button');izq.className='sp-mv izq';izq.textContent='◀';izq.title='Mover antes';izq.disabled=i===0;
+    izq.onclick=()=>moverFotoSujeto(i,i-1);
+    const der=document.createElement('button');der.className='sp-mv der';der.textContent='▶';der.title='Mover después';der.disabled=i===subjectPhotos.length-1;
+    der.onclick=()=>moverFotoSujeto(i,i+1);
+    wrap.append(img,num,del,crop,izq,der);sb.appendChild(wrap);
   });
 }
 function renderMapPhotoSb(){
@@ -473,7 +557,7 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',calidad:'',cub:'',semi:'',descu:'',terr:'',oferta:'0.9',ubicacion:'1',estado:'1',superficie:'1',sfOverride:'',posicionDepto:'',orientacion:'',luminosidad:'',edificio:'',antiguedad:'',alturaInterna:'',pileta:false,sum:false,amenitiesOtros:'',baulera:false,notes:'',photo:null,photoOrig:null,supExtras:[]});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',calidad:'',cub:'',semi:'',descu:'',terr:'',oferta:'0.9',ubicSel:'',ubicacion:'1',estado:'1',superficie:'1',sfOverride:'',posicionDepto:'',luminosidad:'',edificio:'',antiguedad:'',alturaInterna:'',pileta:false,sum:false,amenitiesOtros:'',baulera:false,notes:'',photo:null,photoOrig:null,supExtras:[]});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -497,6 +581,14 @@ function setC(id,field,value){
     const ci=card.querySelector('.tipoOp-custom');if(ci)ci.style.display=c.tipoOp==='Custom'?'':'none';
     if(field==='tipoOp'){const oi=card.querySelector('.oferta-i');if(oi)oi.value=c.oferta;}
   }
+  renderPreview();
+}
+function setUbic(id,sel){
+  const c=comparables.find(c=>c.id===id);if(!c)return;
+  c.ubicSel=sel;
+  const card=document.querySelector(`.sb-card[data-id="${id}"]`);
+  const inp=card&&card.querySelector('.ubic-custom');
+  if(inp){inp.style.display=sel==='Personalizado'?'':'none';if(sel==='Personalizado'){inp.value=c.ubicacion||'1';inp.focus();inp.select();}}
   renderPreview();
 }
 function toggleBody(id){const b=document.querySelector(`.sb-card[data-id="${id}"] .sb-card-body`);if(b)b.style.display=b.style.display==='none'?'':'none';}
@@ -525,15 +617,6 @@ function renderSidebar(){
     <input type="text" value="${esc(c.link||'')}" placeholder="ej: zonaprop.com.ar/..." oninput="setC(${c.id},'link',this.value)" style="font-size:10px;color:#aaa">
   </div>
   
-  <div class="field"><label>Tipo operación</label>
-    <div class="field-hint" style="margin-bottom:3px">Oferta = precio pedido en portal (×0.9). Real = operación cerrada (×1.0).</div>
-    <div class="tog">
-      <button class="ot ${c.tipoOp==='Oferta'?'on':''}" data-v="Oferta" onclick="setC(${c.id},'tipoOp','Oferta')">Oferta (×0.9)</button>
-      <button class="ot ${c.tipoOp==='Real'?'on':''}" data-v="Real" onclick="setC(${c.id},'tipoOp','Real')">Real (×1.0)</button>
-      <button class="ot ${c.tipoOp==='Custom'?'on':''}" data-v="Custom" onclick="setC(${c.id},'tipoOp','Custom')">Otro</button>
-    </div>
-    <input class="tipoOp-custom" type="text" value="${esc(c.tipoOpLabel)}" placeholder="Escribi el tipo..." style="margin-top:3px;${c.tipoOp!=='Custom'?'display:none':''}" oninput="setC(${c.id},'tipoOpLabel',this.value)">
-  </div>
   <div class="field-row">
     <div class="field"><label>Fuente</label>
       <select onchange="setC(${c.id},'fuente',this.value)">
@@ -562,63 +645,50 @@ function renderSidebar(){
   <div class="field"><label>Calidad constructiva</label>
     <select onchange="setC(${c.id},'calidad',this.value)">
       <option value="" ${!c.calidad?'selected':''}>—</option>
-      <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena (factor: 1.00)</option>
-      <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena (factor: 1.11)</option>
-      <option value="Media" ${c.calidad==='Media'?'selected':''}>Media (factor: 1.33)</option>
-      <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja (factor: 1.67)</option>
+      <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena</option>
+      <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena</option>
+      <option value="Media" ${c.calidad==='Media'?'selected':''}>Media</option>
+      <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja</option>
     </select>
   </div>
   <div class="field"><label>Posición en el edificio</label>
     <select onchange="setC(${c.id},'posicionDepto',this.value);renderPreview()">
-      <option value="" ${!c.posicionDepto?'selected':''}>— sin ajuste</option>
-      <option value="Frente" ${c.posicionDepto==='Frente'?'selected':''}>Frente (factor: 1.00)</option>
-      <option value="Lateral" ${c.posicionDepto==='Lateral'?'selected':''}>Lateral (factor: 1.04)</option>
-      <option value="Contrafrente" ${c.posicionDepto==='Contrafrente'?'selected':''}>Contrafrente (factor: 1.08)</option>
-    </select>
-  </div>
-  <div class="field"><label>Orientación</label>
-    <select onchange="setC(${c.id},'orientacion',this.value);renderPreview()">
-      <option value="" ${!c.orientacion?'selected':''}>— sin ajuste</option>
-      <option value="Norte" ${c.orientacion==='Norte'?'selected':''}>Norte (factor: 1.00)</option>
-      <option value="NE" ${c.orientacion==='NE'?'selected':''}>NE (factor: 1.03)</option>
-      <option value="NO" ${c.orientacion==='NO'?'selected':''}>NO (factor: 1.03)</option>
-      <option value="Este" ${c.orientacion==='Este'?'selected':''}>Este (factor: 1.08)</option>
-      <option value="Oeste" ${c.orientacion==='Oeste'?'selected':''}>Oeste (factor: 1.08)</option>
-      <option value="SE" ${c.orientacion==='SE'?'selected':''}>SE (factor: 1.11)</option>
-      <option value="SO" ${c.orientacion==='SO'?'selected':''}>SO (factor: 1.11)</option>
-      <option value="Sur" ${c.orientacion==='Sur'?'selected':''}>Sur (factor: 1.18)</option>
+      <option value="" ${!c.posicionDepto?'selected':''}>—</option>
+      <option value="Frente" ${c.posicionDepto==='Frente'?'selected':''}>Frente</option>
+      <option value="Lateral" ${c.posicionDepto==='Lateral'?'selected':''}>Lateral</option>
+      <option value="Contrafrente" ${c.posicionDepto==='Contrafrente'?'selected':''}>Contrafrente</option>
     </select>
   </div>
   <div class="field"><label>Luminosidad</label>
     <select onchange="setC(${c.id},'luminosidad',this.value);renderPreview()">
-      <option value="" ${!c.luminosidad?'selected':''}>— sin ajuste</option>
-      <option value="Muy buena" ${c.luminosidad==='Muy buena'?'selected':''}>Muy buena (factor: 1.00)</option>
-      <option value="Estándar" ${c.luminosidad==='Estándar'?'selected':''}>Estándar (factor: 1.08)</option>
-      <option value="Mala" ${c.luminosidad==='Mala'?'selected':''}>Mala (factor: 1.18)</option>
+      <option value="" ${!c.luminosidad?'selected':''}>—</option>
+      <option value="Muy buena" ${c.luminosidad==='Muy buena'?'selected':''}>Muy buena</option>
+      <option value="Estándar" ${c.luminosidad==='Estándar'?'selected':''}>Estándar</option>
+      <option value="Mala" ${c.luminosidad==='Mala'?'selected':''}>Mala</option>
     </select>
   </div>
   <div class="field"><label>Tipo de edificio</label>
     <select onchange="setC(${c.id},'edificio',this.value);renderPreview()">
-      <option value="" ${!c.edificio?'selected':''}>— sin ajuste</option>
-      <option value="Torre" ${c.edificio==='Torre'?'selected':''}>Torre (factor: 1.00)</option>
-      <option value="Sobre linderos" ${c.edificio==='Sobre linderos'?'selected':''}>Sobre linderos (factor: 1.06)</option>
+      <option value="" ${!c.edificio?'selected':''}>—</option>
+      <option value="Torre" ${c.edificio==='Torre'?'selected':''}>Torre</option>
+      <option value="Sobre linderos" ${c.edificio==='Sobre linderos'?'selected':''}>Sobre linderos</option>
     </select>
   </div>
   <div class="field"><label>Antigüedad del edificio</label>
     <select onchange="setC(${c.id},'antiguedad',this.value);renderPreview()">
-      <option value="" ${!c.antiguedad?'selected':''}>— sin ajuste</option>
-      <option value="0-5" ${c.antiguedad==='0-5'?'selected':''}>0–5 años (factor: 1.00)</option>
-      <option value="5-10" ${c.antiguedad==='5-10'?'selected':''}>5–10 años (factor: 1.05)</option>
-      <option value="10-20" ${c.antiguedad==='10-20'?'selected':''}>10–20 años (factor: 1.14)</option>
-      <option value="20-50" ${c.antiguedad==='20-50'?'selected':''}>20–50 años (factor: 1.22)</option>
-      <option value="50+" ${c.antiguedad==='50+'?'selected':''}>50+ años (factor: 1.32)</option>
+      <option value="" ${!c.antiguedad?'selected':''}>—</option>
+      <option value="0-5" ${c.antiguedad==='0-5'?'selected':''}>0–5 años</option>
+      <option value="5-10" ${c.antiguedad==='5-10'?'selected':''}>5–10 años</option>
+      <option value="10-20" ${c.antiguedad==='10-20'?'selected':''}>10–20 años</option>
+      <option value="20-50" ${c.antiguedad==='20-50'?'selected':''}>20–50 años</option>
+      <option value="50+" ${c.antiguedad==='50+'?'selected':''}>50+ años</option>
     </select>
   </div>
   <div class="field"><label>Altura interna</label>
     <select onchange="setC(${c.id},'alturaInterna',this.value);renderPreview()">
-      <option value="" ${!c.alturaInterna?'selected':''}>— sin ajuste</option>
-      <option value="1" ${c.alturaInterna==='1'?'selected':''}>Estándar (factor: 1.00)</option>
-      <option value="1.05" ${c.alturaInterna==='1.05'?'selected':''}>Alta (factor: 0.95)</option>
+      <option value="" ${!c.alturaInterna?'selected':''}>—</option>
+      <option value="1" ${c.alturaInterna==='1'?'selected':''}>Estándar</option>
+      <option value="1.05" ${c.alturaInterna==='1.05'?'selected':''}>Alta</option>
     </select>
   </div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Amenities</div>
@@ -645,13 +715,20 @@ function renderSidebar(){
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Factores de homogeneización</div>
   <div class="field-row">
     <div class="field"><label>% Negociación</label><input type="number" class="oferta-i" value="${c.oferta}" step="0.05" oninput="setC(${c.id},'oferta',this.value)"></div>
-    <div class="field"><label>Ubicación</label><input type="number" value="${c.ubicacion}" step="0.05" oninput="setC(${c.id},'ubicacion',this.value)"></div>
+    <div class="field"><label>Ubicación</label>
+      <select onchange="setUbic(${c.id},this.value)">
+        <option value="" ${!c.ubicSel?'selected':''}>—</option>
+        ${['Muy buena','Buena','Media','Baja'].map(o=>`<option ${c.ubicSel===o?'selected':''}>${o}</option>`).join('')}
+        <option value="Personalizado" ${c.ubicSel==='Personalizado'?'selected':''}>Personalizado…</option>
+      </select>
+      <input type="text" inputmode="decimal" class="ubic-custom" value="${esc(c.ubicSel==='Personalizado'?c.ubicacion:'')}" placeholder="ej: 1.05 y Enter" style="margin-top:3px;${c.ubicSel==='Personalizado'?'':'display:none'}" onkeydown="if(event.key==='Enter'){event.preventDefault();setC(${c.id},'ubicacion',this.value.replace(',','.'));this.blur();}" onchange="setC(${c.id},'ubicacion',this.value.replace(',','.'))">
+    </div>
   </div>
-  <div class="field"><label>Estado del departamento</label><input type="number" value="${c.estado}" step="0.05" oninput="setC(${c.id},'estado',this.value)"></div>
+  <div class="field"><label>Estado del departamento</label><input type="text" inputmode="decimal" value="${esc(c.estado)}" placeholder="1.00 = igual a la tasada" onkeydown="if(event.key==='Enter'){event.preventDefault();setC(${c.id},'estado',this.value.replace(',','.'));this.blur();}" onchange="setC(${c.id},'estado',this.value.replace(',','.'))"></div>
   <div class="field-row">
     <div class="field"><label>Superficie</label><input type="number" value="${c.superficie}" step="0.05" oninput="setC(${c.id},'superficie',this.value)"></div>
   </div>
-  <div class="field"><label>Factor Superficie (vacío = auto ${autoSF.toFixed(2)})</label>
+  <div class="field"><label>Factor Superficie</label>
     <input type="number" value="${c.sfOverride}" placeholder="auto" step="0.01" oninput="setC(${c.id},'sfOverride',this.value)">
   </div>
   <div class="field">
@@ -865,11 +942,17 @@ function rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss,subExtras)
   if(terr>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(terr)} m²</strong><span>Terraza</span></div>`);
   (subExtras||[]).forEach(e=>{if(parseFloat(e.m2)>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(parseFloat(e.m2))} m²</strong><span>${esc(e.nombre||'Personalizado')}</span></div>`);});
   
+  const S=sujeto();
+  const amen=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.baulera?'Baulera':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
+  const chars=[['Ubicación',S.ubicacion],['Calidad constructiva',S.calidad],['Posición',S.posicionDepto],['Luminosidad',S.luminosidad],
+    ['Tipo de edificio',S.edificio],['Antigüedad',S.antiguedad?S.antiguedad+' años':''],['Altura interna',{'1':'Estándar','1.05':'Alta'}[S.alturaInterna]||''],['Amenities',amen]]
+    .filter(([,v])=>v).map(([l,v])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${esc(v)}</span></div>`).join('');
   // analista is internal only — not rendered in ficha
   return`<div class="d-subject">
     <div class="d-over">Propiedad Tasada</div>
     <div class="d-addr">${esc(nombre)||'Dirección no especificada'}</div>
     ${metaItems.length?`<div class="d-meta">${metaItems.join('')}</div>`:''}
+    ${chars?`<div class="icard-grid" style="margin-top:3mm">${chars}</div>`:''}
     ${desc?`<div class="d-desc-txt">${esc(desc)}</div>`:''}
     ${rSubjectPhotos()}
   </div>`;
@@ -906,9 +989,7 @@ function rSection(comps,tipo,ss){
 
   const cards=comps.map((c,i)=>{
     const v=vals[i];
-    const chips=[
-      c.tipoOp==='Real'?`<span class="icard-chip real">Operación Real</span>`:c.tipoOp==='Custom'&&c.tipoOpLabel?`<span class="icard-chip">${esc(c.tipoOpLabel)}</span>`:null,
-    ].filter(Boolean).join('');
+    const chips='';
     const amenChips=[c.pileta?'Pileta':null,c.sum?'SUM':null,c.baulera?'Baulera':null,c.amenitiesOtros||null].filter(Boolean).join(', ');
     const data=[
       ['Sup. Considerada',v.sup>0?`${fN(Math.round(v.sup))} m²`:'—'],
@@ -935,7 +1016,6 @@ function rSection(comps,tipo,ss){
 
   const iRows=[
     ['Nombre / Dirección',comps.map(c=>`<strong>${esc(c.address)||'—'}</strong>`)],
-    ['Tipo Operación',comps.map(c=>c.tipoOp==='Real'?'<span style="color:#267326;font-weight:700">Real</span>':c.tipoOp==='Custom'?(esc(c.tipoOpLabel)||'Custom'):'Oferta')],
     ['Sup. Considerada',vals.map(v=>v.sup>0?`<strong>${fN(Math.round(v.sup))} m²</strong>`:'—')],
     ['Calidad',comps.map(c=>esc(c.calidad)||'—')],
     ['Amenities',comps.map(c=>[c.pileta?'Pileta':null,c.sum?'SUM':null,c.baulera?'Baulera':null,c.amenitiesOtros||null].filter(Boolean).join(', ')||'—')],
@@ -944,19 +1024,23 @@ function rSection(comps,tipo,ss){
     ['Valor / m²',vals.map((v,i)=>v.pm2>0?`${comps[i].currency} ${fN(Math.round(v.pm2))}`:'—')],
     ['Notas',comps.map(c=>esc(c.notes)||'—'),'notes'],
   ];
+  const S=sujeto(), fx=(k)=>vals.map(v=>v.f[k]==null?'—':v.f[k]);
+  const ref=(txt)=>txt?`<span style="display:block;font-weight:400;font-size:6.5pt;color:#999">Tasada: ${esc(txt)}</span>`:'';
+  const altTxt={'1':'Estándar','1.05':'Alta'};
+  const amenS=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.baulera?'Baulera':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
   const fRows=[
     ['% Negociación',comps.map(c=>c.oferta)],
-    ['Ubicación',comps.map(c=>c.ubicacion)],
-    ['Estado',comps.map(c=>c.estado)],
+    ['Ubicación'+ref(S.ubicacion),fx('ubicacion')],
+    ['Estado',fx('estado')],
     ['Superficie',comps.map(c=>c.superficie||'1')],
-    ['Calidad',comps.map(c=>c.calidad?getCalidadAdj(c).toFixed(2):'—')],
-    ['Posición edificio',comps.map(c=>c.posicionDepto?getPosicionDeptoAdj(c).toFixed(2):'—')],
-    ['Orientación',comps.map(c=>c.orientacion?getOrientacionAdj(c).toFixed(2):'—')],
-    ['Luminosidad',comps.map(c=>c.luminosidad?getLuminosidadAdj(c).toFixed(2):'—')],
-    ['Edificio',comps.map(c=>c.edificio?getEdificioAdj(c).toFixed(2):'—')],
-    ['Antigüedad',comps.map(c=>c.antiguedad?getAntiguedadAdj(c).toFixed(2):'—')],
-    ['Altura interna',comps.map(c=>c.alturaInterna?parseFloat(c.alturaInterna).toFixed(2):'—')],
-  ];
+    ['Calidad'+ref(S.calidad),fx('calidad')],
+    ['Posición edificio'+ref(S.posicionDepto),fx('posicion')],
+    ['Luminosidad'+ref(S.luminosidad),fx('luminosidad')],
+    ['Edificio'+ref(S.edificio),fx('edificio')],
+    ['Antigüedad'+ref(S.antiguedad?S.antiguedad+' años':''),fx('antiguedad')],
+    ['Altura interna'+ref(altTxt[S.alturaInterna]||''),fx('altura')],
+    ['Amenities'+ref(amenS||(vals.some(v=>v.f.amenities!=null)?'sin amenities':'')),fx('amenities')],
+  ].filter(([,vs])=>vs.some(v=>v!=='—'));
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
   const tipoLabel=tipo==='ALQUILER'?'Alquiler':'Venta';
@@ -1053,16 +1137,230 @@ function discardDraft(){
   localStorage.removeItem(DRAFT_KEY);clearPhotosIDB();
   ['s-nombre','s-fecha','s-analista','s-desc','s-cub','s-semi','s-descu','s-terr'].forEach(id=>{document.getElementById(id).value='';});
   document.getElementById('w-semi').value='0.50';document.getElementById('w-descu').value='0.25';document.getElementById('w-terr').value='0.25';
-  subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;subjectExtras=[];renderSubjectExtrasSb();
+  subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;subjectExtras=[];renderSubjectExtrasSb();ponerCaractSujeto({});
   renderSubjectPhotoSb();renderMapPhotoSb();
   comparables=[];nextId=1;renderSidebar();renderPreview();closeBanner();
 }
 
 // ══════════════════════════════════════
+// CARGAR LA PROPIEDAD TASADA DESDE UN AVISO O UNA FICHA
+// Solo completa los datos de la propiedad tasada (no toca los comparables).
+// ══════════════════════════════════════
+const API_FICHAS='https://web-production-9a60eb.up.railway.app/api/publico';
+const LIB_PDFLIB='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+const LIB_PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const LIB_PDFJS_WORKER='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const LIB_OCR='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+function sImpEstado(txt,mal){const el=document.getElementById('s-imp-estado');if(!el)return;el.className='imp-estado'+(mal?' mal':'');el.innerHTML=txt;}
+function cargarScript(src){
+  return new Promise((ok,mal)=>{
+    if(document.querySelector('script[src="'+src+'"]'))return ok();
+    const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>mal(new Error('No se pudo cargar el lector'));
+    document.head.appendChild(s);
+  });
+}
+async function fotoComoDato(url){
+  const r=await fetch(API_FICHAS+'/foto?u='+encodeURIComponent(url));
+  if(!r.ok)throw new Error('foto');
+  const blob=await r.blob();
+  return await new Promise(res=>{const fr=new FileReader();fr.onload=e=>res(e.target.result);fr.readAsDataURL(blob);});
+}
+function bucketAntig(txt){
+  if(!txt)return'';
+  if(/estrenar/i.test(txt))return'0-5';
+  const m=String(txt).match(/\d+/);if(!m)return'';
+  const n=parseInt(m[0],10);
+  return n<=5?'0-5':n<=10?'5-10':n<=20?'10-20':n<=50?'20-50':'50+';
+}
+function numTxt(v){const m=String(v==null?'':v).match(/\d+(?:[.,]\d+)?/);return m?m[0].replace(',','.'):'';}
+/* Vuelca a la propiedad tasada lo que se haya podido leer. Lo que no viene, queda como estaba. */
+async function aplicarSujeto(d){
+  const set=(id,v)=>{if(v!==undefined&&v!==null&&String(v).trim()!==''){document.getElementById(id).value=v;}};
+  set('s-nombre',d.nombre);set('s-desc',d.desc);
+  set('s-cub',numTxt(d.cub));set('s-semi',numTxt(d.semi));set('s-descu',numTxt(d.descu));set('s-terr',numTxt(d.terr));
+  set('s-antiguedad',bucketAntig(d.antiguedad));
+  const texto=(d.texto||'').toLowerCase();
+  if(/pileta|piscina/.test(texto))document.getElementById('s-pileta').checked=true;
+  if(/\bs\.?u\.?m\b|sal[oó]n de usos/.test(texto))document.getElementById('s-sum').checked=true;
+  if(/baulera/.test(texto))document.getElementById('s-baulera').checked=true;
+  const otros=[['Gimnasio',/gimnasio|\bgym\b/],['Sauna',/sauna/],['Solarium',/solarium/],['Parrilla',/parrilla/],['Laundry',/laundry/],['Jacuzzi',/jacuzzi/]]
+    .filter(([,r])=>r.test(texto)).map(([n])=>n);
+  if(otros.length){
+    const el=document.getElementById('s-amen-otros');
+    const ya=el.value.split(',').map(s=>s.trim()).filter(Boolean);
+    otros.forEach(o=>{if(!ya.some(y=>y.toLowerCase()===o.toLowerCase()))ya.push(o);});
+    el.value=ya.join(', ');
+  }
+  const pos=document.getElementById('s-posicion');
+  if(!pos.value){
+    if(/contrafrente/.test(texto))pos.value='Contrafrente';
+    else if(/disposici[oó]n:?\s*frente|al frente|a la calle/.test(texto))pos.value='Frente';
+    else if(/disposici[oó]n:?\s*lateral/.test(texto))pos.value='Lateral';
+  }
+  const lum=document.getElementById('s-luminosidad');
+  if(!lum.value&&/luminos/.test(texto))lum.value='Muy buena';
+  let fotos=0;
+  for(const f of (d.fotos||[]).slice(0,12)){
+    try{
+      const dato=String(f).startsWith('data:')?f:await fotoComoDato(f);
+      subjectPhotos.push({photo:dato,photoOrig:dato});fotos++;
+    }catch(e){}
+  }
+  renderSubjectPhotoSb();renderPreview();
+  return fotos;
+}
+async function importarSujetoLink(){
+  const inp=document.getElementById('s-imp-url'),url=(inp.value||'').trim();
+  if(!url){sImpEstado('Pegá primero el link del aviso.',true);return;}
+  const btn=document.getElementById('s-imp-btn');btn.disabled=true;
+  sImpEstado('<span class="rueda"></span>Leyendo el aviso…');
+  try{
+    const r=await fetch(API_FICHAS+'/aviso?url='+encodeURIComponent(url));
+    const a=await r.json();
+    if(!r.ok)throw new Error(a.detail||'No se pudo leer el aviso');
+    sImpEstado('<span class="rueda"></span>Trayendo las fotos…');
+    const n=await aplicarSujeto({nombre:a.address,desc:a.comentarios,cub:a.supCubierta,antiguedad:a.antiguedad,
+      texto:[(a.caracteristicas||[]).join(' · '),a.servicios,a.comentarios].join(' \n '),fotos:a.fotos});
+    sImpEstado('Listo: datos de la propiedad tasada'+(n?' y '+n+' fotos':'')+'. Revisá y completá lo que falte.');
+    inp.value='';
+  }catch(e){sImpEstado((e.message||'No se pudo leer el aviso')+'.',true);}
+  btn.disabled=false;
+}
+
+/* ---- PDF ---- */
+function fotosDelPdf(pdf){
+  const N=n=>PDFLib.PDFName.of(n), vistos=new Set(), out=[];
+  for(const page of pdf.getPages()){
+    const res=page.node.Resources();const xo=res&&res.lookup(N('XObject'));
+    if(!xo)continue;
+    for(const [,ref] of xo.entries()){
+      const st=pdf.context.lookup(ref);
+      if(!(st instanceof PDFLib.PDFRawStream))continue;
+      const d=st.dict, num=k=>{const v=pdf.context.lookup(d.get(N(k)));return v&&v.asNumber?v.asNumber():0;};
+      if(String(d.get(N('Subtype')))!=='/Image'||!String(d.get(N('Filter'))||'').includes('DCTDecode'))continue;
+      if(num('Width')<700||num('Height')<450)continue;
+      const clave=String(ref);if(vistos.has(clave))continue;vistos.add(clave);
+      out.push(st.contents);
+    }
+  }
+  return out;
+}
+/* JPG del PDF -> foto. Devuelve null si es un logo (casi toda la imagen de un mismo color plano). */
+function jpgADato(bytes){
+  return new Promise((ok,mal)=>{
+    const url=URL.createObjectURL(new Blob([bytes],{type:'image/jpeg'}));
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=1920;let w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      const px=ctx.getImageData(0,0,w,h).data, cuenta={};let total=0,max=0;
+      for(let i=0;i<px.length;i+=4*97){const k=(px[i]>>4)+'-'+(px[i+1]>>4)+'-'+(px[i+2]>>4);cuenta[k]=(cuenta[k]||0)+1;total++;if(cuenta[k]>max)max=cuenta[k];}
+      if(max/total>0.5)return ok(null);
+      ok(c.toDataURL('image/jpeg',0.85));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);mal(new Error('foto'));};
+    img.src=url;
+  });
+}
+/* Los PDF de Tokko y similares dibujan las letras como formas: el texto se lee con OCR en el navegador. */
+async function textoDelPdf(bytes){
+  await cargarScript(LIB_PDFJS);await cargarScript(LIB_OCR);
+  pdfjsLib.GlobalWorkerOptions.workerSrc=LIB_PDFJS_WORKER;
+  const doc=await pdfjsLib.getDocument({data:bytes}).promise;
+  const worker=await Tesseract.createWorker('spa');
+  let texto='';
+  try{
+    for(let i=1;i<=doc.numPages;i++){
+      sImpEstado('<span class="rueda"></span>Leyendo el texto del PDF (página '+i+' de '+doc.numPages+')…');
+      const page=await doc.getPage(i), vp=page.getViewport({scale:2.5});
+      const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+      await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+      texto+=(await worker.recognize(c)).data.text+'\n';
+    }
+  }finally{await worker.terminate();}
+  return texto;
+}
+/* Formato de ficha de Tokko: "Etiqueta: valor", título con la dirección, "Argentina | Capital Federal | Barrio". */
+function datosDeTextoPdf(t){
+  const d={}, limpio=t.replace(/[ \t]+/g,' ');
+  const lineas=limpio.split('\n').map(s=>s.trim()).filter(Boolean);
+  const valor=et=>{
+    const m=limpio.match(new RegExp('(?:^|[\\s|])'+et+'\\s*:\\s*([^\\n]*)','i'));if(!m)return'';
+    const corte=m[1].search(/\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ.]+(?:\s[a-záéíóúñ]+){0,2}\s*:/);
+    return (corte>=0?m[1].slice(0,corte):m[1]).trim();
+  };
+  const iRef=lineas.findIndex(s=>/\|\s*(departamento|local|oficina|casa|ph|terreno|lote|galp|dep[oó]sito|cochera|edificio|fondo)/i.test(s));
+  if(iRef>=0&&lineas[iRef+1]){
+    let dir=lineas[iRef+1].replace(/\s+al\s+(?=\d)/i,' ');
+    const lugar=(lineas[iRef+2]||'').split('|').map(s=>s.trim()).filter(Boolean);
+    if(lugar.length>1){
+      const barrio=lugar[lugar.length-1], prov=lugar[lugar.length-2]||'';
+      dir+=', '+(/capital federal|caba|ciudad aut/i.test(prov)?barrio+', CABA':barrio);
+    }
+    d.nombre=dir;
+  }
+  d.cub=numTxt(valor('Superficie cubierta')||valor('Cubierta')||valor('Total construido'));
+  d.semi=numTxt(valor('Superficie semicubierta')||valor('Semicubierta'));
+  d.descu=numTxt(valor('Superficie descubierta')||valor('Descubierta'));
+  d.antiguedad=valor('Antig[uü]edad');
+  const disp=valor('Disposici[oó]n');
+  const esTexto=s=>{const ok=(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/g)||[]).length;return ok/s.length>=0.6&&/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{4,}/.test(s);};
+  const todas=t.split('\n').map(s=>s.trim());
+  const iDesc=todas.findIndex(s=>/^DESCRIPCI[OÓ]N$/i.test(s));
+  if(iDesc>=0){
+    const desc=[];
+    for(const s of todas.slice(iDesc+1)){
+      if(!s){desc.push('');continue;}
+      if(/^(FOTOS|UBICACI[OÓ]N|PLANOS|SERVICIOS|AMBIENTES|ADICIONALES|Nota importante)\b/i.test(s)||!esTexto(s))break;
+      desc.push(s.replace(/(\d)\s?m\?/g,'$1 m²'));
+    }
+    d.desc=desc.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  d.texto=limpio+(disp?'\nDisposición: '+disp:'');
+  return d;
+}
+async function importarSujetoPdf(input){
+  const archivo=input.files[0];input.value='';
+  if(!archivo)return;
+  try{
+    sImpEstado('<span class="rueda"></span>Abriendo el PDF…');
+    await cargarScript(LIB_PDFLIB);
+    const bytes=new Uint8Array(await archivo.arrayBuffer());
+    const pdf=await PDFLib.PDFDocument.load(bytes.slice(),{updateMetadata:false});
+    /* fichas hechas con nuestro generador: traen los datos guardados adentro */
+    const ref=pdf.catalog.get(PDFLib.PDFName.of('MetricaFicha'));
+    let n;
+    if(ref){
+      const st=JSON.parse(new TextDecoder().decode(PDFLib.decodePDFRawStream(pdf.context.lookup(ref)).decode()));
+      const l=(st.locals||[])[0]||{};
+      n=await aplicarSujeto({nombre:l.address,desc:l.comentarios,cub:l.supCubierta,descu:l.supDescubierta,antiguedad:l.antiguedad,
+        texto:[l.caracteristicas,l.servicios,l.comentarios].join(' \n '),fotos:(l.photos||[]).map(p=>p.photo)});
+    }else{
+      const d=datosDeTextoPdf(await textoDelPdf(bytes.slice()));
+      if(!d.nombre&&!d.cub&&!d.desc)throw new Error('No se pudieron leer datos en este PDF (puede ser un escaneo o un formato distinto)');
+      sImpEstado('<span class="rueda"></span>Sacando las fotos del PDF…');
+      const fotos=[];
+      for(const f of fotosDelPdf(pdf)){if(fotos.length>=12)break;try{const x=await jpgADato(f);if(x)fotos.push(x);}catch(e){}}
+      d.fotos=fotos;
+      n=await aplicarSujeto(d);
+    }
+    sImpEstado('Listo: datos de la propiedad tasada'+(n?' y '+n+' fotos':'')+' tomados del PDF. Revisá y completá lo que falte.');
+  }catch(e){sImpEstado((e.message||'No se pudo leer el PDF')+'.',true);}
+}
+
+// ══════════════════════════════════════
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
+function ponerCaractSujeto(k){
+  const m={'s-ubicacion':'ubicacion','s-calidad':'calidad','s-posicion':'posicionDepto','s-luminosidad':'luminosidad','s-edificio':'edificio',
+    's-antiguedad':'antiguedad','s-altura':'alturaInterna','s-amen-otros':'amenitiesOtros'};
+  Object.entries(m).forEach(([id,key])=>{const e=document.getElementById(id);if(e)e.value=k[key]||'';});
+  ['pileta','sum','baulera'].forEach(key=>{const e=document.getElementById('s-'+key);if(e)e.checked=!!k[key];});
+}
 function getState(){
-  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,descu:document.getElementById('s-descu').value,terr:document.getElementById('s-terr').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig,subjectExtras:[...(subjectExtras||[])]},weights:{semi:document.getElementById('w-semi').value,descu:document.getElementById('w-descu').value,terr:document.getElementById('w-terr').value,},comparables:comparables.map(c=>({...c})),tipoOperacion:document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta',map:{showMap,geoCoords,capturedMapImg}};
+  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,descu:document.getElementById('s-descu').value,terr:document.getElementById('s-terr').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig,subjectExtras:[...(subjectExtras||[])],caract:sujeto()},weights:{semi:document.getElementById('w-semi').value,descu:document.getElementById('w-descu').value,terr:document.getElementById('w-terr').value,},comparables:comparables.map(c=>({...c})),tipoOperacion:document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta',map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1084,7 +1382,13 @@ function applyState(state){
   document.getElementById('w-terr').value=w.terr||'0.25';
   
   subjectExtras=(state.subject&&state.subject.subjectExtras)||[];
-  comparables=(state.comparables||[]).map(c=>({...c}));
+  ponerCaractSujeto(s.caract||{});
+  comparables=(state.comparables||[]).map(c=>{
+    const x={...c};
+    /* archivos viejos: la ubicación era un número escrito a mano; si no era 1 se conserva como personalizado */
+    if(x.ubicSel===undefined)x.ubicSel=(x.ubicacion&&parseFloat(x.ubicacion)!==1)?'Personalizado':'';
+    return x;
+  });
   {const t=(comparables.length&&comparables[0].tipo)||state.tipoOperacion||'Alquiler';document.getElementById('st-alq').classList.toggle('on',t==='Alquiler');document.getElementById('st-vta').classList.toggle('on',t==='Venta');}
   nextId=comparables.length?Math.max(...comparables.map(c=>c.id))+1:1;
   // Restaurar estado del mapa ANTES de renderPreview para que #leaflet-map exista en el DOM
