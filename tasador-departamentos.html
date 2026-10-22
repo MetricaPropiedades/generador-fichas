@@ -45,15 +45,12 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 #sb-subject-photo .sp-wrap{width:auto;height:auto;margin:0;aspect-ratio:4/3;cursor:grab;}
 #sb-subject-photo .sp-wrap img{width:100%;height:100%;}
 #sb-subject-photo .sp-wrap.arrastrando{opacity:.35;}
-#sb-subject-photo .sp-wrap.destino{outline:2px solid var(--g);outline-offset:1px;border-radius:3px;}
+#sb-subject-photo .sp-wrap.ins-izq::before,#sb-subject-photo .sp-wrap.ins-der::after{content:'';position:absolute;top:-2px;bottom:-2px;width:4px;background:var(--g);border-radius:2px;z-index:3;}
+#sb-subject-photo .sp-wrap.ins-izq::before{left:-5px;}
+#sb-subject-photo .sp-wrap.ins-der::after{right:-5px;}
 #sb-subject-photo .sp-del,#sb-subject-photo .sp-crop{width:22px;height:22px;font-size:13px;}
 .sp-num{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.75);color:#fff;border-radius:3px;font-size:11px;font-weight:700;padding:1px 6px;}
 .sp-wrap .sp-num.principal{background:var(--g);color:#1c1c1c;}
-.sp-mv{position:absolute;bottom:3px;width:22px;height:22px;background:rgba(0,0,0,.75);border:none;color:#fff;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.sp-mv:hover{background:var(--g);color:#000;}
-.sp-mv.izq{left:3px;}
-.sp-mv.der{left:28px;}
-.sp-mv:disabled{opacity:.25;cursor:default;background:rgba(0,0,0,.75);color:#fff;}
 /* carga desde ficha / aviso */
 .imp-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:5px;padding:9px;display:flex;flex-direction:column;gap:6px;}
 .imp-estado{font-size:10.5px;color:rgba(255,255,255,.55);line-height:1.45;min-height:0;}
@@ -491,33 +488,37 @@ async function loadCompPhoto(input,id){
 // ── Sidebar thumbnail renders ──
 /* fotos del inmueble tasado: se ordenan arrastrando o con las flechas; la 1 es la principal */
 let _arrastraFoto=null;
-function moverFotoSujeto(de,a){
-  if(a<0||a>=subjectPhotos.length||de===a)return;
+/* mueve la foto 'de' al lado izquierdo o derecho de la foto 'destino' */
+function moverFotoSujeto(de,destino,lado){
+  let a=lado==='der'?destino+1:destino;
+  if(de<a)a--;
+  if(a===de)return;
   const [f]=subjectPhotos.splice(de,1);subjectPhotos.splice(a,0,f);
   renderSubjectPhotoSb();renderPreview();
 }
 function renderSubjectPhotoSb(){
   const sb=document.getElementById('sb-subject-photo');if(!sb)return;
   sb.innerHTML='';
+  const limpiar=()=>sb.querySelectorAll('.ins-izq,.ins-der').forEach(x=>x.classList.remove('ins-izq','ins-der'));
+  const lado=(e,el)=>{const r=el.getBoundingClientRect();return(e.clientX-r.left)<r.width/2?'izq':'der';};
   subjectPhotos.forEach((p,i)=>{
     const wrap=document.createElement('div');wrap.className='sp-wrap';wrap.draggable=true;
     wrap.title='Arrastrá para cambiar el orden';
     wrap.ondragstart=e=>{_arrastraFoto=i;wrap.classList.add('arrastrando');e.dataTransfer.effectAllowed='move';};
-    wrap.ondragend=()=>{wrap.classList.remove('arrastrando');sb.querySelectorAll('.destino').forEach(x=>x.classList.remove('destino'));};
-    wrap.ondragover=e=>{e.preventDefault();wrap.classList.add('destino');};
-    wrap.ondragleave=()=>wrap.classList.remove('destino');
-    wrap.ondrop=e=>{e.preventDefault();if(_arrastraFoto!==null)moverFotoSujeto(_arrastraFoto,i);_arrastraFoto=null;};
+    wrap.ondragend=()=>{wrap.classList.remove('arrastrando');limpiar();_arrastraFoto=null;};
+    wrap.ondragover=e=>{
+      e.preventDefault();if(_arrastraFoto===null||_arrastraFoto===i)return;
+      const l=lado(e,wrap);limpiar();wrap.classList.add('ins-'+l);
+    };
+    wrap.ondragleave=e=>{if(!wrap.contains(e.relatedTarget))wrap.classList.remove('ins-izq','ins-der');};
+    wrap.ondrop=e=>{e.preventDefault();const l=lado(e,wrap);limpiar();if(_arrastraFoto!==null&&_arrastraFoto!==i)moverFotoSujeto(_arrastraFoto,i,l);_arrastraFoto=null;};
     const img=document.createElement('img');img.src=p.photo;img.draggable=false;
     const num=document.createElement('span');num.className='sp-num'+(i===0?' principal':'');num.textContent=i===0?'1 · Principal':String(i+1);
     const del=document.createElement('button');del.className='sp-del';del.textContent='×';del.title='Quitar';
     del.onclick=()=>{subjectPhotos.splice(i,1);renderSubjectPhotoSb();renderPreview();};
     const crop=document.createElement('button');crop.className='sp-crop';crop.textContent='✂';crop.title='Recortar';
     crop.onclick=()=>openCrop(p.photoOrig||p.photo,r=>{subjectPhotos[i]={photo:r,photoOrig:p.photoOrig||p.photo};renderSubjectPhotoSb();renderPreview();});
-    const izq=document.createElement('button');izq.className='sp-mv izq';izq.textContent='◀';izq.title='Mover antes';izq.disabled=i===0;
-    izq.onclick=()=>moverFotoSujeto(i,i-1);
-    const der=document.createElement('button');der.className='sp-mv der';der.textContent='▶';der.title='Mover después';der.disabled=i===subjectPhotos.length-1;
-    der.onclick=()=>moverFotoSujeto(i,i+1);
-    wrap.append(img,num,del,crop,izq,der);sb.appendChild(wrap);
+    wrap.append(img,num,del,crop);sb.appendChild(wrap);
   });
 }
 function renderMapPhotoSb(){
@@ -1174,7 +1175,13 @@ function bucketAntig(txt){
 }
 function numTxt(v){const m=String(v==null?'':v).match(/\d+(?:[.,]\d+)?/);return m?m[0].replace(',','.'):'';}
 /* Vuelca a la propiedad tasada lo que se haya podido leer. Lo que no viene, queda como estaba. */
+function limpiarSujeto(){
+  ['s-nombre','s-desc','s-cub','s-semi','s-descu','s-terr'].forEach(id=>{document.getElementById(id).value='';});
+  ponerCaractSujeto({});
+  subjectPhotos=[];subjectExtras=[];renderSubjectExtrasSb();
+}
 async function aplicarSujeto(d){
+  limpiarSujeto();
   const set=(id,v)=>{if(v!==undefined&&v!==null&&String(v).trim()!==''){document.getElementById(id).value=v;}};
   set('s-nombre',d.nombre);set('s-desc',d.desc);
   set('s-cub',numTxt(d.cub));set('s-semi',numTxt(d.semi));set('s-descu',numTxt(d.descu));set('s-terr',numTxt(d.terr));
@@ -1207,6 +1214,7 @@ async function aplicarSujeto(d){
     }catch(e){}
   }
   renderSubjectPhotoSb();renderPreview();
+  if(document.getElementById('s-nombre').value.trim())triggerMapGen();
   return fotos;
 }
 async function importarSujetoLink(){
