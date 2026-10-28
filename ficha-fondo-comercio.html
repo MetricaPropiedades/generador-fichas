@@ -7,6 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <title>Editor de Ficha — Métrica</title>
 <style>
 /* ── LAYOUT ── */
@@ -223,7 +225,7 @@ body { font-family: 'Barlow', sans-serif; background: #4a4a4a; display: flex; he
 
   <div class="btn-draft-row">
     <button class="btn-draft" onclick="saveJSON()">💾 Guardar borrador</button>
-    <label class="btn-draft">📂 Cargar borrador<input type="file" accept=".json" onchange="loadJSON(this)" style="display:none"></label>
+    <label class="btn-draft" title="Abrí un PDF hecho con este generador para seguir editándolo">📂 Abrir PDF<input type="file" accept=".pdf,.json" onchange="loadJSON(this)" style="display:none"></label>
     <button class="btn-export" id="btn-export" onclick="exportPDF()" style="margin-top:0;width:auto;padding:7px 12px;font-size:9pt;flex-shrink:0">⬇ PDF</button>
   </div>
 
@@ -893,10 +895,30 @@ async function saveJSON() {
   URL.revokeObjectURL(a.href);
 }
 
+/* Los PDF de este generador llevan adentro los datos de la ficha (fotos incluidas):
+   abrir el PDF devuelve la ficha tal cual estaba, sin necesidad de un archivo aparte. */
+const CLAVE_DATOS_PDF = 'MetricaFichaComercio';
+async function abrirPDF(file) {
+  try {
+    const pdf = await PDFLib.PDFDocument.load(new Uint8Array(await file.arrayBuffer()), { updateMetadata: false });
+    const ref = pdf.catalog.get(PDFLib.PDFName.of(CLAVE_DATOS_PDF));
+    if (!ref) {
+      alert(pdf.catalog.get(PDFLib.PDFName.of('MetricaFicha'))
+        ? 'Este PDF es del generador de fichas de locales: abrilo en ese generador.'
+        : 'Este PDF no tiene los datos de la ficha guardados (se hizo antes de este cambio o con otro programa).');
+      return;
+    }
+    const datos = PDFLib.decodePDFRawStream(pdf.context.lookup(ref)).decode();
+    applyState(JSON.parse(new TextDecoder().decode(datos)));
+    autoSave();
+  } catch (e) { alert('No se pudo abrir el PDF: ' + (e.message || e)); }
+}
+
 function loadJSON(input) {
   const file = input.files[0];
   if (!file) return;
   input.value = '';
+  if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') { abrirPDF(file); return; }
   const reader = new FileReader();
   reader.onload = e => {
     try { applyState(JSON.parse(e.target.result)); }
@@ -916,40 +938,36 @@ async function exportPDF() {
   const btn = document.getElementById('btn-export');
   btn.textContent = 'Preparando...';
   btn.disabled = true;
-  await document.fonts.ready;
-  await new Promise(r => setTimeout(r, 400));
-  const nombre = document.getElementById('f-nombre').value.trim();
-  const titulo = nombre ? `Comercio - ${nombre}` : 'Ficha - Métrica Propiedades';
-  const original = document.title;
-  document.title = titulo;
-
-  // Medir en layout de impresión: ocultar sidebar y quitar padding temporalmente
-  const sidebar = document.querySelector('.sidebar');
-  const wrap    = document.querySelector('.preview-wrap');
-  sidebar.style.display = 'none';
-  wrap.style.padding = '0';
-  wrap.style.overflow = 'visible';
-  await new Promise(r => setTimeout(r, 150)); // esperar reflow
-
-  const docH = document.querySelector('.doc').scrollHeight;
-  const hMM  = Math.ceil(docH * 25.4 / 96) + 10; // px → mm + margen seguridad
-
-  // Restaurar layout
-  sidebar.style.display = '';
-  wrap.style.padding = '';
-  wrap.style.overflow = '';
-
-  const pageSizeStyle = document.createElement('style');
-  pageSizeStyle.id = 'dyn-page-size';
-  pageSizeStyle.textContent = `@page { size: 210mm ${hMM}mm !important; margin: 0 !important; }`;
-  document.head.appendChild(pageSizeStyle);
-
-  await new Promise(r => setTimeout(r, 100));
-  window.print();
-  document.getElementById('dyn-page-size')?.remove();
-  saveJSON();
-  document.title = original;
-  btn.textContent = '⬇ Exportar PDF';
+  try {
+    await document.fonts.ready;
+    await new Promise(r => setTimeout(r, 300));
+    const nombre = document.getElementById('f-nombre').value.trim();
+    const titulo = (nombre ? `Comercio - ${nombre}` : 'Ficha - Métrica Propiedades').replace(/[\\/:*?"<>|]+/g, ' ').trim();
+    const docEl = document.querySelector('.doc');
+    /* resolución alta, sin pasar el límite de tamaño de imagen del navegador en fichas muy largas */
+    const escala = Math.min(4, 14000 / Math.max(docEl.scrollHeight, 1));
+    const cvs = await html2canvas(docEl, { scale: escala, useCORS: true, allowTaint: false, backgroundColor: getComputedStyle(docEl).backgroundColor, logging: false });
+    const img = cvs.toDataURL('image/jpeg', 0.95);
+    const wMm = 210, hMm = wMm * cvs.height / cvs.width;
+    const pt = mm => mm * 72 / 25.4;
+    const pdf = await PDFLib.PDFDocument.create();
+    pdf.setTitle(titulo);
+    pdf.setAuthor('Métrica Propiedades');
+    pdf.setProducer('Métrica Propiedades · generador de fichas');
+    const jpg = await pdf.embedJpg(await (await fetch(img)).arrayBuffer());
+    const page = pdf.addPage([pt(wMm), pt(hMm)]);
+    page.drawImage(jpg, { x: 0, y: 0, width: pt(wMm), height: pt(hMm) });
+    /* los datos de la ficha van guardados adentro del PDF, comprimidos e invisibles al leerlo */
+    const datos = new TextEncoder().encode(JSON.stringify(getState()));
+    pdf.catalog.set(PDFLib.PDFName.of(CLAVE_DATOS_PDF), pdf.context.register(pdf.context.flateStream(datos)));
+    const salida = await pdf.save();
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([salida], { type: 'application/pdf' })), download: titulo + '.pdf' });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch (e) {
+    alert('No se pudo generar el PDF: ' + (e.message || e));
+  }
+  btn.textContent = '⬇ PDF';
   btn.disabled = false;
 }
 
