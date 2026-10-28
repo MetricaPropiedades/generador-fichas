@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <style>
 :root{--g:#C8941A;--dark:#3E4347;--cream:#F8F4EC;--border:#e4e4e4;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -47,6 +48,11 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .sp-del:hover{background:#c0392b;}
 .sp-crop{position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.75);border:none;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .sp-crop:hover{background:var(--g);color:#000;}
+.imp-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:5px;padding:9px;display:flex;flex-direction:column;gap:6px;}
+.imp-estado{font-size:10.5px;color:rgba(255,255,255,.55);line-height:1.45;min-height:0;}
+.imp-estado.mal{color:#e88;}
+.rueda{display:inline-block;width:10px;height:10px;border:2px solid rgba(200,148,26,.3);border-top-color:var(--g);border-radius:50%;animation:gira .8s linear infinite;vertical-align:-1px;margin-right:5px;}
+@keyframes gira{to{transform:rotate(360deg)}}
 .sb-photos{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;}
 
 .sb-card{background:#4e4e4e;border:1px solid rgba(255,255,255,.09);border-radius:6px;overflow:hidden;margin-bottom:4px;}
@@ -105,7 +111,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 
 .icard{display:flex;gap:5mm;padding:5mm;border:1px solid var(--border);border-radius:4px;margin-bottom:3.5mm;background:#fff;}
 .icard:last-child{margin-bottom:0;}
-.icard-photo{width:52mm;flex-shrink:0;border-radius:3px;overflow:hidden;background:#f5f5f5;align-self:stretch;}
+.icard-photo{background-size:cover;background-position:center;width:52mm;flex-shrink:0;border-radius:3px;overflow:hidden;background:#f5f5f5;align-self:stretch;}
 .icard-photo img{width:100%;height:100%;object-fit:cover;display:block;}
 .icard-no-photo{width:52mm;flex-shrink:0;border-radius:3px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:35mm;font-size:7pt;color:#ccc;}
 .icard-body{flex:1;min-width:0;}
@@ -236,10 +242,19 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="btn-row">
     <button class="btn btn-g" onclick="exportPDF()">📄 PDF</button>
     <button class="btn btn-o" onclick="saveJSON()">💾 Guardar</button>
-    <label class="btn btn-o" style="cursor:pointer">📂 Cargar<input type="file" accept=".json" onchange="loadJSON(this)" style="display:none"></label>
+    <label class="btn btn-o" style="cursor:pointer">📂 Cargar<input type="file" accept=".pdf,.json" onchange="loadJSON(this)" style="display:none"></label>
   </div>
 
   <h2>Propiedad Tasada</h2>
+  <div class="imp-box">
+    <div class="field-hint" style="color:rgba(255,255,255,.45)">Cargá los datos del inmueble desde un aviso o una ficha que ya exista (solo completa la propiedad tasada).</div>
+    <div class="field"><input type="text" id="s-imp-url" placeholder="Pegá el link: ZonaProp, Argenprop, Mercado Libre o ficha de Tokko" onkeydown="if(event.key==='Enter')importarSujetoLink()"></div>
+    <div class="btn-row">
+      <button class="btn btn-g" id="s-imp-btn" style="flex:1" onclick="importarSujetoLink()">Traer datos del aviso</button>
+      <label class="btn btn-o" style="cursor:pointer;flex:1;text-align:center">📄 Cargar ficha PDF<input type="file" accept="application/pdf,.pdf" onchange="importarSujetoPdf(this)" style="display:none"></label>
+    </div>
+    <div class="imp-estado" id="s-imp-estado"></div>
+  </div>
   <div class="field"><label>Nombre / Dirección</label>
     <div class="addr-wrap">
       <input type="text" id="s-nombre" placeholder="ej: Cabildo 2302 y Olazábal, CABA" autocomplete="off"
@@ -613,6 +628,14 @@ function renderSidebar(){
   <button class="cdel" onclick="event.stopPropagation();removeComp(${c.id})">×</button>
 </div>
 <div class="sb-card-body">
+  <div class="imp-box">
+    <div class="field"><input type="text" id="c-imp-url-${c.id}" placeholder="Link del aviso (ZonaProp, Argenprop, ML, Tokko)" onkeydown="if(event.key==='Enter')importarCompLink(${c.id})"></div>
+    <div class="btn-row">
+      <button class="btn btn-g" style="flex:1" onclick="importarCompLink(${c.id})">Traer datos del aviso</button>
+      <label class="btn btn-o" style="cursor:pointer;flex:1;text-align:center">📄 Ficha PDF<input type="file" accept="application/pdf,.pdf" onchange="importarCompPdf(this,${c.id})" style="display:none"></label>
+    </div>
+    <div class="imp-estado" id="c-imp-estado-${c.id}"></div>
+  </div>
   <div class="field"><label>Dirección / Nombre</label>
     <div class="addr-wrap" id="aw-${c.id}">
       <input type="text" id="addr-inp-${c.id}" value="${esc(c.address)}" placeholder="ej: Belgrano 925, CABA" autocomplete="off"
@@ -1134,7 +1157,7 @@ function rSection(comps,tipo,ss){
       c.fecha?['Fecha',esc(c.fecha)]:null,
     ].filter(Boolean).map(([l,v2])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${v2}</span></div>`).join('');
     return`<div class="icard">
-      ${c.photo?`<div class="icard-photo"><img src="${c.photo}" alt=""></div>`:`<div class="icard-no-photo">Sin foto</div>`}
+      ${c.photo?`<div class="icard-photo" style="background-image:url('${c.photo}')"></div>`:`<div class="icard-no-photo">Sin foto</div>`}
       <div class="icard-body">
         <div class="icard-top">
           <div class="icard-num-badge">Comp. ${i+1}</div>
@@ -1262,6 +1285,300 @@ function discardDraft(){
   comparables=[];nextId=1;renderSidebar();renderPreview();closeBanner();
 }
 
+const CLAVE_TASACION='MetricaTasacionLocales', CLAVE_OTRO_TASADOR='MetricaTasacionDeptos';
+// ══════════════════════════════════════
+// CARGAR DATOS DESDE UN AVISO O UNA FICHA (propiedad tasada y comparables)
+// Lee links de portales, nuestras fichas en PDF y PDF de Tokko, y los deja en un formato común.
+// ══════════════════════════════════════
+const API_FICHAS='https://web-production-9a60eb.up.railway.app/api/publico';
+const LIB_PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const LIB_PDFJS_WORKER='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const LIB_OCR='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+function estadoEn(id,txt,mal){const el=document.getElementById(id);if(!el)return;el.className='imp-estado'+(mal?' mal':'');el.innerHTML=txt;}
+function cargarScript(src){
+  return new Promise((ok,mal)=>{
+    if(document.querySelector('script[src="'+src+'"]'))return ok();
+    const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>mal(new Error('No se pudo cargar el lector'));
+    document.head.appendChild(s);
+  });
+}
+async function fotoComoDato(url){
+  if(String(url).startsWith('data:'))return url;
+  const r=await fetch(API_FICHAS+'/foto?u='+encodeURIComponent(url));
+  if(!r.ok)throw new Error('foto');
+  const blob=await r.blob();
+  return await new Promise(res=>{const fr=new FileReader();fr.onload=e=>res(e.target.result);fr.readAsDataURL(blob);});
+}
+function bucketAntig(txt){
+  if(!txt)return'';
+  if(/estrenar/i.test(txt))return'0-5';
+  const m=String(txt).match(/\d+/);if(!m)return'';
+  const n=parseInt(m[0],10);
+  return n<=5?'0-5':n<=10?'5-10':n<=20?'10-20':n<=50?'20-50':'50+';
+}
+function numTxt(v){const m=String(v==null?'':v).match(/\d+(?:[.,]\d+)?/);return m?m[0].replace(',','.'):'';}
+function mesAnio(){const d=new Date();return String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
+/* amenities y otros rasgos que se pueden deducir del texto del aviso */
+function rasgosDeTexto(texto){
+  const t=(texto||'').toLowerCase();
+  return{
+    pileta:/pileta|piscina/.test(t), sum:/\bs\.?u\.?m\b|sal[oó]n de usos/.test(t), baulera:/baulera/.test(t),
+    otros:[['Gimnasio',/gimnasio|\bgym\b/],['Sauna',/sauna/],['Solarium',/solarium/],['Parrilla',/parrilla/],['Laundry',/laundry/],['Jacuzzi',/jacuzzi/]].filter(([,r])=>r.test(t)).map(([n])=>n),
+    posicionDepto:/contrafrente/.test(t)?'Contrafrente':(/disposici[oó]n:?\s*frente|al frente|a la calle/.test(t)?'Frente':(/disposici[oó]n:?\s*lateral/.test(t)?'Lateral':'')),
+    luminoso:/luminos/.test(t)
+  };
+}
+/* ---- PDF ---- */
+function fotosDelPdf(pdf){
+  const N=n=>PDFLib.PDFName.of(n), vistos=new Set(), out=[];
+  for(const page of pdf.getPages()){
+    const res=page.node.Resources();const xo=res&&res.lookup(N('XObject'));
+    if(!xo)continue;
+    for(const [,ref] of xo.entries()){
+      const st=pdf.context.lookup(ref);
+      if(!(st instanceof PDFLib.PDFRawStream))continue;
+      const d=st.dict, num=k=>{const v=pdf.context.lookup(d.get(N(k)));return v&&v.asNumber?v.asNumber():0;};
+      if(String(d.get(N('Subtype')))!=='/Image'||!String(d.get(N('Filter'))||'').includes('DCTDecode'))continue;
+      if(num('Width')<700||num('Height')<450)continue;
+      const clave=String(ref);if(vistos.has(clave))continue;vistos.add(clave);
+      out.push(st.contents);
+    }
+  }
+  return out;
+}
+/* JPG del PDF -> foto. Devuelve null si es un logo (casi toda la imagen de un mismo color plano). */
+function jpgADato(bytes){
+  return new Promise((ok,mal)=>{
+    const url=URL.createObjectURL(new Blob([bytes],{type:'image/jpeg'}));
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=1920;let w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      const px=ctx.getImageData(0,0,w,h).data, cuenta={};let total=0,max=0;
+      for(let i=0;i<px.length;i+=4*97){const k=(px[i]>>4)+'-'+(px[i+1]>>4)+'-'+(px[i+2]>>4);cuenta[k]=(cuenta[k]||0)+1;total++;if(cuenta[k]>max)max=cuenta[k];}
+      if(max/total>0.5)return ok(null);
+      ok(c.toDataURL('image/jpeg',0.85));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);mal(new Error('foto'));};
+    img.src=url;
+  });
+}
+/* Los PDF de Tokko y similares dibujan las letras como formas: el texto se lee con OCR en el navegador. */
+async function textoDelPdf(bytes,avisar){
+  await cargarScript(LIB_PDFJS);await cargarScript(LIB_OCR);
+  pdfjsLib.GlobalWorkerOptions.workerSrc=LIB_PDFJS_WORKER;
+  const doc=await pdfjsLib.getDocument({data:bytes}).promise;
+  const worker=await Tesseract.createWorker('spa');
+  let texto='';
+  try{
+    for(let i=1;i<=doc.numPages;i++){
+      avisar('<span class="rueda"></span>Leyendo el texto del PDF (página '+i+' de '+doc.numPages+')…');
+      const page=await doc.getPage(i), vp=page.getViewport({scale:2.5});
+      const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+      await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+      texto+=(await worker.recognize(c)).data.text+'\n';
+    }
+  }finally{await worker.terminate();}
+  return texto;
+}
+/* Formato de ficha de Tokko: "Etiqueta: valor", título con la dirección, "Argentina | Capital Federal | Barrio". */
+function datosDeTextoPdf(t){
+  const d={}, limpio=t.replace(/[ \t]+/g,' ');
+  const lineas=limpio.split('\n').map(s=>s.trim()).filter(Boolean);
+  const valor=et=>{
+    const m=limpio.match(new RegExp('(?:^|[\\s|])'+et+'\\s*:\\s*([^\\n]*)','i'));if(!m)return'';
+    const corte=m[1].search(/\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ.]+(?:\s[a-záéíóúñ]+){0,2}\s*:/);
+    return (corte>=0?m[1].slice(0,corte):m[1]).trim();
+  };
+  const iRef=lineas.findIndex(s=>/\|\s*(departamento|local|oficina|casa|ph|terreno|lote|galp|dep[oó]sito|cochera|edificio|fondo)/i.test(s));
+  if(iRef>=0&&lineas[iRef+1]){
+    let dir=lineas[iRef+1].replace(/\s+al\s+(?=\d)/i,' ');
+    const lugar=(lineas[iRef+2]||'').split('|').map(s=>s.trim()).filter(Boolean);
+    if(lugar.length>1){
+      const barrio=lugar[lugar.length-1], prov=lugar[lugar.length-2]||'';
+      dir+=', '+(/capital federal|caba|ciudad aut/i.test(prov)?barrio+', CABA':barrio);
+    }
+    d.direccion=dir;
+  }
+  const cab=limpio.split(/\n(?:OPERACI[OÓ]N|INFORMACI[OÓ]N GENERAL|SUPERFICIES)/i)[0];
+  const pr=cab.match(/(USD|U\$S|\$)\s*(\d{1,3}(?:[.,]\d{3})+|\d{4,})/i);
+  if(pr){d.currency=pr[1]==='$'?'ARS':'USD';d.precio=pr[2].replace(/,/g,'.');}
+  d.cub=numTxt(valor('Superficie cubierta')||valor('Cubierta')||valor('Total construido')||valor('Superficie total'));
+  d.semi=numTxt(valor('Superficie semicubierta')||valor('Semicubierta'));
+  d.descu=numTxt(valor('Superficie descubierta')||valor('Descubierta'));
+  d.terr=numTxt(valor('Superficie del terreno')||valor('Terreno'));
+  d.frente=numTxt(valor('Frente'));
+  d.antiguedad=valor('Antig[uü]edad');
+  const plantas=numTxt(valor('Plantas'));
+  const disp=valor('Disposici[oó]n');
+  const esTexto=s=>{const ok=(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/g)||[]).length;return ok/s.length>=0.6&&/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{4,}/.test(s);};
+  const todas=t.split('\n').map(s=>s.trim());
+  const iDesc=todas.findIndex(s=>/^DESCRIPCI[OÓ]N$/i.test(s));
+  if(iDesc>=0){
+    const desc=[];
+    for(const s of todas.slice(iDesc+1)){
+      if(!s){desc.push('');continue;}
+      if(/^(FOTOS|UBICACI[OÓ]N|PLANOS|SERVICIOS|AMBIENTES|ADICIONALES|Nota importante)\b/i.test(s)||!esTexto(s))break;
+      desc.push(s.replace(/(\d)\s?m\?/g,'$1 m²'));
+    }
+    d.desc=desc.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  if(d.cub&&(/todo\s+(desarrollado\s+)?en\s+planta\s+baja/i.test(t)||plantas==='1'))d.pb=d.cub;
+  d.texto=limpio+(disp?'\nDisposición: '+disp:'');
+  return d;
+}
+const FUENTE_DE={zonaprop:'ZonaProp',argenprop:'Argenprop',mercadolibre:'Mercado Libre'};
+/* link de portal -> datos */
+async function leerAviso(url){
+  const r=await fetch(API_FICHAS+'/aviso?url='+encodeURIComponent(url));
+  const a=await r.json();
+  if(!r.ok)throw new Error(a.detail||'No se pudo leer el aviso');
+  return{direccion:a.address,desc:a.comentarios,currency:a.currency,precio:a.precio,fuente:FUENTE_DE[a.fuente]||'Otro',link:url,
+    cub:a.supCubierta,pb:a.supPB,p1:a.supPA,ss:a.supSS,terr:a.supTerreno,frente:a.frente,posicion:a.posicion,antiguedad:a.antiguedad,
+    texto:[(a.caracteristicas||[]).join(' · '),a.servicios,a.comentarios].join(' \n '),fotos:a.fotos||[]};
+}
+/* PDF -> datos: nuestras fichas traen los datos guardados adentro; los de Tokko se leen con OCR */
+async function leerPdf(file,avisar){
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const pdf=await PDFLib.PDFDocument.load(bytes.slice(),{updateMetadata:false});
+  const dato=k=>{const ref=pdf.catalog.get(PDFLib.PDFName.of(k));return ref?JSON.parse(new TextDecoder().decode(PDFLib.decodePDFRawStream(pdf.context.lookup(ref)).decode())):null;};
+  if(pdf.catalog.get(PDFLib.PDFName.of('MetricaTasacionLocales'))||pdf.catalog.get(PDFLib.PDFName.of('MetricaTasacionDeptos')))
+    throw new Error('Este PDF es una tasación completa: abrilo con el botón "Cargar" de arriba');
+  const loc=dato('MetricaFicha');
+  if(loc){
+    const l=(loc.locals||[])[0]||{};
+    return{direccion:l.address,desc:l.comentarios,currency:l.currency,precio:l.precio,fuente:'Otro',cub:l.supCubierta,pb:l.supPB,p1:l.supPA,ss:l.supSS,
+      descu:l.supDescubierta,terr:l.supTerreno,frente:l.frente,posicion:l.posicion,antiguedad:l.antiguedad,
+      texto:[l.caracteristicas,l.servicios,l.comentarios].join(' \n '),fotos:(l.photos||[]).map(p=>p.photo)};
+  }
+  const com=dato('MetricaFichaComercio');
+  if(com){
+    const f=com.fields||{};
+    return{direccion:f['d-dir']||f['f-ubicacion'],desc:f['f-desc'],currency:com.precioCur,precio:com.precioVal,fuente:'Otro',cub:f['f-sup'],
+      texto:f['f-desc'],fotos:[com.mainPhoto,...(com.galleryPhotos||[])].filter(Boolean)};
+  }
+  const d=datosDeTextoPdf(await textoDelPdf(bytes.slice(),avisar));
+  if(!d.direccion&&!d.cub&&!d.desc)throw new Error('No se pudieron leer datos en este PDF (puede ser un escaneo o un formato distinto)');
+  avisar('<span class="rueda"></span>Sacando las fotos del PDF…');
+  d.fotos=[];
+  for(const f of fotosDelPdf(pdf)){if(d.fotos.length>=12)break;try{const x=await jpgADato(f);if(x)d.fotos.push(x);}catch(e){}}
+  d.fuente='Otro';
+  return d;
+}
+/* trae el aviso (link) o la ficha (PDF) y se lo pasa a 'aplicar'; los mensajes van al cuadro 'idEstado' */
+async function importarDesde(origen,idEstado,aplicar){
+  const avisar=(txt,mal)=>estadoEn(idEstado,txt,mal);
+  try{
+    avisar(typeof origen==='string'?'<span class="rueda"></span>Leyendo el aviso…':'<span class="rueda"></span>Abriendo el PDF…');
+    const d=typeof origen==='string'?await leerAviso(origen):await leerPdf(origen,avisar);
+    avisar('<span class="rueda"></span>Trayendo las fotos…');
+    const fotos=[];
+    for(const f of (d.fotos||[]).slice(0,12)){try{fotos.push(await fotoComoDato(f));}catch(e){}}
+    d.fotos=fotos;
+    const msg=await aplicar(d);
+    estadoEn(idEstado,msg||'Listo. Revisá y completá lo que falte.');
+  }catch(e){avisar((e.message||'No se pudo leer')+'.',true);}
+}
+
+// ── Locales: qué completa cada carga ──
+function posCuadraDe(p){
+  const t=String(p||'').toLowerCase();
+  if(/semi\s*-?\s*esquina|ante\s*-?\s*esquina|a metros de la esquina|cerca de la esquina/.test(t))return'ante-esquina';
+  if(/\besquina\b|ochava/.test(t))return'esquina';
+  if(/entre\s*medianeras|media\s*cuadra|mitad de cuadra/.test(t))return'mitad';
+  return'';
+}
+function aplicarSujeto(d){
+  ['s-nombre','s-desc','s-frente','s-pb','s-ss','s-p1'].forEach(id=>{document.getElementById(id).value='';});
+  subjectExtras=[];renderSubjectExtrasSb();
+  const set=(id,v)=>{if(v!=null&&String(v).trim()!=='')document.getElementById(id).value=v;};
+  set('s-nombre',d.direccion);set('s-desc',d.desc);set('s-frente',numTxt(d.frente));
+  set('s-pb',numTxt(d.pb||d.cub));set('s-ss',numTxt(d.ss));set('s-p1',numTxt(d.p1));
+  subjectPhotos=d.fotos.map(f=>({photo:f,photoOrig:f}));
+  renderSubjectPhotoSb();renderPreview();
+  if(document.getElementById('s-nombre').value.trim())triggerMapGen();
+  return'Listo: datos de la propiedad tasada'+(d.fotos.length?' y '+d.fotos.length+' fotos':'')+'. Revisá y completá lo que falte.';
+}
+function aplicarComp(id,d){
+  const c=comparables.find(x=>x.id===id);if(!c)return'';
+  Object.assign(c,{address:d.direccion||'',link:d.link||'',currency:d.precio?(d.currency||c.currency):c.currency,price:d.precio||'',
+    fuente:d.fuente||c.fuente,fecha:mesAnio(),frente:numTxt(d.frente),pb:numTxt(d.pb||d.cub),ss:numTxt(d.ss),p1:numTxt(d.p1),p2:'',customFloors:[],
+    notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,photoLink:''});
+  const pos=posCuadraDe(d.posicion||d.texto);if(pos)c.posicion=pos;
+  renderSidebar();renderPreview();
+  if(showMap&&c.address)triggerMapGen();
+  return'Listo: datos del comparable'+(c.photo?' y foto':'')+'. Revisá régimen, calidad y los factores.';
+}
+
+function importarSujetoLink(){
+  const inp=document.getElementById('s-imp-url'),url=(inp.value||'').trim();
+  if(!url){estadoEn('s-imp-estado','Pegá primero el link del aviso.',true);return;}
+  importarDesde(url,'s-imp-estado',aplicarSujeto).then(()=>{inp.value='';});
+}
+function importarSujetoPdf(input){const f=input.files[0];input.value='';if(f)importarDesde(f,'s-imp-estado',aplicarSujeto);}
+function importarCompLink(id){
+  const inp=document.getElementById('c-imp-url-'+id),url=(inp&&inp.value||'').trim();
+  if(!url){estadoEn('c-imp-estado-'+id,'Pegá primero el link del aviso.',true);return;}
+  importarDesde(url,'c-imp-estado-'+id,d=>aplicarComp(id,d));
+}
+function importarCompPdf(input,id){const f=input.files[0];input.value='';if(f)importarDesde(f,'c-imp-estado-'+id,d=>aplicarComp(id,d));}
+
+// ══════════════════════════════════════
+// PDF DE LA TASACIÓN: lleva adentro todos los datos para volver a abrirla y seguir editando
+// ══════════════════════════════════════
+async function exportPDF(){
+  if(showMap&&leafletMap&&!capturedMapImg){
+    const st=document.getElementById('map-status');
+    if(st)st.textContent='Capturando mapa...';
+    await captureLeafletMap();
+    renderPreview();
+    await delay(200);
+    if(st)st.textContent='Mapa capturado';
+  }
+  try{
+    await document.fonts.ready;
+    await delay(150);
+    const docEl=document.getElementById('doc');
+    const escala=Math.min(3,14000/Math.max(docEl.scrollHeight,1));
+    let cvs=await html2canvas(docEl,{scale:escala,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false});
+    /* el pie (oscuro) es lo último de la hoja: se recortan las filas claras que queden debajo por redondeo */
+    {const ctx=cvs.getContext('2d');let h=cvs.height;
+     const blanca=y=>{const d=ctx.getImageData(0,y,cvs.width,1).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];return s/(d.length/4)/3>150;};
+     while(h>1&&cvs.height-h<30&&blanca(h-1))h--;
+     if(h<cvs.height){const c2=document.createElement('canvas');c2.width=cvs.width;c2.height=h;c2.getContext('2d').drawImage(cvs,0,0);cvs=c2;}}
+    const wMm=210,hMm=wMm*cvs.height/cvs.width,pt=mm=>mm*72/25.4;
+    const nombre=document.getElementById('s-nombre').value.trim();
+    const titulo=('Tasación - '+(nombre||'Métrica')).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90);
+    const pdf=await PDFLib.PDFDocument.create();
+    pdf.setTitle(titulo);pdf.setAuthor('Métrica Tasaciones');pdf.setProducer('Métrica · tasador');
+    const jpg=await pdf.embedJpg(await (await fetch(cvs.toDataURL('image/jpeg',0.95))).arrayBuffer());
+    pdf.addPage([pt(wMm),pt(hMm)]).drawImage(jpg,{x:0,y:0,width:pt(wMm),height:pt(hMm)});
+    const datos=new TextEncoder().encode(JSON.stringify(getState()));
+    pdf.catalog.set(PDFLib.PDFName.of(CLAVE_TASACION),pdf.context.register(pdf.context.flateStream(datos)));
+    const salida=await pdf.save();
+    const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([salida],{type:'application/pdf'})),download:titulo+'.pdf'});
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  }catch(e){alert('No se pudo generar el PDF: '+(e.message||e));}
+  capturedMapImg=null;renderPreview();
+}
+async function abrirTasacionPDF(file){
+  try{
+    const pdf=await PDFLib.PDFDocument.load(new Uint8Array(await file.arrayBuffer()),{updateMetadata:false});
+    const ref=pdf.catalog.get(PDFLib.PDFName.of(CLAVE_TASACION));
+    if(!ref){
+      alert(pdf.catalog.get(PDFLib.PDFName.of(CLAVE_OTRO_TASADOR))
+        ?'Este PDF es del otro tasador: abrilo ahí.'
+        :'Este PDF no tiene los datos de la tasación guardados (se hizo antes de este cambio o es de otro programa).\nPara tomar los datos de un aviso o de una ficha usá "Traer datos" en la propiedad tasada o en un comparable.');
+      return;
+    }
+    applyState(JSON.parse(new TextDecoder().decode(PDFLib.decodePDFRawStream(pdf.context.lookup(ref)).decode())));
+    _fh=null;autoSave();
+  }catch(e){alert('No se pudo abrir el PDF: '+(e.message||e));}
+}
+
 // ══════════════════════════════════════
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
@@ -1310,33 +1627,11 @@ async function saveJSON(){
   if(window.showSaveFilePicker){try{if(!_fh)_fh=await window.showSaveFilePicker({suggestedName:name,types:[{description:'JSON',accept:{'application/json':['.json']}}]});const w=await _fh.createWritable();await w.write(json);await w.close();return;}catch(e){if(e.name==='AbortError')return;_fh=null;}}
   const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([json],{type:'application/json'})),download:name});a.click();URL.revokeObjectURL(a.href);
 }
-function loadJSON(input){const file=input.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{try{applyState(JSON.parse(e.target.result));_fh=null;}catch{alert('Error al leer el archivo.');}};r.readAsText(file);input.value='';}
+function loadJSON(input){const file=input.files[0];if(!file)return;if(/\.pdf$/i.test(file.name)||file.type==='application/pdf'){input.value='';abrirTasacionPDF(file);return;}const r=new FileReader();r.onload=e=>{try{applyState(JSON.parse(e.target.result));_fh=null;}catch{alert('Error al leer el archivo.');}};r.readAsText(file);input.value='';}
 
 // ══════════════════════════════════════
 // PDF
 // ══════════════════════════════════════
-async function exportPDF(){
-  // Save JSON first (reuses existing file handle if already saved, otherwise asks once)
-  // Capture Leaflet map to image before hiding sidebar
-  if(showMap&&leafletMap&&!capturedMapImg){
-    const st=document.getElementById('map-status');
-    if(st)st.textContent='Capturando mapa...';
-    await captureLeafletMap();
-    renderPreview();
-    await delay(200);
-    if(st)st.textContent='Mapa capturado';
-  }
-  await saveJSON();
-  const sb=document.querySelector('.sidebar'),wp=document.querySelector('.preview-wrap');
-  sb.style.display='none';wp.style.padding='0';wp.style.overflow='visible';
-  await new Promise(r=>setTimeout(r,150));
-  const hMM=Math.ceil(document.querySelector('.doc').scrollHeight*25.4/96)+10;
-  sb.style.display='';wp.style.padding='';wp.style.overflow='';
-  const st=document.createElement('style');st.id='dyn-page';st.textContent=`@page{size:210mm ${hMM}mm !important;margin:0 !important;}`;
-  document.head.appendChild(st);
-  await new Promise(r=>setTimeout(r,100));
-  window.print();capturedMapImg=null;renderPreview();document.getElementById('dyn-page')?.remove();
-}
 
 // ══════════════════════════════════════
 // LOGO
