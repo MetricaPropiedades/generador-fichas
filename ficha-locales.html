@@ -148,6 +148,8 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .placeholder-slot{border:1.5px dashed #ccc;border-radius:4px;padding:8mm 0;text-align:center;color:#bbb;font-size:9pt;margin-bottom:4mm;}
 .planos-title{font-family:'Big Shoulders Display',sans-serif;font-size:13pt;font-weight:800;color:#C8941A;text-transform:uppercase;letter-spacing:.06em;margin:5mm 0 3mm;border-bottom:1.5px solid #C8941A;padding-bottom:2mm;}
 .photo-thumb-wrap{cursor:grab;}
+.save-status{font-size:10px;color:rgba(255,255,255,.35);min-height:12px;}
+.save-status.mal{color:#e88;font-weight:600;}
 .tabs-inm{display:flex;gap:0;margin:-2px 0 10px;border-bottom:1px solid rgba(255,255,255,.1);}
 .tabs-inm button{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.45);font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:7px 4px 8px;cursor:pointer;margin-bottom:-1px;}
 .tabs-inm button:hover{color:rgba(255,255,255,.75);}
@@ -175,6 +177,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
       <label class="btn-sec" style="cursor:pointer" title="Abrí un PDF hecho con este generador para seguir editándolo">📂 Abrir PDF<input type="file" accept=".pdf,.json" style="display:none" onchange="loadJSON(this)"></label>
     </div>
     <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:13px;"></div>
+    <div id="save-status" class="save-status"></div>
     <div class="sb-import">
       <input id="imp-url" type="url" placeholder="Pegá el link: ZonaProp, Argenprop, Mercado Libre o ficha de Tokko (ficha.info)"
              onkeydown="if(event.key==='Enter'){event.preventDefault();importarAviso();}">
@@ -252,12 +255,11 @@ function actualizarUIInmueble(){
   document.title='Ficha de '+tipoOperacion+' de '+NOMBRES[tipoInmueble].uno+' — Métrica Propiedades';
 }
 /* cada pestaña guarda lo suyo: al cambiar se guarda la actual y se recupera la otra */
-function setInmueble(t){
+async function setInmueble(t){
   if(t===tipoInmueble)return;
-  autoSave();
+  autoSave();if(_idbPendiente){clearTimeout(_idbTimer);await _idbPendiente();}
   tipoInmueble=t;
-  let parsed=null;
-  try{const raw=localStorage.getItem(draftKey());if(raw)parsed=JSON.parse(raw);}catch(e){}
+  const parsed=await leerBorrador();
   if(parsed&&parsed.locals&&parsed.locals.length){applyState(parsed);}
   else{
     locals=[];nextId=1;showMap=true;geoCoords={locals:[]};capturedMapImg=null;
@@ -941,7 +943,58 @@ function applyState(state){
   renderSidebar();renderPreview();
   if(showMap)setTimeout(()=>initMapFromCache(),300);
 }
-function autoSave(){if(!_autoSaveEnabled)return;try{localStorage.setItem(draftKey(),JSON.stringify(getState()));}catch(e){}}
+/* ---- borrador automático ----
+   Los datos van a localStorage (ocupan poco) y las fotos, planos y mapa a IndexedDB, que no tiene el límite
+   de ~5 MB de localStorage: con muchas fotos el guardado fallaba en silencio y al recargar se perdía todo. */
+const _IDB_NOMBRE='metrica-fichas', _IDB_TABLA='imagenes';
+function _idb(){return new Promise((ok,mal)=>{const r=indexedDB.open(_IDB_NOMBRE,1);r.onupgradeneeded=e=>e.target.result.createObjectStore(_IDB_TABLA);r.onsuccess=e=>ok(e.target.result);r.onerror=()=>mal(r.error);});}
+async function idbPut(k,v){const db=await _idb();await new Promise((ok,mal)=>{const tx=db.transaction(_IDB_TABLA,'readwrite');tx.objectStore(_IDB_TABLA).put(v,k);tx.oncomplete=ok;tx.onerror=()=>mal(tx.error);tx.onabort=()=>mal(tx.error);});}
+async function idbGet(k){const db=await _idb();return await new Promise((ok,mal)=>{const tx=db.transaction(_IDB_TABLA,'readonly');const q=tx.objectStore(_IDB_TABLA).get(k);q.onsuccess=()=>ok(q.result||null);q.onerror=()=>mal(q.error);});}
+/* saca las imágenes del estado (para localStorage) y las devuelve aparte (para IndexedDB) */
+function separarImagenes(st){
+  const imgs={locals:{},capturedMapImg:(st.map&&st.map.capturedMapImg)||null};
+  st.locals=st.locals.map(l=>{
+    imgs.locals[l.id]={photos:(l.photos||[]).map(p=>({photo:p.photo,photoOrig:p.photoOrig})),planos:(l.planos||[]).map(p=>({plano:p.plano,planoOrig:p.planoOrig}))};
+    return{...l,photos:(l.photos||[]).map(({photo,photoOrig,...resto})=>resto),planos:(l.planos||[]).map(({plano,planoOrig,...resto})=>resto)};
+  });
+  st.map={...(st.map||{}),capturedMapImg:null};
+  st._imgsAparte=true;
+  return imgs;
+}
+function unirImagenes(st,imgs){
+  if(!st||!st._imgsAparte)return st;   /* borradores viejos: traen las fotos adentro */
+  const im=(imgs&&imgs.locals)||{};
+  st.locals=(st.locals||[]).map(l=>{
+    const x=im[l.id]||{};
+    return{...l,photos:(l.photos||[]).map((r,i)=>({...r,...((x.photos||[])[i]||{})})).filter(p=>p.photo),
+                planos:(l.planos||[]).map((r,i)=>({...r,...((x.planos||[])[i]||{})})).filter(p=>p.plano)};
+  });
+  if(st.map&&imgs&&imgs.capturedMapImg)st.map.capturedMapImg=imgs.capturedMapImg;
+  return st;
+}
+async function leerBorrador(){
+  let st=null;
+  try{const raw=localStorage.getItem(draftKey());if(raw)st=JSON.parse(raw);}catch(e){}
+  if(st&&st._imgsAparte){try{st=unirImagenes(st,await idbGet(draftKey()));}catch(e){st=unirImagenes(st,null);}}
+  return st;
+}
+let _idbTimer=null,_idbPendiente=null;
+function estadoGuardado(ok){
+  const el=document.getElementById('save-status');if(!el)return;
+  const h=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  el.className='save-status'+(ok?'':' mal');
+  el.textContent=ok?'Borrador guardado ✓ '+h:'⚠ No se pudo guardar el borrador. Descargá el PDF para no perder los cambios.';
+}
+function autoSave(){
+  if(!_autoSaveEnabled)return;
+  const clave=draftKey(), st=getState(), imgs=separarImagenes(st);
+  try{localStorage.setItem(clave,JSON.stringify(st));}catch(e){estadoGuardado(false);return;}
+  clearTimeout(_idbTimer);
+  _idbPendiente=()=>{_idbPendiente=null;return idbPut(clave,imgs).then(()=>estadoGuardado(true)).catch(()=>estadoGuardado(false));};
+  _idbTimer=setTimeout(()=>_idbPendiente&&_idbPendiente(),400);
+}
+window.addEventListener('pagehide',()=>{if(_idbPendiente){clearTimeout(_idbTimer);_idbPendiente();}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&_idbPendiente){clearTimeout(_idbTimer);_idbPendiente();}});
 async function saveJSON(){
   const json=JSON.stringify(getState(),null,2);
   const name='Fichas-Locales-Metrica.json';
@@ -1191,12 +1244,10 @@ function dragDrop(ev,localId,toIdx,type){
 }
 function sLev(el){setL(+el.dataset.id,el.dataset.f,el.value);}
 function sLbt(el){setL(+el.dataset.id,el.dataset.f,el.dataset.v);}
-function init(){
+async function init(){
   try{const tb=localStorage.getItem('metrica_fichas_tab');if(tb==='local'||tb==='depto')tipoInmueble=tb;}catch(e){}
-  try{
-    const raw=localStorage.getItem(draftKey());
-    if(raw){const parsed=JSON.parse(raw);if(parsed?.locals?.length>0){applyState(parsed);_autoSaveEnabled=true;return;}}
-  }catch(e){}
+  const parsed=await leerBorrador();
+  if(parsed?.locals?.length>0){applyState(parsed);_autoSaveEnabled=true;return;}
   showMap=true;actualizarUIInmueble();addLocal();_autoSaveEnabled=true;
 }
 init();
