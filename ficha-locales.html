@@ -80,7 +80,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .plano-wrap .ph-crop{bottom:2px;right:2px;}
 .hint{font-size:9px;color:rgba(255,255,255,.22);margin-top:1px;}
 #preview{flex:1;overflow-y:auto;background:#4a4a4a;padding:20px;display:flex;justify-content:center;align-items:flex-start;}
-#doc{width:210mm;min-height:297mm;background:#fff;box-shadow:0 4px 32px rgba(0,0,0,.5);}
+#doc{width:210mm;background:#fff;box-shadow:0 4px 32px rgba(0,0,0,.5);}
 .doc-header{background:#3C3F44;padding:8mm 13mm 7mm;display:flex;align-items:center;justify-content:space-between;}
 .doc-logo{height:66px;}
 .doc-title-block{text-align:left;}
@@ -233,7 +233,7 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',luminosidad:'',aptoCredito:'',aptoProfesional:'',mascotas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
@@ -305,6 +305,7 @@ async function importarAviso(){
     if(d.caracteristicas&&d.caracteristicas.length)l.caracteristicas=d.caracteristicas.join(' · ');
     if(tipoInmueble==='depto'){
       const am=amenitiesDe([(d.caracteristicas||[]).join(' '),d.comentarios].join(' '));if(am)l.amenities=am;
+      rasgosDepto(l,[(d.caracteristicas||[]).join(' · '),d.comentarios].join(' \n '));
       const txt=String(d.comentarios||'').toLowerCase();
       if(!l.disposicion)l.disposicion=/contrafrente/.test(txt)?'Contrafrente':(/al frente|a la calle/.test(txt)?'Frente':'');
     }
@@ -603,6 +604,8 @@ function renderSidebar(){
 /* campos del panel para un departamento */
 function camposDepto(l){
   const f=(lab,k,ph,tipo)=>'<div class="field"><label>'+lab+'</label><input type="'+(tipo||'text')+'" value="'+esc(l[k])+'"'+(ph?' placeholder="'+ph+'"':'')+(tipo==='number'?' step="0.01"':'')+' data-id="'+l.id+'" data-f="'+k+'" oninput="sLev(this)"></div>';
+  const sel=(lab,k,ops)=>'<div class="field"><label>'+lab+'</label><select data-id="'+l.id+'" data-f="'+k+'" onchange="sLev(this)">'+
+    ['',...ops].map(o=>'<option value="'+o+'"'+(l[k]===o?' selected':'')+'>'+(o||'—')+'</option>').join('')+'</select></div>';
   const disp=['','Frente','Contrafrente','Lateral','Interno'].map(o=>'<option value="'+o+'"'+(l.disposicion===o?' selected':'')+'>'+(o||'— Disposición —')+'</option>').join('');
   return '<div class="field-row">'+f('Disponibilidad','disponibilidad','Ej: Inmediata')+f('Piso / unidad','piso','Ej: 5º B')+'</div>'+
     '<div class="field-row3">'+f('Ambientes','ambientes')+f('Dormitorios','dormitorios')+f('Baños','banos')+'</div>'+
@@ -613,6 +616,8 @@ function camposDepto(l){
       '<div class="field"><label>Disposición</label><select data-id="'+l.id+'" data-f="disposicion" onchange="sLev(this)">'+disp+'</select></div>'+
       f('Orientación','orientacion','Ej: Norte')+
     '</div>'+
+    '<div class="field-row">'+sel('Luminosidad','luminosidad',['Muy luminoso','Luminoso','Poco luminoso'])+sel('Apto crédito','aptoCredito',['Sí','No'])+'</div>'+
+    '<div class="field-row">'+sel('Apto profesional','aptoProfesional',['Sí','No'])+sel('Permite mascotas','mascotas',['Sí','No'])+'</div>'+
     '<div class="field-row">'+f('Antigüedad','antiguedad','A estrenar / 10 años')+f('Expensas','expensas')+'</div>'+
     '<div class="field-row">'+f('Condición','condicion','Excelente / Muy bueno')+f('Características','caracteristicas','Luminoso · Balcón')+'</div>'+
     f('Amenities','amenities','Pileta · SUM · Gimnasio')+
@@ -633,14 +638,27 @@ function filasDepto(l){
   if(l.piso)r.push(['Piso / Unidad',esc(l.piso)]);
   if(l.disposicion)r.push(['Disposici\u00f3n',esc(l.disposicion)]);
   if(l.orientacion)r.push(['Orientaci\u00f3n',esc(l.orientacion)]);
+  if(l.luminosidad)r.push(['Luminosidad',esc(l.luminosidad)]);
   if(l.cocheras)r.push(['Cocheras',esc(l.cocheras)]);
   if(l.antiguedad)r.push(['Antig\u00fcedad',esc(l.antiguedad)]);
   if(l.expensas)r.push(['Expensas',esc(l.expensas)]);
   if(l.condicion)r.push(['Condici\u00f3n',esc(l.condicion)]);
+  if(l.aptoCredito)r.push(['Apto Cr\u00e9dito',esc(l.aptoCredito)]);
+  if(l.aptoProfesional)r.push(['Apto Profesional',esc(l.aptoProfesional)]);
+  if(l.mascotas)r.push(['Permite Mascotas',esc(l.mascotas)]);
   if(l.amenities)r.push(['Amenities',esc(l.amenities)]);
   if(l.caracteristicas)r.push(['Caracter\u00edsticas',esc(l.caracteristicas)]);
   if(l.servicios)r.push(['Servicios',esc(l.servicios)]);
   return r;
+}
+/* apto crédito, apto profesional, mascotas y luminosidad a partir del texto del aviso */
+function rasgosDepto(l,texto){
+  const t=String(texto||'').toLowerCase();
+  const sn=(re,no)=>no.test(t)?'No':(re.test(t)?'Sí':'');
+  if(!l.aptoCredito)l.aptoCredito=sn(/apto\s*cr[eé]dito|acepta\s*cr[eé]dito|cr[eé]dito:\s*s[ií]/,/no\s*(es\s*)?apto\s*cr[eé]dito|cr[eé]dito:\s*no\b(?!\s*especificado)/);
+  if(!l.aptoProfesional)l.aptoProfesional=sn(/apto\s*profesional(?!\s*:\s*no)/,/apto\s*profesional\s*:\s*no|no\s*(es\s*)?apto\s*profesional/);
+  if(!l.mascotas)l.mascotas=sn(/(acepta|permite|se aceptan)\s*mascotas|pet\s*friendly/,/no\s*(se\s*)?(acepta|permite)n?\s*mascotas/);
+  if(!l.luminosidad)l.luminosidad=/muy\s*luminos/.test(t)?'Muy luminoso':(/luminos/.test(t)?'Luminoso':'');
 }
 /* amenities del edificio que se pueden leer en el texto del aviso */
 function amenitiesDe(texto){
@@ -735,7 +753,7 @@ function rMap(){
     '<div id="leaflet-map" style="height:90mm;border-radius:4px;border:1px solid #ddd;z-index:0;background:#f5f5f5"></div>'+
     imgHtml+
     '<div class="map-legend" style="margin-top:2mm">'+
-      '<span><span class="map-legend-dot" style="background:#C8941A"></span>Locales</span>'+
+      '<span><span class="map-legend-dot" style="background:#C8941A"></span>'+NOMBRES[tipoInmueble].varios+'</span>'+
     '</div>'+
   '</div>';
 }
@@ -830,7 +848,7 @@ function initMapFromCache(){
   geoCoords.locals.forEach(item=>{
     if(!item?.coord)return;
     n++;const{lat,lon}=item.coord;
-    L.marker([lat,lon],{icon:mkBlueIcon(n)}).addTo(leafletMap).bindPopup('<b>Local '+n+'</b><br>'+(item.addr||''));
+    L.marker([lat,lon],{icon:mkBlueIcon(n)}).addTo(leafletMap).bindPopup('<b>'+NOMBRES[tipoInmueble].uno+' '+n+'</b><br>'+(item.addr||''));
     bounds.push([lat,lon]);
   });
   if(geoCoords.savedView){
@@ -1060,7 +1078,7 @@ async function importarPdfAjeno(pdf,bytes){
         'banos','toilettes','cocheras','antiguedad','expensas','condicion','orientacion','disposicion']
       :['address','supCubierta','supPB','supDescubierta','supTerreno','frente','fondo','currency','precio','comentarios',
         'banos','toilettes','cocheras','antiguedad','expensas','condicion','plantas']).forEach(k=>{if(d[k])l[k]=d[k];});
-    if(tipoInmueble==='depto'){const am=amenitiesDe(texto);if(am)l.amenities=am;}
+    if(tipoInmueble==='depto'){const am=amenitiesDe(texto);if(am)l.amenities=am;rasgosDepto(l,texto);}
     if(d.operacion&&d.operacion!==tipoOperacion)setTipo(d.operacion);
     const fotos=fotosDelPdf(pdf);
     impEstado('<span class="rueda"></span>Sacando las fotos del PDF…');
