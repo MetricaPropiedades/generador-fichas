@@ -148,18 +148,26 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .placeholder-slot{border:1.5px dashed #ccc;border-radius:4px;padding:8mm 0;text-align:center;color:#bbb;font-size:9pt;margin-bottom:4mm;}
 .planos-title{font-family:'Big Shoulders Display',sans-serif;font-size:13pt;font-weight:800;color:#C8941A;text-transform:uppercase;letter-spacing:.06em;margin:5mm 0 3mm;border-bottom:1.5px solid #C8941A;padding-bottom:2mm;}
 .photo-thumb-wrap{cursor:grab;}
+.tabs-inm{display:flex;gap:0;margin:-2px 0 10px;border-bottom:1px solid rgba(255,255,255,.1);}
+.tabs-inm button{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.45);font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:7px 4px 8px;cursor:pointer;margin-bottom:-1px;}
+.tabs-inm button:hover{color:rgba(255,255,255,.75);}
+.tabs-inm button.on{color:var(--gold,#C8941A);border-bottom-color:var(--gold,#C8941A);}
 </style>
 </head>
 <body>
 <aside id="sidebar">
   <div class="sb-header">
+    <div class="tabs-inm">
+      <button id="tab-local" class="on" onclick="setInmueble('local')">Locales</button>
+      <button id="tab-depto" onclick="setInmueble('depto')">Departamentos</button>
+    </div>
     <div class="sb-title" id="sb-title-label">Ficha de Alquiler</div>
     <div class="tog" style="margin-top:6px">
       <button id="tog-alq" class="on" onclick="setTipo('Alquiler')">Alquiler</button>
       <button id="tog-vta" onclick="setTipo('Venta')">Venta</button>
     </div>
     <div class="sb-actions">
-      <button class="btn-add" onclick="addLocal()">+ Agregar local</button>
+      <button class="btn-add" id="btn-add-item" onclick="addLocal()">+ Agregar local</button>
       <button class="btn-sec" onclick="triggerMapGen()">🗺 Mapa</button>
     </div>
     <div class="sb-extra-btns">
@@ -197,9 +205,12 @@ const LOGO_B64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAwAAAAFuCAYAAAA24H
 let locals=[], nextId=1, _autoSaveEnabled=false, _mapDebounce=null, _mapRunning=false, _mapInitTimer=null;
 let showMap=false, geoCoords={locals:[]}, capturedMapImg=null, geoCache={};
 let tipoOperacion='Alquiler';
+let tipoInmueble='local';   /* 'local' o 'depto': cada pestaña tiene su propio borrador */
 let leafletMap=null;
 let _cropTarget={type:'',localId:0,idx:0}, _cropper=null;
-const DRAFT_KEY='metrica_fichas_locales_v1';
+const DRAFT_KEYS={local:'metrica_fichas_locales_v1',depto:'metrica_fichas_deptos_v1'};
+function draftKey(){return DRAFT_KEYS[tipoInmueble]||DRAFT_KEYS.local;}
+const NOMBRES={local:{uno:'Local',varios:'Locales',art:'un local'},depto:{uno:'Departamento',varios:'Departamentos',art:'un departamento'}};
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fN(n){return Number(n).toLocaleString('es-AR');}
@@ -222,16 +233,37 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',servicios:'',condicion:'',plantas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
   document.getElementById('sb-title-label').textContent='Ficha de '+t;
+  if(document.getElementById('btn-add-item'))actualizarUIInmueble();
   document.getElementById('tog-alq').classList.toggle('on',t==='Alquiler');
   document.getElementById('tog-vta').classList.toggle('on',t==='Venta');
-  renderPreview();autoSave();
+  renderSidebar();renderPreview();autoSave();
 }
 function addLocal(){locals.push(defaultLocal());renderSidebar();renderPreview();}
+function actualizarUIInmueble(){
+  document.getElementById('tab-local').classList.toggle('on',tipoInmueble==='local');
+  document.getElementById('tab-depto').classList.toggle('on',tipoInmueble==='depto');
+  try{localStorage.setItem('metrica_fichas_tab',tipoInmueble);}catch(e){}
+  document.getElementById('btn-add-item').textContent='+ Agregar '+NOMBRES[tipoInmueble].uno.toLowerCase();
+  document.title='Ficha de '+tipoOperacion+' de '+NOMBRES[tipoInmueble].uno+' — Métrica Propiedades';
+}
+/* cada pestaña guarda lo suyo: al cambiar se guarda la actual y se recupera la otra */
+function setInmueble(t){
+  if(t===tipoInmueble)return;
+  autoSave();
+  tipoInmueble=t;
+  let parsed=null;
+  try{const raw=localStorage.getItem(draftKey());if(raw)parsed=JSON.parse(raw);}catch(e){}
+  if(parsed&&parsed.locals&&parsed.locals.length){applyState(parsed);}
+  else{
+    locals=[];nextId=1;showMap=true;geoCoords={locals:[]};capturedMapImg=null;
+    actualizarUIInmueble();locals.push(defaultLocal());renderSidebar();renderPreview();
+  }
+}
 
 /* ---- cargar un local desde el aviso de un portal ----
    La página no puede leer los portales por su cuenta, así que le pide los datos a la app del buscador,
@@ -262,10 +294,20 @@ async function importarAviso(){
     /* si el último local está vacío se completa ese, y si no se agrega uno nuevo */
     let l=locals[locals.length-1];
     if(!l||l.address||l.supCubierta||l.precio){l=defaultLocal();locals.push(l);}
-    ['address','supCubierta','supPB','supPA','supSS','supTerreno','frente','fondo','posicion','currency','precio','comentarios',
-     'disponibilidad','banos','toilettes','cocheras','antiguedad','expensas','servicios','condicion','plantas']
-      .forEach(function(k){ if(d[k]!==undefined&&d[k]!=='') l[k]=d[k]; });
+    const claves=tipoInmueble==='depto'
+      ?['address','supCubierta','supTotal','currency','precio','comentarios','disponibilidad','ambientes','dormitorios','banos','toilettes','cocheras','antiguedad','expensas','servicios','condicion']
+      :['address','supCubierta','supPB','supPA','supSS','supTerreno','frente','fondo','posicion','currency','precio','comentarios',
+        'disponibilidad','banos','toilettes','cocheras','antiguedad','expensas','servicios','condicion','plantas'];
+    claves.forEach(function(k){ if(d[k]!==undefined&&d[k]!=='') l[k]=d[k]; });
+    /* la app manda las medidas con coma decimal ("62,3"); los campos numéricos necesitan punto */
+    ['supCubierta','supPB','supPA','supSS','supTerreno','supSemi','supDescubierta','supTotal','frente','fondo']
+      .forEach(k=>{if(l[k])l[k]=String(l[k]).replace(/\./g,'').replace(',','.');});
     if(d.caracteristicas&&d.caracteristicas.length)l.caracteristicas=d.caracteristicas.join(' · ');
+    if(tipoInmueble==='depto'){
+      const am=amenitiesDe([(d.caracteristicas||[]).join(' '),d.comentarios].join(' '));if(am)l.amenities=am;
+      const txt=String(d.comentarios||'').toLowerCase();
+      if(!l.disposicion)l.disposicion=/contrafrente/.test(txt)?'Contrafrente':(/al frente|a la calle/.test(txt)?'Frente':'');
+    }
     renderSidebar();renderPreview();
     const fotos=(d.fotos||[]).slice(0,12);
     if(fotos.length){
@@ -429,7 +471,7 @@ function applyCrop(){
 function renderSidebar(){
   const container=document.getElementById('locals-container');
   if(!locals.length){
-    container.innerHTML='<div style="padding:20px 16px;text-align:center;color:rgba(255,255,255,.2);font-size:11px">Agregá un local para comenzar</div>';
+    container.innerHTML='<div style="padding:20px 16px;text-align:center;color:rgba(255,255,255,.2);font-size:11px">Agregá '+NOMBRES[tipoInmueble].art+' para comenzar</div>';
     return;
   }
   container.innerHTML=locals.map((l,i)=>{
@@ -439,13 +481,14 @@ function renderSidebar(){
     return '<div class="sb-local" data-id="'+l.id+'">'+
       '<div class="sb-local-header" onclick="toggleLocalCollapse('+l.id+')">'+
         '<div class="sb-local-num">'+num+'</div>'+
-        '<div class="sb-local-addr">'+(l.address||'Local '+num)+'</div>'+
+        '<div class="sb-local-addr">'+(l.address||NOMBRES[tipoInmueble].uno+' '+num)+'</div>'+
         '<button class="btn-danger" onclick="event.stopPropagation();removeLocal('+l.id+')">✕</button>'+
       '</div>'+
       '<div class="sb-local-body'+(l.collapsed?' collapsed':'')+'">'+
         '<div class="field"><label>Dirección</label>'+
           '<input type="text" value="'+esc(l.address)+'" placeholder="Ej: Av. Corrientes 1234, CABA" data-id="'+l.id+'" data-f="address" oninput="sLev(this)">'+
         '</div>'+
+        (tipoInmueble==='depto'?camposDepto(l):(
         '<div class="field-row">'+
           '<div class="field"><label>Disponibilidad</label>'+
             '<input type="text" value="'+esc(l.disponibilidad)+'" placeholder="Ej: Inmediata" data-id="'+l.id+'" data-f="disponibilidad" oninput="sLev(this)">'+
@@ -526,7 +569,8 @@ function renderSidebar(){
               '<button class="'+(l.espAereo==='Sí'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="Sí" onclick="sLbt(this)">Sí</button>'+
             '</div>'+
           '</div>'+
-        '</div>'+
+        '</div>'
+        ))+
         '<div class="field-row">'+
           '<div class="field"><label>Moneda</label>'+
             '<div class="tog">'+
@@ -534,7 +578,7 @@ function renderSidebar(){
               '<button class="'+(l.currency==='ARS'?'on':'')+'" data-id="'+l.id+'" data-f="currency" data-v="ARS" onclick="sLbt(this)">ARS</button>'+
             '</div>'+
           '</div>'+
-          '<div class="field"><label>Precio alquiler</label>'+
+          '<div class="field"><label>Precio '+tipoOperacion.toLowerCase()+'</label>'+
             '<input type="text" value="'+esc(l.precio)+'" placeholder="12.000" data-id="'+l.id+'" data-f="precio" oninput="sLev(this)">'+
           '</div>'+
         '</div>'+
@@ -542,7 +586,7 @@ function renderSidebar(){
           '<textarea data-id="'+l.id+'" data-f="comentarios" oninput="sLev(this)" placeholder="Descripción...">'+esc(l.comentarios)+'</textarea>'+
         '</div>'+
 
-        '<div class="section-label">Fotos del local</div>'+
+        '<div class="section-label">Fotos del '+NOMBRES[tipoInmueble].uno.toLowerCase()+'</div>'+
         '<div class="photo-grid-sb" id="photos-sb-'+l.id+'"></div>'+
         '<label class="file-label">📷 Agregar foto(s)<input type="file" accept="image/*" multiple onchange="addPhotos('+l.id+',this)"></label>'+
 
@@ -555,8 +599,60 @@ function renderSidebar(){
   locals.forEach(l=>{renderPhotosSb(l.id);renderPlanosSb(l.id);});
 }
 
+
+/* campos del panel para un departamento */
+function camposDepto(l){
+  const f=(lab,k,ph,tipo)=>'<div class="field"><label>'+lab+'</label><input type="'+(tipo||'text')+'" value="'+esc(l[k])+'"'+(ph?' placeholder="'+ph+'"':'')+(tipo==='number'?' step="0.01"':'')+' data-id="'+l.id+'" data-f="'+k+'" oninput="sLev(this)"></div>';
+  const disp=['','Frente','Contrafrente','Lateral','Interno'].map(o=>'<option value="'+o+'"'+(l.disposicion===o?' selected':'')+'>'+(o||'— Disposición —')+'</option>').join('');
+  return '<div class="field-row">'+f('Disponibilidad','disponibilidad','Ej: Inmediata')+f('Piso / unidad','piso','Ej: 5º B')+'</div>'+
+    '<div class="field-row3">'+f('Ambientes','ambientes')+f('Dormitorios','dormitorios')+f('Baños','banos')+'</div>'+
+    '<div class="field-row">'+f('Toilettes','toilettes')+f('Cocheras','cocheras')+'</div>'+
+    '<div class="field-row">'+f('Sup. cubierta m²','supCubierta','','number')+f('Sup. semicubierta m²','supSemi','','number')+'</div>'+
+    '<div class="field-row">'+f('Sup. descubierta m²','supDescubierta','','number')+f('Sup. total m²','supTotal','','number')+'</div>'+
+    '<div class="field-row">'+
+      '<div class="field"><label>Disposición</label><select data-id="'+l.id+'" data-f="disposicion" onchange="sLev(this)">'+disp+'</select></div>'+
+      f('Orientación','orientacion','Ej: Norte')+
+    '</div>'+
+    '<div class="field-row">'+f('Antigüedad','antiguedad','A estrenar / 10 años')+f('Expensas','expensas')+'</div>'+
+    '<div class="field-row">'+f('Condición','condicion','Excelente / Muy bueno')+f('Características','caracteristicas','Luminoso · Balcón')+'</div>'+
+    f('Amenities','amenities','Pileta · SUM · Gimnasio')+
+    f('Servicios','servicios','Agua corriente · Gas natural · Cloaca');
+}
+/* filas de la tabla de la ficha (solo las que tienen dato) */
+function filasDepto(l){
+  const r=[],m=v=>fN(v)+' m\u00b2';
+  if(l.disponibilidad)r.push(['Disponibilidad',esc(l.disponibilidad)]);
+  if(l.ambientes)r.push(['Ambientes',esc(l.ambientes)]);
+  if(l.dormitorios)r.push(['Dormitorios',esc(l.dormitorios)]);
+  if(l.banos)r.push(['Ba\u00f1os',esc(l.banos)]);
+  if(l.toilettes)r.push(['Toilettes',esc(l.toilettes)]);
+  if(l.supCubierta)r.push(['Superficie Cubierta',m(l.supCubierta)]);
+  if(l.supSemi)r.push(['Superficie Semicubierta',m(l.supSemi)]);
+  if(l.supDescubierta)r.push(['Superficie Descubierta',m(l.supDescubierta)]);
+  if(l.supTotal)r.push(['Superficie Total',m(l.supTotal)]);
+  if(l.piso)r.push(['Piso / Unidad',esc(l.piso)]);
+  if(l.disposicion)r.push(['Disposici\u00f3n',esc(l.disposicion)]);
+  if(l.orientacion)r.push(['Orientaci\u00f3n',esc(l.orientacion)]);
+  if(l.cocheras)r.push(['Cocheras',esc(l.cocheras)]);
+  if(l.antiguedad)r.push(['Antig\u00fcedad',esc(l.antiguedad)]);
+  if(l.expensas)r.push(['Expensas',esc(l.expensas)]);
+  if(l.condicion)r.push(['Condici\u00f3n',esc(l.condicion)]);
+  if(l.amenities)r.push(['Amenities',esc(l.amenities)]);
+  if(l.caracteristicas)r.push(['Caracter\u00edsticas',esc(l.caracteristicas)]);
+  if(l.servicios)r.push(['Servicios',esc(l.servicios)]);
+  return r;
+}
+/* amenities del edificio que se pueden leer en el texto del aviso */
+function amenitiesDe(texto){
+  const t=String(texto||'').toLowerCase();
+  return[['Pileta',/pileta|piscina/],['SUM',/\bs\.?u\.?m\b|sal[oó]n de usos/],['Gimnasio',/gimnasio|\bgym\b/],['Sauna',/sauna/],['Solarium',/solarium/],
+    ['Parrilla',/parrilla/],['Laundry',/laundry|lavadero com/],['Baulera',/baulera/],['Jacuzzi',/jacuzzi/],['Seguridad 24 hs',/seguridad 24|vigilancia 24/]]
+    .filter(([,r])=>r.test(t)).map(([n])=>n).join(' · ');
+}
+
 function rHeader(){
-  const title=locals.length<=1?'Ficha de '+tipoOperacion+' de Local':'Ficha de '+tipoOperacion+' de Locales';
+  const N=NOMBRES[tipoInmueble];
+  const title='Ficha de '+tipoOperacion+' de '+(locals.length<=1?N.uno:N.varios);
   return '<div class="doc-header">'+
     '<div class="doc-title-block">'+
       '<div class="doc-title">'+title+'</div>'+
@@ -569,6 +665,7 @@ function rLocal(l,idx){
   const num=idx+1;
   const dash='—';
   const rows=[];
+  if(tipoInmueble==='depto'){filasDepto(l).forEach(r=>rows.push(r));}else{
   if(l.disponibilidad)rows.push(['Disponibilidad',esc(l.disponibilidad)]);
   if(l.supCubierta)rows.push(['Superficie Cubierta',fN(l.supCubierta)+' m\u00b2']);
   if(l.supPB)rows.push(['Superficie PB',fN(l.supPB)+' m\u00b2']);
@@ -589,6 +686,7 @@ function rLocal(l,idx){
   if(l.condicion)rows.push(['Condici\u00f3n',esc(l.condicion)]);
   if(l.caracteristicas)rows.push(['Caracter\u00edsticas',esc(l.caracteristicas)]);
   if(l.servicios)rows.push(['Servicios',esc(l.servicios)]);
+  }
   const tableRows=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
   const precioRow='<tr class="precio-row"><td>Precio de '+tipoOperacion.toLowerCase()+'</td><td>'+(l.precio?esc(l.currency)+' '+esc(l.precio):dash)+'</td></tr>';
   const tableHtml='<table class="prop-table"><tbody>'+tableRows+precioRow+'</tbody></table>';
@@ -610,7 +708,7 @@ function rLocal(l,idx){
       photosHtml+='<div class="photos-grid-'+(resto.length===2?2:3)+'">'+resto.map(p=>cuadro(p,rComun)).join('')+'</div>';
     }
   }else{
-    photosHtml='<div class="placeholder-slot">📷 Imagen del local</div>';
+    photosHtml='<div class="placeholder-slot">📷 Imagen del '+NOMBRES[tipoInmueble].uno.toLowerCase()+'</div>';
   }
 
   let planosHtml='';
@@ -665,7 +763,7 @@ function medirFotos(){
 
 function renderPreview(){
   medirFotos();
-  const localsHtml=locals.length?locals.map((l,i)=>rLocal(l,i)).join(''):'<div style="padding:20mm 13mm;text-align:center;color:#ccc;font-size:9pt">Agregá un local desde el panel izquierdo.</div>';
+  const localsHtml=locals.length?locals.map((l,i)=>rLocal(l,i)).join(''):'<div style="padding:20mm 13mm;text-align:center;color:#ccc;font-size:9pt">Agregá '+NOMBRES[tipoInmueble].art+' desde el panel izquierdo.</div>';
   const mapHtml=(showMap||capturedMapImg)?rMap():'';
   document.getElementById('doc').innerHTML=rHeader()+localsHtml+mapHtml+rFooter();
   if(showMap){clearTimeout(_mapInitTimer);_mapInitTimer=setTimeout(()=>initMapFromCache(),80);}
@@ -773,9 +871,12 @@ async function triggerMapGen(){
   initMapFromCache();autoSave();_mapRunning=false;
 }
 
-function getState(){return{version:1,tipoOperacion,locals:locals.map(l=>({...l})),map:{showMap,geoCoords,capturedMapImg}};}
+function getState(){return{version:1,tipoOperacion,tipoInmueble,locals:locals.map(l=>({...l})),map:{showMap,geoCoords,capturedMapImg}};}
 function applyState(state){
   if(!state)return;
+  const ti=state.tipoInmueble||'local';
+  if(ti!==tipoInmueble){autoSave();tipoInmueble=ti;}
+  actualizarUIInmueble();
   locals=(state.locals||[]).map(l=>({...l}));
   nextId=locals.length?Math.max(...locals.map(l=>l.id))+1:1;
   if(state.tipoOperacion)setTipo(state.tipoOperacion);
@@ -784,7 +885,7 @@ function applyState(state){
   renderSidebar();renderPreview();
   if(showMap)setTimeout(()=>initMapFromCache(),300);
 }
-function autoSave(){if(!_autoSaveEnabled)return;try{localStorage.setItem(DRAFT_KEY,JSON.stringify(getState()));}catch(e){}}
+function autoSave(){if(!_autoSaveEnabled)return;try{localStorage.setItem(draftKey(),JSON.stringify(getState()));}catch(e){}}
 async function saveJSON(){
   const json=JSON.stringify(getState(),null,2);
   const name='Fichas-Locales-Metrica.json';
@@ -913,8 +1014,13 @@ function datosDeTextoPdf(t){
   if(op)d.operacion=/^vent/i.test(op[1])?'Venta':'Alquiler';
   else if(/\balquil/i.test(limpio))d.operacion='Alquiler';
   const sup=k=>numero(valor(k));
-  d.supCubierta=sup('Superficie cubierta')||sup('Total construido')||sup('Superficie total');
-  d.supDescubierta=sup('Superficie descubierta');
+  d.supCubierta=sup('Superficie cubierta')||sup('Cubierta')||sup('Total construido')||sup('Superficie total');
+  d.supDescubierta=sup('Superficie descubierta')||sup('Descubierta');
+  d.supSemi=sup('Superficie semicubierta')||sup('Semicubierta');
+  d.supTotal=sup('Total construido')||sup('Superficie total');
+  d.ambientes=numero(valor('Ambientes'));d.dormitorios=numero(valor('Dormitorios'));
+  const ori=valor('Orientaci[oó]n');if(ori&&ori.length<20)d.orientacion=ori;
+  const dsp=valor('Disposici[oó]n');if(/contrafrente/i.test(dsp))d.disposicion='Contrafrente';else if(/frente/i.test(dsp))d.disposicion='Frente';else if(/lateral/i.test(dsp))d.disposicion='Lateral';else if(/interno/i.test(dsp))d.disposicion='Interno';
   d.supTerreno=sup('Superficie del terreno')||sup('Terreno');
   d.frente=sup('Frente');d.fondo=sup('Fondo');
   d.banos=numero(valor('Ba[ñn]os'));d.toilettes=numero(valor('Toilettes?'));d.cocheras=numero(valor('Cocheras'));d.plantas=numero(valor('Plantas'));
@@ -949,8 +1055,12 @@ async function importarPdfAjeno(pdf,bytes){
     if(!d.address&&!d.supCubierta&&!d.precio)throw new Error('No se pudieron leer datos en este PDF (puede ser un escaneo o un formato distinto)');
     let l=locals[locals.length-1];
     if(!l||l.address||l.supCubierta||l.precio){l=defaultLocal();locals.push(l);}
-    ['address','supCubierta','supPB','supDescubierta','supTerreno','frente','fondo','currency','precio','comentarios',
-     'banos','toilettes','cocheras','antiguedad','expensas','condicion','plantas'].forEach(k=>{if(d[k])l[k]=d[k];});
+    (tipoInmueble==='depto'
+      ?['address','supCubierta','supSemi','supDescubierta','supTotal','currency','precio','comentarios','ambientes','dormitorios',
+        'banos','toilettes','cocheras','antiguedad','expensas','condicion','orientacion','disposicion']
+      :['address','supCubierta','supPB','supDescubierta','supTerreno','frente','fondo','currency','precio','comentarios',
+        'banos','toilettes','cocheras','antiguedad','expensas','condicion','plantas']).forEach(k=>{if(d[k])l[k]=d[k];});
+    if(tipoInmueble==='depto'){const am=amenitiesDe(texto);if(am)l.amenities=am;}
     if(d.operacion&&d.operacion!==tipoOperacion)setTipo(d.operacion);
     const fotos=fotosDelPdf(pdf);
     impEstado('<span class="rueda"></span>Sacando las fotos del PDF…');
@@ -1026,11 +1136,12 @@ function dragDrop(ev,localId,toIdx,type){
 function sLev(el){setL(+el.dataset.id,el.dataset.f,el.value);}
 function sLbt(el){setL(+el.dataset.id,el.dataset.f,el.dataset.v);}
 function init(){
+  try{const tb=localStorage.getItem('metrica_fichas_tab');if(tb==='local'||tb==='depto')tipoInmueble=tb;}catch(e){}
   try{
-    const raw=localStorage.getItem(DRAFT_KEY);
+    const raw=localStorage.getItem(draftKey());
     if(raw){const parsed=JSON.parse(raw);if(parsed?.locals?.length>0){applyState(parsed);_autoSaveEnabled=true;return;}}
   }catch(e){}
-  showMap=true;addLocal();_autoSaveEnabled=true;
+  showMap=true;actualizarUIInmueble();addLocal();_autoSaveEnabled=true;
 }
 init();
 </script>
