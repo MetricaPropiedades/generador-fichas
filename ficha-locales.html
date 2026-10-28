@@ -787,7 +787,7 @@ function renderPreview(){
   const mapHtml=(showMap||capturedMapImg)?rMap():'';
   document.getElementById('doc').innerHTML=rHeader()+localsHtml+mapHtml+rFooter();
   if(showMap){clearTimeout(_mapInitTimer);_mapInitTimer=setTimeout(()=>initMapFromCache(),80);}
-  _autoSaveEnabled=true;autoSave();
+  autoSave();
 }
 
 function mkPinSvg(color,label){
@@ -985,12 +985,22 @@ function estadoGuardado(ok){
   el.className='save-status'+(ok?'':' mal');
   el.textContent=ok?'Borrador guardado ✓ '+h:'⚠ No se pudo guardar el borrador. Descargá el PDF para no perder los cambios.';
 }
+const _miPestana=Math.random().toString(36).slice(2);
+let _pestanaBloqueada=false;
+const _canal=('BroadcastChannel' in window)?new BroadcastChannel('metrica-fichas'):null;
+function avisoOtraPestana(){
+  _pestanaBloqueada=true;
+  const el=document.getElementById('save-status');if(!el)return;
+  el.className='save-status mal';
+  el.innerHTML='⚠ El generador está abierto en otra pestaña y ahí se guardaron cambios. Para no pisarlos, esta pestaña dejó de guardar: seguí en la otra, o descargá el PDF de esta. <a href="#" onclick="_pestanaBloqueada=false;autoSave();return false" style="color:#e8c87a">Seguir acá igual</a>';
+}
+if(_canal)_canal.onmessage=e=>{const m=e.data||{};if(m.id!==_miPestana&&m.tipo==='guarde'&&m.clave===draftKey())avisoOtraPestana();};
 function autoSave(){
-  if(!_autoSaveEnabled)return;
+  if(!_autoSaveEnabled||_pestanaBloqueada)return;
   const clave=draftKey(), st=getState(), imgs=separarImagenes(st);
   try{localStorage.setItem(clave,JSON.stringify(st));}catch(e){estadoGuardado(false);return;}
   clearTimeout(_idbTimer);
-  _idbPendiente=()=>{_idbPendiente=null;return idbPut(clave,imgs).then(()=>estadoGuardado(true)).catch(()=>estadoGuardado(false));};
+  _idbPendiente=()=>{_idbPendiente=null;return idbPut(clave,imgs).then(()=>{estadoGuardado(true);if(_canal)_canal.postMessage({tipo:'guarde',id:_miPestana,clave});}).catch(()=>estadoGuardado(false));};
   _idbTimer=setTimeout(()=>_idbPendiente&&_idbPendiente(),400);
 }
 window.addEventListener('pagehide',()=>{if(_idbPendiente){clearTimeout(_idbTimer);_idbPendiente();}});
