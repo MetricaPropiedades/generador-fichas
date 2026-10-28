@@ -815,9 +815,47 @@ function mkBlueIcon(num){
   return L.divIcon({className:'',html,iconSize:[0,0]});
 }
 
+/* Esquinas ("25 y 20, Mercedes", "Rivadavia y Acoyte"): el buscador no entiende cruces, así que se pide la forma
+   de cada calle y se toma el punto donde se tocan. "c. 25", "C25" o "25" se leen como "Calle 25". */
+function normLocalidad(s){
+  return String(s||'').replace(/\bpcia\.?\s*(de\s*)?(bs\.?\s*as\.?|buenos\s*aires)/gi,'Buenos Aires').replace(/\bprov(incia)?\.?\s*(de\s*)?(bs\.?\s*as\.?|buenos\s*aires)/gi,'Buenos Aires')
+    .replace(/\bbs\.?\s*as\.?\b/gi,'Buenos Aires').replace(/\bCABA\b/gi,'Ciudad Autónoma de Buenos Aires').trim();
+}
+function normCalle(s){
+  s=String(s||'').trim().replace(/[.,;]+$/,'');
+  const m=s.match(/^(?:c\.?|calle)\s*(\d+\s*(?:bis)?)$/i)||s.match(/^(\d+\s*(?:bis)?)$/i);
+  return m?'Calle '+m[1].replace(/\s+/g,' '):s.replace(/\bAv\.\s*/gi,'Avenida ');
+}
+async function buscarEsquina(address){
+  const partes=String(address||'').split(',');
+  const m=(partes[0]||'').trim().match(/^(.+?)\s+(?:y|e|esq\.?|esquina)\s+(.+)$/i);
+  if(!m||/\d{3,}/.test(partes[0]))return null;   /* "Cabildo 2302" es altura, no esquina */
+  const loc=normLocalidad(partes.slice(1).join(',')||'Buenos Aires');
+  const forma=async calle=>{
+    const q=normCalle(calle)+', '+loc+', Argentina';
+    const r=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q,format:'json',limit:'10',countrycodes:'ar',polygon_geojson:'1'}),{headers:{'Accept-Language':'es'}});
+    const out=[];
+    for(const x of await r.json()){
+      const g=x.geojson||{};
+      if(g.type==='LineString')out.push(...g.coordinates);
+      else if(g.type==='MultiLineString')g.coordinates.forEach(l=>out.push(...l));
+    }
+    return out;
+  };
+  try{
+    const a=await forma(m[1]);await delay(1100);const b=await forma(m[2]);
+    let mejor=null;
+    for(const [x1,y1] of a)for(const [x2,y2] of b){
+      const d=Math.hypot((x1-x2)*Math.cos(y1*Math.PI/180)*111320,(y1-y2)*110540);
+      if(!mejor||d<mejor.d)mejor={d,lat:(y1+y2)/2,lon:(x1+x2)/2};
+    }
+    return mejor&&mejor.d<80?{lat:mejor.lat,lon:mejor.lon}:null;
+  }catch(e){return null;}
+}
 async function nominatim(address){
   const key=address.trim().toLowerCase();
   if(key in geoCache)return geoCache[key];
+  const esq=await buscarEsquina(address);if(esq){geoCache[key]=esq;return esq;}
   let addr=address.trim()
     .replace(/\bCABA\b/gi,'Buenos Aires')
     .replace(/\bAv\.\s*/gi,'Avenida ')
