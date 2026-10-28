@@ -229,7 +229,7 @@ function compressImage(file){
         if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
         const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
         canvas.getContext('2d').drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL('image/jpeg',0.85));
+        resolve(canvas.toDataURL('image/jpeg',0.92));
       };img.src=e.target.result;
     };reader.readAsDataURL(file);
   });
@@ -1187,6 +1187,43 @@ function nombreArchivo(){
   const dir=(locals[0]&&locals[0].address)||'local';
   return ('Ficha '+tipoOperacion+' - '+dir).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)+'.pdf';
 }
+/* Las fotos y planos van al PDF con su archivo original, encima de la imagen de la hoja: si quedaran dentro
+   de esa imagen se re-dibujan y re-comprimen y se ven pixeladas. Se recortan igual que en pantalla (cover). */
+function fotosEnPantalla(docEl){
+  const base=docEl.getBoundingClientRect(),out=[];
+  for(const el of docEl.querySelectorAll('.ph-cover,.plano-full img')){
+    const r=el.getBoundingClientRect();if(r.width<2||r.height<2)continue;
+    const src=el.tagName==='IMG'?el.src:((getComputedStyle(el).backgroundImage.match(/^url\(["']?(.*?)["']?\)$/)||[])[1]);
+    if(!src||!/^data:image\//.test(src))continue;
+    out.push({src,cover:el.tagName!=='IMG',x:r.left-base.left,y:r.top-base.top,w:r.width,h:r.height});
+  }
+  return{base,fotos:out};
+}
+async function incrustarImagen(pdf,src){
+  const tipo=(src.match(/^data:(image\/[a-z+]+)/)||[])[1];
+  const bytes=await (await fetch(src)).arrayBuffer();
+  if(tipo==='image/jpeg')return pdf.embedJpg(bytes);
+  if(tipo==='image/png')return pdf.embedPng(bytes);
+  /* webp u otros: se pasan a JPG de alta calidad */
+  const im=await new Promise((ok,mal)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=mal;i.src=src;});
+  const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);
+  return pdf.embedJpg(await (await fetch(c.toDataURL('image/jpeg',0.95))).arrayBuffer());
+}
+async function ponerFotosNativas(pdf,page,info,k,altoPt){
+  const L=PDFLib;
+  for(const f of info.fotos){
+    let img;try{img=await incrustarImagen(pdf,f.src);}catch(e){continue;}
+    const bx=f.x*k,bw=f.w*k,bh=f.h*k,by=altoPt-(f.y+f.h)*k;
+    let dw=bw,dh=bh,dx=bx,dy=by;
+    if(f.cover){
+      const ri=img.width/img.height,rb=bw/bh;
+      if(ri>rb){dh=bh;dw=bh*ri;dx=bx-(dw-bw)/2;}else{dw=bw;dh=bw/ri;dy=by-(dh-bh)/2;}
+    }
+    page.pushOperators(L.pushGraphicsState(),L.rectangle(bx,by,bw,bh),L.clip(),L.endPath());
+    page.drawImage(img,{x:dx,y:dy,width:dw,height:dh});
+    page.pushOperators(L.popGraphicsState());
+  }
+}
 async function exportPDF(){
   if(showMap&&leafletMap){
     try{
@@ -1205,12 +1242,13 @@ async function exportPDF(){
   const mapCapture=document.querySelector('.map-capture');
   if(mapDiv)mapDiv.style.display='none';
   if(mapCapture)mapCapture.style.display='block';
-  const cvs=await html2canvas(docEl,{scale:4,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false});
+  const info=fotosEnPantalla(docEl);
+  const cvs=await html2canvas(docEl,{scale:3,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false});
   if(mapDiv)mapDiv.style.display='';
   if(mapCapture)mapCapture.style.display='';
   const img=cvs.toDataURL('image/jpeg',0.98);
   const wMm=210;
-  const hMm=Math.round(wMm*cvs.height/cvs.width);
+  const hMm=wMm*cvs.height/cvs.width;
   docEl.style.minHeight='';
   const pt=mm=>mm*72/25.4;
   const pdf=await PDFLib.PDFDocument.create();
@@ -1220,6 +1258,7 @@ async function exportPDF(){
   const jpg=await pdf.embedJpg(await (await fetch(img)).arrayBuffer());
   const page=pdf.addPage([pt(wMm),pt(hMm)]);
   page.drawImage(jpg,{x:0,y:0,width:pt(wMm),height:pt(hMm)});
+  await ponerFotosNativas(pdf,page,info,pt(wMm)/info.base.width,pt(hMm));
   /* los datos de la ficha van guardados adentro del PDF, comprimidos e invisibles al leerlo */
   const datos=new TextEncoder().encode(JSON.stringify(getState()));
   pdf.catalog.set(PDFLib.PDFName.of(CLAVE_DATOS_PDF),pdf.context.register(pdf.context.flateStream(datos)));
