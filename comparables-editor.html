@@ -278,6 +278,8 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
     <div class="field"><label>1er Piso (m²)</label><input type="number" id="s-p1" placeholder="0" oninput="renderPreview()"></div>
   </div>
   <div class="field-calc" id="s-calc">Sup. considerada: —</div>
+  <div id="s-extras-list"></div>
+  <button onclick="addSubjectExtra()" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
 
   <h2>Coeficientes de Homogeneización</h2>
   <div class="field-hint">Factor de reducción por planta respecto a PB. Subsuelo: 0.50 = vale la mitad. 1er Piso: 0.60 = vale el 60%.</div>
@@ -308,6 +310,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 // ══════════════════════════════════════
 let comparables=[], nextId=1, _fh=null, showFirma=true;
 let subjectPhotos=[];
+let subjectExtras=[];
 let mapPhoto=null, mapPhotoOrig=null;
 let showMap=false, geoCoords={subject:null,comparables:[]}, capturedMapImg=null, geoCache={};
 let leafletMap=null;
@@ -318,7 +321,27 @@ function removeFloor(id,fi){const c=comparables.find(x=>x.id===id);if(c){c.custo
 function setFloorName(id,fi,val){const c=comparables.find(x=>x.id===id);if(c&&c.customFloors[fi])c.customFloors[fi].name=val;}
 function setFloorM2(id,fi,val){const c=comparables.find(x=>x.id===id);if(c&&c.customFloors[fi]){c.customFloors[fi].m2=val;renderPreview();}}
 
-function subSup(){const w=W();return(parseFloat(document.getElementById('s-pb').value)||0)+(parseFloat(document.getElementById('s-ss').value)||0)*w.ss+(parseFloat(document.getElementById('s-p1').value)||0)*w.p1;}
+function subSup(){const w=W();return(parseFloat(document.getElementById('s-pb').value)||0)+(parseFloat(document.getElementById('s-ss').value)||0)*w.ss+(parseFloat(document.getElementById('s-p1').value)||0)*w.p1+(subjectExtras||[]).reduce((s,e)=>s+(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1),0);}
+function numDec(v){return String(v==null?'':v).replace(',','.').trim();}
+/* personalizados de la propiedad tasada: se aplican con Enter o al salir del campo */
+function extraKey(ev,i,campo){
+  if(ev.key!=='Enter')return;
+  ev.preventDefault();
+  setSubjectExtra(i,campo,campo==='nombre'?ev.target.value:numDec(ev.target.value));
+  ev.target.blur();
+}
+function renderSubjectExtrasSb(){
+  const list=document.getElementById('s-extras-list');if(!list)return;
+  list.innerHTML=(subjectExtras||[]).map((e,i)=>`<div class="field-row" style="align-items:flex-end;gap:4px;margin-bottom:4px">
+    <div class="field" style="flex:2"><label>Personalizado — nombre</label><input type="text" value="${esc(e.nombre||'')}" placeholder="ej: Entrepiso, Terraza..." onkeydown="extraKey(event,${i},'nombre')" onchange="setSubjectExtra(${i},'nombre',this.value)"></div>
+    <div class="field"><label>m²</label><input type="text" inputmode="decimal" value="${esc(e.m2||'')}" placeholder="0" onkeydown="extraKey(event,${i},'m2')" onchange="setSubjectExtra(${i},'m2',numDec(this.value))"></div>
+    <div class="field"><label>Coef ×</label><input type="text" inputmode="decimal" value="${esc(e.coef||'1.00')}" onkeydown="extraKey(event,${i},'coef')" onchange="setSubjectExtra(${i},'coef',numDec(this.value))"></div>
+    <button onclick="removeSubjectExtra(${i})" title="Quitar" style="margin-top:16px;padding:4px 8px;background:#b55;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px;flex-shrink:0">✕</button>
+  </div>`).join('');
+}
+function addSubjectExtra(){subjectExtras.push({nombre:'',m2:'',coef:'1.00'});renderSubjectExtrasSb();renderPreview();}
+function removeSubjectExtra(i){subjectExtras.splice(i,1);renderSubjectExtrasSb();renderPreview();}
+function setSubjectExtra(i,campo,valor){if(!subjectExtras[i])return;subjectExtras[i][campo]=valor;renderPreview();}
 function cSup(c){const w=W();return(parseFloat(c.pb)||0)+(parseFloat(c.ss)||0)*w.ss+(parseFloat(c.p1)||0)*w.p1+(c.customFloors||[]).reduce((s,f)=>s+(parseFloat(f.m2)||0)*w.p1,0);}
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
@@ -1054,6 +1077,7 @@ function rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,frente){
   if(pb>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(pb)} m²</strong><span>Planta Baja</span></div>`);
   if(sv>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(sv)} m²</strong><span>Subsuelo ×${w.ss}</span></div>`);
   if(p1>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(p1)} m²</strong><span>1er Piso ×${w.p1}</span></div>`);
+  (subjectExtras||[]).forEach(e=>{if(parseFloat(e.m2)>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(parseFloat(e.m2))} m²</strong><span>${esc(e.nombre||'Personalizado')} ×${esc(e.coef||'1.00')}</span></div>`);});
   
   // analista is internal only — not rendered in ficha
   return`<div class="d-subject">
@@ -1233,7 +1257,7 @@ function discardDraft(){
   localStorage.removeItem(DRAFT_KEY);
   ['s-nombre','s-fecha','s-analista','s-desc','s-fund','s-pb','s-ss','s-p1'].forEach(id=>{document.getElementById(id).value='';});
   document.getElementById('w-ss').value='0.50';document.getElementById('w-p1').value='0.60';
-  subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;
+  subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;subjectExtras=[];renderSubjectExtrasSb();
   renderSubjectPhotoSb();renderMapPhotoSb();
   comparables=[];nextId=1;renderSidebar();renderPreview();closeBanner();
 }
@@ -1242,7 +1266,7 @@ function discardDraft(){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function getState(){
-  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,fund:document.getElementById('s-fund').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
+  return{version:3,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,fund:document.getElementById('s-fund').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,subjectExtras:[...(subjectExtras||[])],photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1255,6 +1279,7 @@ function applyState(state){
   document.getElementById('s-pb').value=s.pb||'';
   document.getElementById('s-ss').value=s.ss||'';
   document.getElementById('s-p1').value=s.p1||'';
+  subjectExtras=(s.subjectExtras||[]).map(e=>({...e}));renderSubjectExtrasSb();
     subjectPhotos=(s.photos||[]).map(p=>({photo:p.photo,photoOrig:p.photoOrig||p.photo}));
   if(!subjectPhotos.length&&s.photo){subjectPhotos=[{photo:s.photo,photoOrig:s.photoOrig||s.photo}];}
   mapPhoto=s.mapPhoto||null;mapPhotoOrig=s.mapPhotoOrig||null;

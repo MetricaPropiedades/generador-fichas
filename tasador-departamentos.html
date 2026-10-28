@@ -567,7 +567,23 @@ function addComparable(){
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
 
-function renderSubjectExtrasSb(){const list=document.getElementById('s-extras-list');if(!list)return;list.innerHTML=(subjectExtras||[]).map((e,i)=>'<div class="field-row" style="align-items:flex-end;gap:4px;margin-bottom:4px"><div class="field" style="flex:2"><label>Personalizable — nombre</label><input type="text" value="'+esc(e.nombre||'')+'" placeholder="ej: Baulera, Jardín..." oninput="setSubjectExtra('+i+',\'nombre\',this.value)"></div><div class="field"><label>m²</label><input type="number" value="'+(e.m2||'')+'" placeholder="0" oninput="setSubjectExtra('+i+',\'m2\',this.value)"></div><div class="field"><label>Coef ×</label><input type="number" value="'+(e.coef||'1.00')+'" step="0.05" min="0" max="1" oninput="setSubjectExtra('+i+',\'coef\',this.value)"></div><button onclick="removeSubjectExtra('+i+')" style="margin-top:16px;padding:4px 8px;background:#b55;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px;flex-shrink:0">✕</button></div>').join('');}
+function numDec(v){return String(v==null?'':v).replace(',','.').trim();}
+/* personalizados de la propiedad tasada: se aplican con Enter o al salir del campo */
+function extraKey(ev,i,campo){
+  if(ev.key!=='Enter')return;
+  ev.preventDefault();
+  setSubjectExtra(i,campo,campo==='nombre'?ev.target.value:numDec(ev.target.value));
+  ev.target.blur();
+}
+function renderSubjectExtrasSb(){
+  const list=document.getElementById('s-extras-list');if(!list)return;
+  list.innerHTML=(subjectExtras||[]).map((e,i)=>`<div class="field-row" style="align-items:flex-end;gap:4px;margin-bottom:4px">
+    <div class="field" style="flex:2"><label>Personalizado — nombre</label><input type="text" value="${esc(e.nombre||'')}" placeholder="ej: Baulera, Jardín..." onkeydown="extraKey(event,${i},'nombre')" onchange="setSubjectExtra(${i},'nombre',this.value)"></div>
+    <div class="field"><label>m²</label><input type="text" inputmode="decimal" value="${esc(e.m2||'')}" placeholder="0" onkeydown="extraKey(event,${i},'m2')" onchange="setSubjectExtra(${i},'m2',numDec(this.value))"></div>
+    <div class="field"><label>Coef ×</label><input type="text" inputmode="decimal" value="${esc(e.coef||'1.00')}" onkeydown="extraKey(event,${i},'coef')" onchange="setSubjectExtra(${i},'coef',numDec(this.value))"></div>
+    <button onclick="removeSubjectExtra(${i})" title="Quitar" style="margin-top:16px;padding:4px 8px;background:#b55;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px;flex-shrink:0">✕</button>
+  </div>`).join('');
+}
 function addSubjectExtra(){subjectExtras.push({nombre:'',m2:'',coef:'1.00'});renderSubjectExtrasSb();renderPreview();}
 function removeSubjectExtra(idx){subjectExtras.splice(idx,1);renderSubjectExtrasSb();renderPreview();}
 function setSubjectExtra(idx,field,value){if(!subjectExtras[idx])return;subjectExtras[idx][field]=value;renderPreview();}
