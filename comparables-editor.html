@@ -1377,7 +1377,7 @@ function fotosDelPdf(pdf){
       if(!(st instanceof PDFLib.PDFRawStream))continue;
       const d=st.dict, num=k=>{const v=pdf.context.lookup(d.get(N(k)));return v&&v.asNumber?v.asNumber():0;};
       if(String(d.get(N('Subtype')))!=='/Image'||!String(d.get(N('Filter'))||'').includes('DCTDecode'))continue;
-      if(num('Width')<700||num('Height')<450)continue;
+      if(Math.min(num('Width'),num('Height'))<400||Math.max(num('Width'),num('Height'))<600)continue;
       const clave=String(ref);if(vistos.has(clave))continue;vistos.add(clave);
       out.push(st.contents);
     }
@@ -1501,7 +1501,7 @@ async function leerPdf(file,avisar){
   if(!d.direccion&&!d.cub&&!d.desc)throw new Error('No se pudieron leer datos en este PDF (puede ser un escaneo o un formato distinto)');
   avisar('<span class="rueda"></span>Sacando las fotos del PDF…');
   d.fotos=[];
-  for(const f of fotosDelPdf(pdf)){if(d.fotos.length>=12)break;try{const x=await jpgADato(f);if(x)d.fotos.push(x);}catch(e){}}
+  for(const f of fotosDelPdf(pdf)){if(d.fotos.length>=60)break;try{const x=await jpgADato(f);if(x)d.fotos.push(x);}catch(e){}}
   d.fuente='Otro';
   return d;
 }
@@ -1513,7 +1513,7 @@ async function importarDesde(origen,idEstado,aplicar){
     const d=typeof origen==='string'?await leerAviso(origen):await leerPdf(origen,avisar);
     avisar('<span class="rueda"></span>Trayendo las fotos…');
     const fotos=[];
-    for(const f of (d.fotos||[]).slice(0,12)){try{fotos.push(await fotoComoDato(f));}catch(e){}}
+    for(const f of (d.fotos||[]).slice(0,60)){try{fotos.push(await fotoComoDato(f));}catch(e){}}
     d.fotos=fotos;
     const msg=await aplicar(d);
     estadoEn(idEstado,msg||'Listo. Revisá y completá lo que falte.');

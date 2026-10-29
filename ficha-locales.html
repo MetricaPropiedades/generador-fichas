@@ -312,7 +312,7 @@ async function importarAviso(){
       if(!l.disposicion)l.disposicion=/contrafrente/.test(txt)?'Contrafrente':(/al frente|a la calle/.test(txt)?'Frente':'');
     }
     renderSidebar();renderPreview();
-    const fotos=(d.fotos||[]).slice(0,12);
+    const fotos=(d.fotos||[]).slice(0,60);
     if(fotos.length){
       impEstado('<span class="rueda"></span>Trayendo '+fotos.length+' fotos…');
       let listas=0;
@@ -1058,7 +1058,7 @@ function fotosDelPdf(pdf){
       if(!(st instanceof PDFLib.PDFRawStream))continue;
       const d=st.dict, num=k=>{const v=pdf.context.lookup(d.get(N(k)));return v&&v.asNumber?v.asNumber():0;};
       if(String(d.get(N('Subtype')))!=='/Image'||!String(d.get(N('Filter'))||'').includes('DCTDecode'))continue;
-      if(num('Width')<700||num('Height')<450)continue;   /* afuera logos, íconos y el mapa */
+      if(Math.min(num('Width'),num('Height'))<400||Math.max(num('Width'),num('Height'))<600)continue;   /* afuera logos, íconos y el mapa */
       const clave=String(ref);if(vistos.has(clave))continue;vistos.add(clave);
       out.push(st.contents);
     }
@@ -1184,7 +1184,7 @@ async function importarPdfAjeno(pdf,bytes){
     const fotos=fotosDelPdf(pdf);
     impEstado('<span class="rueda"></span>Sacando las fotos del PDF…');
     for(const f of fotos){
-      if(l.photos.length>=12)break;
+      if(l.photos.length>=60)break;
       try{const dato=await jpgADato(f);if(dato)l.photos.push({photo:dato,photoOrig:dato});}catch(e){}
     }
     renderSidebar();renderPreview();autoSave();
