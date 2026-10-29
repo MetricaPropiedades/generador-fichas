@@ -154,6 +154,53 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .tabs-inm button{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.45);font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:7px 4px 8px;cursor:pointer;margin-bottom:-1px;}
 .tabs-inm button:hover{color:rgba(255,255,255,.75);}
 .tabs-inm button.on{color:var(--gold,#C8941A);border-bottom-color:var(--gold,#C8941A);}
+
+/* ── Celular: solo cambia en pantallas angostas; en la compu queda todo igual ── */
+#mob-bar{display:none;}
+@media (max-width:820px){
+  body{display:block;height:100dvh;}
+  #sidebar{width:100%;height:calc(100dvh - 62px);border-right:none;}
+  #preview{display:none;height:calc(100dvh - 62px);padding:8px;}
+  body.ver-ficha #sidebar{display:none;}
+  body.ver-ficha #preview{display:flex;}
+  #mob-bar{display:flex;position:fixed;left:0;right:0;bottom:0;height:62px;background:#1a1a1a;border-top:1px solid rgba(255,255,255,.14);z-index:1000;padding:8px 10px;gap:8px;}
+  #mob-bar button{flex:1;font-size:15px;font-weight:700;border-radius:8px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#ddd;font-family:'Inter',sans-serif;}
+  #mob-bar button.on{background:var(--gold);color:#1a1a1a;border-color:var(--gold);}
+  .sb-header{padding:16px 14px 14px;}
+  .sb-title{font-size:16px;}
+  .tabs-inm button{font-size:14px;padding:12px 4px 13px;}
+  .tog{gap:6px;}
+  .tog button{font-size:15px;padding:11px 6px;border-radius:6px;}
+  .sb-actions,.sb-extra-btns{gap:8px;}
+  .sb-actions>*,.sb-extra-btns>*{flex:1;text-align:center;}
+  .btn-add,.btn-sec{font-size:14px;padding:12px 14px;min-height:46px;border-radius:6px;}
+  .sb-import input{font-size:16px;padding:12px;border-radius:6px;}
+  .sb-import .estado,#map-status,.save-status{font-size:13px;}
+  .sb-local{margin:12px 10px;border-radius:10px;}
+  .sb-local-header{padding:14px;gap:10px;}
+  .sb-local-num{width:28px;height:28px;font-size:13px;}
+  .sb-local-addr{font-size:15px;}
+  .btn-danger{font-size:15px;padding:8px 13px;}
+  .sb-local-body{padding:14px;}
+  .field{margin-bottom:14px;gap:6px;}
+  .field label{font-size:12px;}
+  .field input,.field textarea,.field select{font-size:16px;padding:12px;border-radius:6px;min-height:48px;}
+  .field textarea{min-height:220px;line-height:1.5;}
+  .field-row,.field-row3{grid-template-columns:1fr 1fr;gap:10px;}
+  .section-label{font-size:12px;margin:16px 0 8px;}
+  .photo-grid-sb{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .photo-thumb-wrap{width:auto;height:auto;aspect-ratio:4/3;}
+  .photo-thumb-wrap img{width:100%;height:100%;}
+  .ph-del,.ph-star,.ph-crop{width:30px;height:30px;font-size:15px;}
+  .ph-main{font-size:10px;padding:2px 6px;}
+  .file-label{font-size:15px;padding:15px;border-radius:6px;}
+  .plano-wrap img{height:90px;}
+  #doc{box-shadow:none;flex-shrink:0;}
+  .modal-box{max-width:100vw;padding:12px;}
+  .modal-box img{max-width:94vw;max-height:60vh;}
+  .modal-btns{flex-wrap:wrap;}
+  .modal-btns button{flex:1;min-height:46px;font-size:14px;}
+}
 </style>
 </head>
 <body>
@@ -190,6 +237,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
   <div id="locals-container"></div>
 </aside>
 <div id="preview"><div id="doc"></div></div>
+<div id="mob-bar"><button id="mob-edit" class="on" onclick="vistaMovil(false)">✏️ Editar</button><button id="mob-ver" onclick="vistaMovil(true)">👁 Ver ficha</button></div>
 <div id="cropper-modal" style="display:none">
   <div class="modal-box">
     <img id="cropper-img" src="" alt="">
@@ -1234,7 +1282,26 @@ async function ponerFotosNativas(pdf,page,info,k,altoPt){
     page.pushOperators(L.popGraphicsState());
   }
 }
+/* ── celular: una pantalla a la vez (panel o ficha) y la ficha achicada al ancho del teléfono ── */
+function esMovil(){return window.matchMedia('(max-width:820px)').matches;}
+function ajustarZoomFicha(){const d=document.getElementById('doc');if(d)d.style.zoom=esMovil()?String(Math.min(1,(window.innerWidth-16)/794)):'';}
+function vistaMovil(ver){
+  document.body.classList.toggle('ver-ficha',ver);
+  document.getElementById('mob-edit').classList.toggle('on',!ver);
+  document.getElementById('mob-ver').classList.toggle('on',ver);
+  if(ver){ajustarZoomFicha();document.getElementById('preview').scrollTop=0;setTimeout(()=>{if(leafletMap)leafletMap.invalidateSize();},200);}
+}
+window.addEventListener('resize',ajustarZoomFicha);
+/* el PDF se arma con la ficha visible y a tamaño real, aunque en el celular estés en la pantalla de edición */
 async function exportPDF(){
+  const doc=document.getElementById('doc'),z=doc.style.zoom,oculto=esMovil()&&!document.body.classList.contains('ver-ficha');
+  if(oculto)document.body.classList.add('ver-ficha');
+  doc.style.zoom='';
+  if(leafletMap)leafletMap.invalidateSize();
+  await new Promise(r=>setTimeout(r,350));
+  try{await _exportPDF();}finally{doc.style.zoom=z;if(oculto)document.body.classList.remove('ver-ficha');}
+}
+async function _exportPDF(){
   if(showMap&&leafletMap){
     try{
       leafletMap.invalidateSize();
@@ -1253,7 +1320,7 @@ async function exportPDF(){
   if(mapDiv)mapDiv.style.display='none';
   if(mapCapture)mapCapture.style.display='block';
   const info=fotosEnPantalla(docEl);
-  const cvs=await html2canvas(docEl,{scale:3,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false});
+  const cvs=await html2canvas(docEl,{scale:3,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false,windowWidth:Math.max(window.innerWidth,1280)});
   if(mapDiv)mapDiv.style.display='';
   if(mapCapture)mapCapture.style.display='';
   const img=cvs.toDataURL('image/jpeg',0.98);
@@ -1299,6 +1366,7 @@ async function init(){
   if(parsed?.locals?.length>0){applyState(parsed);_autoSaveEnabled=true;return;}
   showMap=true;actualizarUIInmueble();addLocal();_autoSaveEnabled=true;
 }
+ajustarZoomFicha();
 init();
 </script>
 </body>
