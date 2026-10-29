@@ -1619,6 +1619,37 @@ const FIRMA_B64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOwAAAC6CAYAAACtB
 // Safety net: save on page unload (refresh, close, navigate away)
 window.addEventListener('beforeunload',()=>{if(_autoSaveEnabled)autoSave();});
 </script>
+<script>
+/* cuadros de texto (comentarios, descripción, notas): crecen con lo que se escribe hasta 10 renglones;
+   de ahí en más se desliza adentro. Nunca quedan más chicos que su alto mínimo. */
+(function(){
+  function autoAlto(el){
+    if(!el||el.tagName!=='TEXTAREA'||!el.isConnected)return;
+    const cs=getComputedStyle(el), fs=parseFloat(cs.fontSize)||12;
+    const lh=cs.lineHeight==='normal'?fs*1.2:(parseFloat(cs.lineHeight)||fs*1.2);
+    const bordes=(parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0);
+    const max=Math.round(lh*10+(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)+bordes);
+    el.style.height='auto';
+    const h=el.scrollHeight+bordes;
+    el.style.height=Math.min(h,max)+'px';
+    el.style.overflowY=h>max?'auto':'hidden';
+  }
+  window.autoAltoTextos=function(){document.querySelectorAll('textarea').forEach(autoAlto);};
+  document.addEventListener('input',e=>autoAlto(e.target));
+  document.addEventListener('focusin',e=>autoAlto(e.target));
+  new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){
+    if(n.nodeType!==1)continue;
+    if(n.tagName==='TEXTAREA')autoAlto(n);else if(n.querySelector&&n.querySelector('textarea'))n.querySelectorAll('textarea').forEach(autoAlto);
+  }}).observe(document.body,{childList:true,subtree:true});
+  /* cuando el texto se carga solo (abrir PDF, traer un aviso, recuperar borrador) también se reacomoda */
+  ['applyState','aplicarSujeto','aplicarComp','setInmueble','importarAviso'].forEach(n=>{
+    const f=window[n];if(typeof f!=='function')return;
+    window[n]=function(){const r=f.apply(this,arguments);Promise.resolve(r).then(()=>setTimeout(window.autoAltoTextos,0));return r;};
+  });
+  window.addEventListener('load',window.autoAltoTextos);
+  setTimeout(window.autoAltoTextos,0);
+})();
+</script>
 </body>
 </html>
 
