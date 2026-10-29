@@ -209,6 +209,13 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   .sec-title{break-after:avoid;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}
 }
+.dir-sug{position:fixed;z-index:100000;background:#262626;border:1px solid rgba(255,255,255,.14);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.55);max-height:300px;overflow-y:auto;font-family:'Inter','Barlow',sans-serif;}
+.dir-op{padding:9px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);line-height:1.35;}
+.dir-op:last-child{border-bottom:none;}
+.dir-op b{display:block;font-size:12.5px;font-weight:600;color:#eee;}
+.dir-op span{display:block;font-size:11px;color:rgba(255,255,255,.5);margin-top:1px;}
+.dir-op:hover,.dir-op.on{background:rgba(200,148,26,.22);}
+@media (max-width:820px){.dir-op{padding:13px 14px;}.dir-op b{font-size:15px;}.dir-op span{font-size:13px;}}
 </style>
 </head>
 <body>
@@ -824,22 +831,7 @@ function addrTyping(id,val){
 
 async function fetchAddrSuggestions(id,val){
   try{
-    const q=val.trim()+', Argentina';
-    const url='https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&limit=6&countrycodes=ar&addressdetails=1';
-    const r=await fetch(url,{headers:{'Accept-Language':'es','User-Agent':'MetricaPropiedades/1.0'}});
-    const arr=await r.json();
-    // Convertir formato Nominatim → formato interno {geometry:{coordinates:[lon,lat]}, properties:{...}}
-    const features=arr.map(item=>({
-      geometry:{coordinates:[parseFloat(item.lon),parseFloat(item.lat)]},
-      properties:{
-        name:item.address?.road||(item.display_name.split(',')[0]||''),
-        housenumber:item.address?.house_number||'',
-        street:item.address?.road||'',
-        city:item.address?.city||item.address?.town||item.address?.village||'',
-        state:item.address?.state||'',
-        _display:item.display_name
-      }
-    }));
+    const features=(await photonPreferCaba(normDir(val),6)).slice(0,7);
     addrResults[id]=features;
     addrCursor[id]=-1;
     showAddrDrop(id,features);
@@ -850,7 +842,7 @@ function addrLabel(f){
   const p=f.properties||{};
   const street=[p.street,p.housenumber].filter(Boolean).join(' ');
   const main=street||p.name||'Sin nombre';
-  const isCABA=p.state==='Ciudad Autónoma de Buenos Aires';
+  const isCABA=esCaba(p);
   const city=isCABA?'CABA':p.city;
   const sub=[city,isCABA?null:p.state].filter(Boolean).join(', ');
   return{main,sub,label:(main+(sub?', '+sub:'')).trim()};
@@ -976,37 +968,117 @@ async function buscarEsquina(address){
     return mejor&&mejor.d<80?{lat:mejor.lat,lon:mejor.lon}:null;
   }catch(e){return null;}
 }
+/* ══ Direcciones: interpretación amplia + sugerencias mientras se escribe (como Google Maps) ══
+   Gratis, con Photon (OpenStreetMap). Lo que se elige de la lista queda fijado con su punto exacto. */
+const BBOX_AR='-73.6,-55.1,-53.6,-21.8';
+function normDir(s){
+  return String(s||'')
+    .replace(/\bC\.?A\.?B\.?A\.?(?=\W|$)/gi,'CABA').replace(/\bcapital\s+federal\b/gi,'CABA')
+    .replace(/\bAv(?:da)?\.?\s+/gi,'Avenida ').replace(/\bGral\.?\s+/gi,'General ').replace(/\bPte\.?\s+/gi,'Presidente ')
+    .replace(/\bCnel\.?\s+/gi,'Coronel ').replace(/\bTte\.?\s+/gi,'Teniente ').replace(/\bDr\.?\s+/gi,'Doctor ')
+    .replace(/\bSta\.?\s+/gi,'Santa ').replace(/\bSto\.?\s+/gi,'Santo ').replace(/\bIng\.?\s+/gi,'Ingeniero ')
+    .replace(/\b(?:c\.?|calle)\s*(\d+)\b/gi,'Calle $1')
+    .replace(/\s+e\/\s*[^,]+/gi,'')                               /* "e/ X y Y" (entre calles) */
+    .replace(/\bal\s+(?=\d)/gi,'').replace(/\bN[°º.]?\s*(?=\d)/g,'')
+    .replace(/\b(?:piso|dto|depto|dpto|departamento|uf|of\.?|oficina)\s*[\w°º-]+/gi,'')
+    .replace(/\bpcia\.?\s*(?:de\s*)?(?:bs\.?\s*as\.?|buenos\s*aires)/gi,'Buenos Aires').replace(/\bprov(?:incia)?\.?\s*(?:de\s*)?(?:bs\.?\s*as\.?|buenos\s*aires)/gi,'Buenos Aires')
+    .replace(/\bbs\.?\s*as\.?(?=\W|$)/gi,'Buenos Aires').replace(/\bCABA\b/g,'Ciudad Autónoma de Buenos Aires')
+    .replace(/\s{2,}/g,' ').replace(/\s+,/g,',').replace(/,\s*,/g,',').trim().replace(/^,|,$/g,'');
+}
+/* lo que se eligió de la lista: dirección -> punto exacto (se recuerda entre sesiones) */
+let geoElegidos={};
+try{geoElegidos=JSON.parse(localStorage.getItem('metrica-geo-elegidos')||'{}');}catch(e){}
+function guardarElegido(texto,c){geoElegidos[texto.trim().toLowerCase()]={lat:c.lat,lon:c.lon};try{localStorage.setItem('metrica-geo-elegidos',JSON.stringify(geoElegidos));}catch(e){}}
+function etiquetaPhoton(p){
+  const calle=p.street?(p.street+(p.housenumber?' '+p.housenumber:'')):'';
+  const nombre=p.name&&p.name!==p.street?p.name:'';
+  const principal=calle&&nombre&&!/^(house|house_number|residential|secondary|primary|tertiary)$/.test(p.osm_value||'')?nombre+' — '+calle:(calle||nombre||'Sin nombre');
+  const caba=esCaba(p);
+  const zona=caba?[p.district||p.locality,'CABA']:[p.district||p.locality,p.city,p.state];
+  const sub=[...new Set(zona.filter(Boolean))].join(', ');
+  return{principal,sub,texto:principal.replace(/^.* — /,'')+(sub?', '+sub:'')};
+}
+function esCaba(p){return /aut[oó]noma de buenos aires|autonomous city of buenos aires/i.test((p&&p.state||'')+' '+(p&&p.city||''));}
+/* sin localidad escrita, lo más común es CABA: primero se busca ahí y después en el resto */
+async function photonPreferCaba(q,limite){
+  if(q.includes(','))return photon(q,limite);
+  const [enCaba,resto]=await Promise.all([photon(q+', Ciudad Autónoma de Buenos Aires',4),photon(q,limite)]);
+  const vistos=new Set();
+  return[...enCaba.filter(f=>esCaba(f.properties)),...resto].filter(f=>{const k=(f.properties&&f.properties.osm_id)||f.geometry.coordinates.join(',');if(vistos.has(k))return false;vistos.add(k);return true;});
+}
+async function photon(q,limite){
+  const r=await fetch('https://photon.komoot.io/api/?'+new URLSearchParams({q,limit:String(limite||6),bbox:BBOX_AR,lat:'-34.6',lon:'-58.45'}));
+  if(!r.ok)return[];
+  const d=await r.json();
+  return(d.features||[]).filter(f=>!f.properties||!f.properties.countrycode||f.properties.countrycode==='AR');
+}
+async function sugerenciasDir(texto){
+  const q=normDir(texto);if(q.length<3)return[];
+  const out=[];
+  if(/^\s*[^,]+?\s+(?:y|e|esq\.?|esquina)\s+[^,]+/i.test(texto)&&!/\d{3,}/.test(texto.split(',')[0]))
+    out.push({principal:'Esquina '+texto.split(',')[0].trim(),sub:normLocalidad(texto.split(',').slice(1).join(','))||'buscar el cruce de las dos calles',texto:texto.trim(),esquina:true});
+  for(const f of await photonPreferCaba(q,6)){
+    const e=etiquetaPhoton(f.properties||{});
+    if(out.some(o=>o.texto===e.texto))continue;
+    out.push({...e,lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]});
+  }
+  return out;
+}
+/* engancha la lista de sugerencias a un campo; alElegir recibe {texto,lat,lon} */
+function conectarAutocompletado(inp,alElegir){
+  if(!inp||inp._autocomp)return;inp._autocomp=true;inp.setAttribute('autocomplete','off');
+  let caja=null,items=[],activo=-1,timer=null,pedido=0;
+  const cerrar=()=>{if(caja){caja.remove();caja=null;}items=[];activo=-1;};
+  const ubicar=()=>{if(!caja)return;const r=inp.getBoundingClientRect();caja.style.left=r.left+'px';caja.style.top=(r.bottom+2)+'px';caja.style.width=Math.max(r.width,260)+'px';};
+  const pintar=()=>{
+    if(!items.length){cerrar();return;}
+    if(!caja){caja=document.createElement('div');caja.className='dir-sug';document.body.appendChild(caja);}
+    caja.innerHTML=items.map((s,i)=>'<div class="dir-op'+(i===activo?' on':'')+'" data-i="'+i+'"><b>'+esc(s.principal)+'</b>'+(s.sub?'<span>'+esc(s.sub)+'</span>':'')+'</div>').join('');
+    caja.querySelectorAll('.dir-op').forEach(el=>el.onmousedown=ev=>{ev.preventDefault();elegir(+el.dataset.i);});
+    ubicar();
+  };
+  const elegir=async i=>{
+    const s=items[i];if(!s)return;cerrar();
+    inp.value=s.texto;inp.dispatchEvent(new Event('input',{bubbles:true}));
+    if(s.esquina){const c=await buscarEsquina(s.texto);if(c)guardarElegido(s.texto,c);}
+    else guardarElegido(s.texto,s);
+    alElegir&&alElegir({texto:s.texto,lat:s.lat,lon:s.lon});
+  };
+  inp.addEventListener('input',e=>{
+    if(!e.isTrusted)return;
+    clearTimeout(timer);const v=inp.value,yo=++pedido;
+    if(normDir(v).length<3){cerrar();return;}
+    timer=setTimeout(async()=>{try{const r=await sugerenciasDir(v);if(yo!==pedido||document.activeElement!==inp)return;items=r;activo=-1;pintar();}catch(e){}},300);
+  });
+  inp.addEventListener('keydown',e=>{
+    if(!caja)return;
+    if(e.key==='ArrowDown'){e.preventDefault();activo=Math.min(items.length-1,activo+1);pintar();}
+    else if(e.key==='ArrowUp'){e.preventDefault();activo=Math.max(0,activo-1);pintar();}
+    else if(e.key==='Enter'&&activo>=0){e.preventDefault();elegir(activo);}
+    else if(e.key==='Escape')cerrar();
+  });
+  inp.addEventListener('blur',()=>setTimeout(cerrar,150));
+  window.addEventListener('scroll',ubicar,true);window.addEventListener('resize',ubicar);
+}
+
 async function nominatim(address){
-  const key=address.trim().toLowerCase();
+  const key=String(address||'').trim().toLowerCase();if(!key)return null;
+  if(geoElegidos[key])return geoElegidos[key];
   if(key in geoCache)return geoCache[key];
   const esq=await buscarEsquina(address);if(esq){geoCache[key]=esq;return esq;}
-  // Normalizar abreviaturas
-  let addr=address.trim()
-    .replace(/CABA/gi,'Buenos Aires')
-    .replace(/C.A.B.A./gi,'Buenos Aires')
-    .replace(/Av.s*/gi,'Avenida ')
-    .replace(/Gral.s*/gi,'General ')
-    .replace(/Dr.s*/gi,'Doctor ');
-  const q=addr+(addr.toLowerCase().includes('buenos aires')?', Argentina':', Buenos Aires, Argentina');
-  // Intentar con Photon primero (más permisivo para BA), luego Nominatim como fallback
-  try{
-    const r=await fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(q)+'&limit=3&lang=es');
-    const d=await r.json();
-    // Photon: filtrar resultados en Argentina
-    const f=d.features?.find(f=>f.properties?.country==='Argentina')||d.features?.[0];
-    if(f?.geometry?.coordinates){
-      const [lon,lat]=[f.geometry.coordinates[0],f.geometry.coordinates[1]];
-      const result={lat,lon};geoCache[key]=result;return result;
-    }
-  }catch(e){}
-  // Fallback: Nominatim
-  try{
-    await delay(1100);
-    const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&limit=1&countrycodes=ar',{headers:{'Accept-Language':'es','User-Agent':'MetricaPropiedades/1.0'}});
-    const d=await r.json();
-    const result=d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;
-    if(result)geoCache[key]=result;return result;
-  }catch(e){return null;}
+  const q=normDir(address);
+  /* si no aparece con la altura exacta, se prueba la calle sola (queda en la cuadra aproximada) */
+  const sinAltura=q.replace(/^([^,\d]+?)\s+\d+\s*[a-z]?\b/i,'$1');
+  for(const t of (sinAltura!==q?[q,sinAltura]:[q])){
+    try{const f=(await photonPreferCaba(t,3))[0];if(f){const r={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]};geoCache[key]=r;return r;}}catch(e){}
+    try{
+      await delay(1100);
+      const r=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q:t+', Argentina',format:'json',limit:'1',countrycodes:'ar'}),{headers:{'Accept-Language':'es'}});
+      const d=await r.json();
+      if(d[0]){const res={lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)};geoCache[key]=res;return res;}
+    }catch(e){}
+  }
+  return null;
 }
 
 
