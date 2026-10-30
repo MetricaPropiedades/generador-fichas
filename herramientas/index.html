@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="es" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="google" content="notranslate">
+<title>Herramientas Métrica</title>
+<meta name="description" content="Accesos a las herramientas de Métrica Propiedades y Métrica Tasaciones.">
+<meta name="theme-color" content="#424549">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Métrica">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gris:#424549;--gris-2:#36393d;--claro:#EBEBEC;--mostaza:#D19C1D;--texto:#2B2B2B;--suave:#6b6f74;--card:#fff;--borde:rgba(0,0,0,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;}
+body{font-family:'Barlow',system-ui,sans-serif;background:var(--claro);color:var(--texto);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button{font:inherit;cursor:pointer;}
+:focus-visible{outline:3px solid var(--mostaza);outline-offset:3px;border-radius:6px;}
+
+/* cabecera */
+.cab{background:var(--gris);color:#fff;padding:calc(22px + env(safe-area-inset-top)) 20px 26px;}
+.cab-in{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:16px;}
+.cab img{width:54px;height:54px;border-radius:10px;flex-shrink:0;}
+.cab h1{font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:clamp(26px,5vw,36px);letter-spacing:.02em;line-height:1;text-transform:uppercase;}
+.cab h1 span{color:var(--mostaza);}
+.cab p{font-size:14px;color:rgba(255,255,255,.65);margin-top:5px;}
+.cab-txt{flex:1;min-width:0;}
+.btn-inst{background:var(--mostaza);color:#1c1c1c;border:none;border-radius:8px;padding:11px 16px;font-weight:700;font-size:14px;white-space:nowrap;display:flex;align-items:center;gap:7px;}
+.btn-inst:hover{filter:brightness(1.08);}
+.btn-inst[hidden]{display:none!important;}
+
+main{max-width:1080px;margin:0 auto;padding:26px 20px calc(40px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:34px;}
+
+/* secciones por marca */
+.sec-hd{display:flex;align-items:center;gap:14px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--mostaza);}
+.sec-hd .marca{background:var(--gris);border-radius:8px;padding:7px 12px;display:flex;}
+.sec-hd .marca img{height:30px;width:auto;display:block;}
+.sec-hd h2{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--suave);}
+
+.grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+.app{background:var(--card);border:1px solid var(--borde);border-radius:14px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:10px;min-height:150px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);transition:transform .15s,box-shadow .15s,border-color .15s;position:relative;}
+.app:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.09);border-color:rgba(209,156,29,.5);}
+.app:active{transform:translateY(0);}
+.ico{width:48px;height:48px;border-radius:11px;background:var(--gris);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ico svg{width:26px;height:26px;stroke:var(--mostaza);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.app h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:23px;line-height:1.02;text-transform:uppercase;letter-spacing:.01em;}
+.app p{font-size:13.5px;color:var(--suave);line-height:1.4;}
+.tag{position:absolute;top:16px;right:14px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);background:var(--claro);border-radius:20px;padding:3px 9px;}
+
+/* datos útiles */
+.datos{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;}
+.dato{background:var(--card);border:1px solid var(--borde);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;text-align:left;width:100%;color:var(--texto);}
+.dato:hover{border-color:rgba(209,156,29,.5);}
+.dato .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);}
+.dato .val{font-size:15.5px;font-weight:600;margin-top:2px;word-break:break-word;}
+.dato .cp{margin-left:auto;font-size:12px;font-weight:700;color:var(--mostaza);flex-shrink:0;}
+.dato-txt{min-width:0;}
+
+.pie{font-size:13px;color:var(--suave);text-align:center;line-height:1.6;}
+
+/* aviso de copiado */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--gris);color:#fff;padding:11px 18px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* instrucciones para instalar */
+.modal{position:fixed;inset:0;background:rgba(20,20,22,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;z-index:50;}
+.modal[hidden]{display:none!important;}
+.modal-box{background:#fff;border-radius:16px;max-width:460px;width:100%;padding:22px 22px 18px;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.modal-box h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:24px;text-transform:uppercase;margin-bottom:12px;}
+.modal-box ol{padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.45;}
+.modal-box b{color:var(--texto);}
+.modal-box .cerrar{margin-top:18px;width:100%;background:var(--gris);color:#fff;border:none;border-radius:10px;padding:13px;font-weight:700;font-size:15px;}
+@media (min-width:700px){.modal{align-items:center;}}
+@media (max-width:520px){
+  .grilla{grid-template-columns:1fr 1fr;gap:10px;}
+  .app{padding:14px;min-height:150px;gap:8px;}
+  .app h3{font-size:20px;}
+  .app p{font-size:12.5px;}
+  .ico{width:42px;height:42px;}
+  .tag{top:12px;right:10px;font-size:9.5px;padding:2px 7px;}
+  .cab img{width:46px;height:46px;}
+  .btn-inst{padding:10px 12px;font-size:13px;}
+}
+/* recursos de marca */
+.rec-marca{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:16px;letter-spacing:.08em;text-transform:uppercase;margin:4px 0 10px;}
+.rec-marca + .recursos{margin-bottom:22px;}
+.recursos{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+.rec{background:var(--card);border:1px solid var(--borde);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s,box-shadow .15s;}
+.rec:hover{border-color:rgba(209,156,29,.5);box-shadow:0 6px 18px rgba(0,0,0,.08);}
+.rec-img{height:96px;background:#7a7d81;display:flex;align-items:center;justify-content:center;padding:10px;}
+.rec-img img{max-width:100%;max-height:100%;display:block;}
+.rec-txt{padding:10px 12px 12px;display:flex;align-items:center;gap:8px;}
+.rec-txt b{font-size:14px;font-weight:700;display:block;}
+.rec-txt small{font-size:11.5px;color:var(--suave);}
+.rec-txt .dl{margin-left:auto;font-size:12px;font-weight:700;color:var(--mostaza);flex-shrink:0;}
+@media (max-width:520px){.recursos{grid-template-columns:1fr 1fr;}.rec-img{height:76px;}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="cab">
+  <div class="cab-in">
+    <img src="icono-192.png" alt="">
+    <div class="cab-txt">
+      <h1>Herramientas <span>Métrica</span></h1>
+      <p>Todas las herramientas en un solo lugar</p>
+    </div>
+    <button class="btn-inst" id="btn-inst" onclick="instalar()">📲 <span>Instalar</span></button>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="sec-hd">
+      <div class="marca"><img src="logo-propiedades.png" alt="Métrica Propiedades"></div>
+      <h2>Fichas, presentaciones y búsquedas</h2>
+    </div>
+    <div class="grilla">
+      <a class="app" href="https://metricapropiedades.github.io/generador-fichas/ficha-locales.html?tipo=local" target="_blank" rel="noopener">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M5 13v7h14v-7"/><path d="M10 20v-4h4v4"/></svg></div>
+        <h3>Fichas de locales</h3><p>Alquiler y venta de locales comerciales</p>
+      </a>
+      <a class="app" href="https://metricapropiedades.github.io/generador-fichas/ficha-locales.html?tipo=depto" target="_blank" rel="noopener">
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/><path d="M11 21v-3h2v3"/></svg></div>
+        <h3>Fichas de departamentos</h3><p>Alquiler y venta de departamentos</p>
+      </a>
+      <a class="app" href="https://metricapropiedades.github.io/generador-fichas/ficha-fondo-comercio.html" target="_blank" rel="noopener">
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/><path d="M11 12v2h2v-2"/></svg></div>
+        <h3>Fondo de comercio</h3><p>Fichas de venta de fondos de comercio</p>
+      </a>
+      <a class="app" href="https://metricapropiedades.github.io/generador-fichas/plantilla-presentacion/" target="_blank" rel="noopener">
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M12 16v4M8 20h8"/><path d="M7 12l3-3 2 2 4-4"/></svg></div>
+        <h3>Presentaciones</h3><p>Presentaciones de inversión editables</p>
+      </a>
+      <a class="app" href="https://web-production-9a60eb.up.railway.app/" target="_blank" rel="noopener">
+        <span class="tag">Con usuario</span>
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/><path d="M8.5 11h5M11 8.5v5"/></svg></div>
+        <h3>Buscador de locales</h3><p>Avisos nuevos por cliente, todos los días</p>
+      </a>
+      <a class="app" href="https://www.metricapropiedades.com/" target="_blank" rel="noopener">
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.7 3.7 5.7 3.7 9s-1.2 6.3-3.7 9c-2.5-2.7-3.7-5.7-3.7-9S9.5 5.7 12 3z"/></svg></div>
+        <h3>Web Propiedades</h3><p>metricapropiedades.com</p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-hd">
+      <div class="marca"><img src="logo-tasaciones.png" alt="Métrica Tasaciones"></div>
+      <h2>Tasaciones por comparables</h2>
+    </div>
+    <div class="grilla">
+      <a class="app" href="https://metricapropiedades.github.io/generador-fichas/comparables-editor.html" target="_blank" rel="noopener">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v18M7 21h10"/><path d="M5 7h14"/><path d="M5 7l-3 6a3 3 0 0 0 6 0z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0z"/></svg></div>
+        <h3>Tasador de locales</h3><p>Locales e inmuebles comerciales</p>
+      </a>
+      <a class="app" href="https://metricapropiedades.github.io/generador-fichas/tasador-departamentos.html" target="_blank" rel="noopener">
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 8h8M8 12h3M13 12h3M8 16h3M13 16h3"/></svg></div>
+        <h3>Tasador de departamentos</h3><p>Departamentos y propiedades residenciales</p>
+      </a>
+      <a class="app" href="https://metricatasaciones.com/" target="_blank" rel="noopener">
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.7 3.7 5.7 3.7 9s-1.2 6.3-3.7 9c-2.5-2.7-3.7-5.7-3.7-9S9.5 5.7 12 3z"/></svg></div>
+        <h3>Web Tasaciones</h3><p>metricatasaciones.com</p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-hd"><h2 style="color:var(--texto)">Datos útiles · tocá para copiar</h2></div>
+    <div class="datos">
+      <button class="dato" data-copiar="Mat. CUCICBA 7173"><div class="dato-txt"><div class="lbl">Matrícula</div><div class="val">CUCICBA 7173</div></div><span class="cp">Copiar</span></button>
+      <button class="dato" data-copiar="Av. Del Libertador 7208, Piso 3, CABA"><div class="dato-txt"><div class="lbl">Oficina</div><div class="val">Av. Del Libertador 7208, Piso 3, CABA</div></div><span class="cp">Copiar</span></button>
+      <button class="dato" data-copiar="+54 9 11 5836 0000"><div class="dato-txt"><div class="lbl">WhatsApp Propiedades</div><div class="val">+54 9 11 5836 0000</div></div><span class="cp">Copiar</span></button>
+      <button class="dato" data-copiar="santiago@metricapropiedades.com"><div class="dato-txt"><div class="lbl">Mail Propiedades</div><div class="val">santiago@metricapropiedades.com</div></div><span class="cp">Copiar</span></button>
+      <button class="dato" data-copiar="+54 9 11 7340-7207"><div class="dato-txt"><div class="lbl">WhatsApp Tasaciones</div><div class="val">+54 9 11 7340-7207</div></div><span class="cp">Copiar</span></button>
+      <button class="dato" data-copiar="info@metricatasaciones.com"><div class="dato-txt"><div class="lbl">Mail Tasaciones</div><div class="val">info@metricatasaciones.com</div></div><span class="cp">Copiar</span></button>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-hd"><h2 style="color:var(--texto)">Recursos de marca · tocá para descargar</h2></div>
+    <div class="rec-marca">Métrica Propiedades</div>
+    <div class="recursos" data-marca="propiedades"></div>
+    <div class="rec-marca">Métrica Tasaciones</div>
+    <div class="recursos" data-marca="tasaciones"></div>
+  </section>
+
+  <p class="pie">Instalala en tu celular o compu para tenerla siempre a mano.<br>Métrica Propiedades · Métrica Tasaciones</p>
+</main>
+
+<div class="toast" id="toast">Copiado</div>
+
+<div class="modal" id="modal" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="modal-box">
+    <h3>Instalar la app</h3>
+    <ol id="pasos"></ol>
+    <button class="cerrar" onclick="document.getElementById('modal').hidden=true">Listo</button>
+  </div>
+</div>
+
+<script>
+/* copiar datos con un toque */
+const toast=document.getElementById('toast');let _t;
+document.querySelectorAll('[data-copiar]').forEach(b=>b.addEventListener('click',async()=>{
+  const v=b.dataset.copiar;
+  try{await navigator.clipboard.writeText(v);}catch(e){const ta=document.createElement('textarea');ta.value=v;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}
+  toast.textContent='Copiado: '+v;toast.classList.add('on');clearTimeout(_t);_t=setTimeout(()=>toast.classList.remove('on'),1800);
+}));
+
+/* recursos de marca: logos, encabezados y pies de página para descargar */
+const RECURSOS=[
+  ['logo-sin-fondo','Logo sin fondo','PNG transparente'],
+  ['logo-con-fondo','Logo con fondo','Fondo gris'],
+  ['logo-cuadrado','Logo cuadrado','Para perfiles y redes'],
+  ['encabezado','Encabezado','Para documentos'],
+  ['pie-de-pagina','Pie de página','Para documentos'],
+];
+const EXT={propiedades:{'logo-sin-fondo':'png','logo-con-fondo':'jpg','logo-cuadrado':'png','encabezado':'jpg','pie-de-pagina':'jpg'},
+           tasaciones:{'logo-sin-fondo':'png','logo-con-fondo':'png','logo-cuadrado':'png','encabezado':'png','pie-de-pagina':'png'}};
+document.querySelectorAll('.recursos').forEach(box=>{
+  const m=box.dataset.marca;
+  box.innerHTML=RECURSOS.map(([id,nombre,nota])=>{
+    const f='recursos/'+m+'-'+id+'.'+EXT[m][id];
+    return '<a class="rec" href="'+f+'" download><div class="rec-img"><img src="'+f+'" alt="'+nombre+'" loading="lazy"></div>'+
+      '<div class="rec-txt"><div><b>'+nombre+'</b><small>'+nota+' · '+EXT[m][id].toUpperCase()+'</small></div><span class="dl">⬇</span></div></a>';
+  }).join('');
+});
+
+/* instalar como app: en Android/compu con el aviso del navegador; en iPhone, con instrucciones */
+let _aviso=null;
+const instalada=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+if(instalada())document.getElementById('btn-inst').hidden=true;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_aviso=e;});
+window.addEventListener('appinstalled',()=>{document.getElementById('btn-inst').hidden=true;});
+async function instalar(){
+  if(_aviso){_aviso.prompt();await _aviso.userChoice;_aviso=null;return;}
+  const ua=navigator.userAgent, ios=/iphone|ipad|ipod/i.test(ua)||(/Macintosh/.test(ua)&&'ontouchend' in document), android=/android/i.test(ua);
+  const pasos=ios?['Abrí esta página en <b>Safari</b>.','Tocá el botón <b>Compartir</b> (el cuadrado con la flecha para arriba).','Elegí <b>Agregar a pantalla de inicio</b> y tocá <b>Agregar</b>.']
+    :android?['Tocá el menú <b>⋮</b> de arriba a la derecha de Chrome.','Elegí <b>Instalar app</b> o <b>Agregar a pantalla de inicio</b>.','Confirmá: va a aparecer el ícono de Métrica entre tus apps.']
+    :['En Chrome o Edge, tocá el ícono de <b>instalar</b> que aparece a la derecha de la barra de direcciones (una pantallita con una flecha).','O abrí el menú <b>⋮</b> → <b>Transmitir, guardar y compartir</b> → <b>Instalar página como app</b>.','Ya instalada, hacé clic derecho en su ícono de la barra de tareas → <b>Anclar a la barra de tareas</b>.'];
+  document.getElementById('pasos').innerHTML=pasos.map(p=>'<li>'+p+'</li>').join('');
+  document.getElementById('modal').hidden=false;
+}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
