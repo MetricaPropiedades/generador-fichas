@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="google" content="notranslate">
-<title>Herramientas Métrica</title>
+<title>Central Métrica</title>
 <meta name="description" content="Accesos a las herramientas de Métrica Propiedades y Métrica Tasaciones.">
 <meta name="theme-color" content="#424549">
 <link rel="manifest" href="manifest.webmanifest">
@@ -103,6 +103,14 @@ main{max-width:1080px;margin:0 auto;padding:26px 20px calc(40px + env(safe-area-
 .rec-txt small{font-size:11.5px;color:var(--suave);}
 .rec-txt .dl{margin-left:auto;font-size:12px;font-weight:700;color:var(--mostaza);flex-shrink:0;}
 @media (max-width:520px){.recursos{grid-template-columns:1fr 1fr;}.rec-img{height:76px;}}
+/* cotización del dólar, discreta en la cabecera */
+.dolar{max-width:1080px;margin:14px auto 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;font-size:13px;color:rgba(255,255,255,.6);font-variant-numeric:tabular-nums;}
+.dolar[hidden]{display:none!important;}
+.dolar b{color:#fff;font-weight:600;}
+.dolar small{font-size:11.5px;color:rgba(255,255,255,.42);}
+
+.modal-box{max-height:calc(100vh - 32px);overflow-y:auto;}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -112,11 +120,12 @@ main{max-width:1080px;margin:0 auto;padding:26px 20px calc(40px + env(safe-area-
   <div class="cab-in">
     <img src="icono-192.png" alt="">
     <div class="cab-txt">
-      <h1>Herramientas <span>Métrica</span></h1>
+      <h1>Central <span>Métrica</span></h1>
       <p>Todas las herramientas en un solo lugar</p>
     </div>
     <button class="btn-inst" id="btn-inst" onclick="instalar()">📲 <span>Instalar</span></button>
   </div>
+  <div class="dolar" id="dolar" hidden></div>
 </header>
 
 <main>
@@ -251,6 +260,22 @@ async function instalar(){
   document.getElementById('pasos').innerHTML=pasos.map(p=>'<li>'+p+'</li>').join('');
   document.getElementById('modal').hidden=false;
 }
+/* dólar: se consulta al abrir la app y cada 10 minutos mientras está abierta */
+const fmt=n=>'$'+Math.round(n).toLocaleString('es-AR');
+async function cargarDolar(){
+  try{
+    const r=await fetch('https://dolarapi.com/v1/dolares',{cache:'no-store'});if(!r.ok)return;
+    const d=Object.fromEntries((await r.json()).map(x=>[x.casa,x]));
+    const ult=[d.oficial,d.bolsa,d.blue].filter(Boolean).map(x=>new Date(x.fechaActualizacion)).sort((a,b)=>b-a)[0];
+    const el=document.getElementById('dolar');
+    el.innerHTML='<span>Dólar venta</span>'+
+      [['Oficial',d.oficial],['MEP',d.bolsa],['Blue',d.blue]].filter(x=>x[1]).map(([n,x])=>'<span>'+n+' <b>'+fmt(x.venta)+'</b></span>').join('')+
+      (ult?'<small>actualizado '+ult.toLocaleString('es-AR',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})+'</small>':'');
+    el.hidden=false;
+  }catch(e){}
+}
+cargarDolar();setInterval(cargarDolar,10*60*1000);
+
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
