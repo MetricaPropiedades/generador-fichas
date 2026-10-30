@@ -258,18 +258,18 @@ document.addEventListener('click',async ev=>{
   toast.textContent='Copiado: '+v;toast.classList.add('on');clearTimeout(_t);_t=setTimeout(()=>toast.classList.remove('on'),1800);
 });
 
-/* colores de la marca: los del manual y los que se usan en las herramientas y la web */
+/* colores de la marca: RGB para pantalla, CMYK de los carteles impresos (Illustrator) */
 const COLORES=[
-  ['Mostaza','Acentos, íconos, botones','#D19C1D','209, 156, 29','C0 M25 Y86 K18'],
-  ['Gris mate','Fondos institucionales','#3E4348','62, 67, 72','C13 M6 Y0 K71'],
-  ['Gris oscuro','Menús y pies de la web','#2E3236','46, 50, 54','C15 M7 Y0 K79'],
+  ['Mostaza','Acentos, íconos, botones','#D19C1D','209, 156, 29','C18 M33 Y83 K6'],
+  ['Gris mate','Fondos institucionales','#3E4348','62, 67, 72','C71 M58 Y50 K50'],
+  ['Gris oscuro','Menús y pies de la web','#2E3236','46, 50, 54',''],
   ['Gris claro','Fondos claros','#EBEBEC','235, 235, 236','C0 M0 Y0 K7'],
   ['Blanco','Textos sobre fondos oscuros','#FFFFFF','255, 255, 255','C0 M0 Y0 K0'],
 ];
 document.getElementById('colores').innerHTML=COLORES.map(([n,uso,hex,rgb,cmyk])=>
   '<div class="color"><div class="muestra" style="background:'+hex+'"></div><div class="info"><b>'+n+'</b><small>'+uso+'</small></div><div class="codigos">'+
   '<button data-copiar="'+rgb+'"><span>RGB</span>'+rgb+'</button>'+
-  '<button data-copiar="'+cmyk+'"><span>CMYK</span>'+cmyk+'</button>'+
+  (cmyk?'<button data-copiar="'+cmyk+'"><span>CMYK</span>'+cmyk+'</button>':'')+
   '</div></div>').join('');
 
 /* recursos de marca: logos, encabezados y pies de página para descargar */
