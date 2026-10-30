@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--gris:#424549;--gris-2:#36393d;--claro:#EBEBEC;--mostaza:#D19C1D;--texto:#2B2B2B;--suave:#6b6f74;--card:#fff;--borde:rgba(0,0,0,.07);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -90,6 +90,26 @@ main{max-width:1080px;margin:0 auto;padding:26px 20px calc(40px + env(safe-area-
   .cab img{width:46px;height:46px;}
   .btn-inst{padding:10px 12px;font-size:13px;}
 }
+/* colores y tipografías */
+.colores{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+.color{background:var(--card);border:1px solid var(--borde);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
+.color .muestra{height:78px;border-bottom:1px solid var(--borde);}
+.color .info{padding:10px 12px 8px;}
+.color .info b{font-size:15px;display:block;}
+.color .info small{font-size:12px;color:var(--suave);}
+.color .codigos{display:flex;flex-direction:column;padding:0 6px 8px;}
+.color .codigos button{display:flex;justify-content:space-between;gap:8px;background:none;border:none;border-radius:7px;padding:6px;font-size:13px;color:var(--texto);text-align:left;font-variant-numeric:tabular-nums;}
+.color .codigos button:hover{background:var(--claro);}
+.color .codigos span{color:var(--suave);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding-top:1px;}
+.tipos{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:12px;}
+.tipo{background:var(--card);border:1px solid var(--borde);border-radius:12px;padding:14px 15px;display:flex;flex-direction:column;gap:4px;}
+.tipo .demo{font-size:30px;line-height:1.1;color:var(--texto);margin-bottom:4px;}
+.tipo b{font-size:14.5px;}
+.tipo small{font-size:13px;color:var(--suave);line-height:1.4;}
+.tipo a{font-size:13px;font-weight:700;color:var(--mostaza);margin-top:4px;align-self:flex-start;}
+.tipo a:hover{text-decoration:underline;}
+@media (max-width:520px){.colores{grid-template-columns:1fr 1fr;}.color .muestra{height:58px;}}
+
 /* recursos de marca */
 .rec-marca{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:16px;letter-spacing:.08em;text-transform:uppercase;margin:4px 0 10px;}
 .rec-marca + .recursos{margin-bottom:22px;}
@@ -197,6 +217,17 @@ main{max-width:1080px;margin:0 auto;padding:26px 20px calc(40px + env(safe-area-
   </section>
 
   <section>
+    <div class="sec-hd"><h2 style="color:var(--texto)">Colores y tipografías · tocá un código para copiarlo</h2></div>
+    <div class="colores" id="colores"></div>
+    <div class="tipos">
+      <div class="tipo"><div class="demo" style="font-family:'Bebas Neue',sans-serif">MÉTRICA PROPIEDADES</div><b>Bebas Neue</b><small>Solo para el logo.</small><a href="https://fonts.google.com/specimen/Bebas+Neue" target="_blank" rel="noopener">Descargar gratis ↗</a></div>
+      <div class="tipo"><div class="demo" style="font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase">Local en alquiler</div><b>Big Shoulders Display</b><small>Títulos de fichas, tasaciones, web y publicidades.</small><a href="https://fonts.google.com/specimen/Big+Shoulders+Display" target="_blank" rel="noopener">Descargar gratis ↗</a></div>
+      <div class="tipo"><div class="demo" style="font-family:'Barlow',sans-serif;font-size:24px">Superficie 120 m²</div><b>Barlow</b><small>Textos de fichas, tasaciones y web.</small><a href="https://fonts.google.com/specimen/Barlow" target="_blank" rel="noopener">Descargar gratis ↗</a></div>
+      <div class="tipo"><div class="demo" style="font-family:Calibri,Carlito,sans-serif;font-size:24px">Informe de valuación</div><b>Proxima Nova + Calibri</b><small>Documentos de Word: Proxima Nova en títulos y subtítulos, Calibri 12 en el cuerpo. Calibri viene con Office.</small></div>
+    </div>
+  </section>
+
+  <section>
     <div class="sec-hd"><h2 style="color:var(--texto)">Recursos de marca · tocá para descargar</h2></div>
     <div class="rec-marca">Métrica Propiedades</div>
     <div class="recursos" data-marca="propiedades"></div>
@@ -220,11 +251,27 @@ main{max-width:1080px;margin:0 auto;padding:26px 20px calc(40px + env(safe-area-
 <script>
 /* copiar datos con un toque */
 const toast=document.getElementById('toast');let _t;
-document.querySelectorAll('[data-copiar]').forEach(b=>b.addEventListener('click',async()=>{
+document.addEventListener('click',async ev=>{
+  const b=ev.target.closest('[data-copiar]');if(!b)return;
   const v=b.dataset.copiar;
   try{await navigator.clipboard.writeText(v);}catch(e){const ta=document.createElement('textarea');ta.value=v;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}
   toast.textContent='Copiado: '+v;toast.classList.add('on');clearTimeout(_t);_t=setTimeout(()=>toast.classList.remove('on'),1800);
-}));
+});
+
+/* colores de la marca: los del manual y los que se usan en las herramientas y la web */
+const COLORES=[
+  ['Mostaza','Acentos, íconos, botones','#D19C1D','209, 156, 29','C0 M25 Y86 K18'],
+  ['Gris mate','Fondos institucionales','#3E4348','62, 67, 72','C13 M6 Y0 K71'],
+  ['Gris oscuro','Menús y pies de la web','#2E3236','46, 50, 54',''],
+  ['Gris claro','Fondos claros','#EBEBEC','235, 235, 236','C0 M0 Y0 K7'],
+  ['Blanco','Textos sobre fondos oscuros','#FFFFFF','255, 255, 255',''],
+];
+document.getElementById('colores').innerHTML=COLORES.map(([n,uso,hex,rgb,cmyk])=>
+  '<div class="color"><div class="muestra" style="background:'+hex+'"></div><div class="info"><b>'+n+'</b><small>'+uso+'</small></div><div class="codigos">'+
+  '<button data-copiar="'+hex+'"><span>HEX</span>'+hex+'</button>'+
+  '<button data-copiar="'+rgb+'"><span>RGB</span>'+rgb+'</button>'+
+  (cmyk?'<button data-copiar="'+cmyk+'"><span>CMYK</span>'+cmyk+'</button>':'')+
+  '</div></div>').join('');
 
 /* recursos de marca: logos, encabezados y pies de página para descargar */
 const RECURSOS=[
