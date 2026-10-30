@@ -1458,7 +1458,10 @@ function dragDrop(ev,localId,toIdx,type){
 function sLev(el){setL(+el.dataset.id,el.dataset.f,el.value);}
 function sLbt(el){setL(+el.dataset.id,el.dataset.f,el.dataset.v);}
 async function init(){
-  try{const tb=localStorage.getItem('metrica_fichas_tab');if(tb==='local'||tb==='depto')tipoInmueble=tb;}catch(e){}
+  /* ?tipo=depto o ?tipo=local (desde la app de herramientas) elige la pestaña; si no, la última usada */
+  const tq=new URLSearchParams(location.search).get('tipo');
+  if(tq==='local'||tq==='depto')tipoInmueble=tq;
+  else{try{const tb=localStorage.getItem('metrica_fichas_tab');if(tb==='local'||tb==='depto')tipoInmueble=tb;}catch(e){}}
   const parsed=await leerBorrador();
   if(parsed?.locals?.length>0){applyState(parsed);_autoSaveEnabled=true;return;}
   showMap=true;actualizarUIInmueble();addLocal();_autoSaveEnabled=true;
