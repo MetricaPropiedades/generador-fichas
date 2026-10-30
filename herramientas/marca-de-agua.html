@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="es" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="google" content="notranslate">
+<title>Marca de agua · Central Métrica</title>
+<meta name="theme-color" content="#424549">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gris:#424549;--claro:#EBEBEC;--mostaza:#D19C1D;--texto:#2B2B2B;--suave:#6b6f74;--card:#fff;--borde:rgba(0,0,0,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;}
+body{font-family:'Barlow',system-ui,sans-serif;background:var(--claro);color:var(--texto);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+button{font:inherit;cursor:pointer;}
+:focus-visible{outline:3px solid var(--mostaza);outline-offset:3px;border-radius:6px;}
+
+.cab{background:var(--gris);color:#fff;padding:calc(16px + env(safe-area-inset-top)) 20px 18px;}
+.cab-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+.volver{font-size:14px;font-weight:600;color:rgba(255,255,255,.7);white-space:nowrap;}
+.volver:hover{color:#fff;}
+.cab h1{font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:clamp(24px,4.5vw,32px);letter-spacing:.02em;line-height:1;text-transform:uppercase;}
+.cab h1 span{color:var(--mostaza);}
+
+main{max-width:1180px;margin:0 auto;padding:22px 20px calc(40px + env(safe-area-inset-bottom));display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start;}
+.panel{background:var(--card);border:1px solid var(--borde);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:18px;position:sticky;top:16px;}
+.grupo{display:flex;flex-direction:column;gap:8px;}
+.grupo>.lbl{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);display:flex;justify-content:space-between;}
+.grupo>.lbl b{color:var(--texto);font-size:13px;letter-spacing:0;}
+.segm{display:flex;background:var(--claro);border-radius:9px;padding:3px;gap:3px;}
+.segm button{flex:1;border:none;background:none;border-radius:7px;padding:8px 6px;font-size:14px;font-weight:600;color:var(--suave);}
+.segm button.on{background:#fff;color:var(--texto);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+.pos{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:132px;}
+.pos button{height:30px;border:1px solid #d5d6d8;background:#fff;border-radius:6px;}
+.pos button.on{background:var(--mostaza);border-color:var(--mostaza);}
+.pos button:disabled{visibility:hidden;}
+input[type=range]{width:100%;accent-color:var(--mostaza);height:22px;}
+.ayuda{font-size:12.5px;color:var(--suave);line-height:1.4;}
+.acciones{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--borde);padding-top:16px;}
+.btn{border:none;border-radius:10px;padding:13px;font-weight:700;font-size:15px;}
+.btn-prim{background:var(--mostaza);color:#1c1c1c;}
+.btn-sec{background:var(--claro);color:var(--texto);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.estado{font-size:13.5px;color:var(--suave);min-height:18px;line-height:1.4;}
+.estado.ok{color:#2F7D4F;font-weight:600;}
+.estado.err{color:#B3261E;}
+
+.zona{border:2px dashed #c9cacc;border-radius:14px;background:var(--card);padding:34px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:border-color .15s,background .15s;}
+.zona:hover,.zona.sobre{border-color:var(--mostaza);background:#fffaf0;}
+.zona b{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:22px;text-transform:uppercase;}
+.zona span{font-size:14px;color:var(--suave);}
+.zona.chica{padding:14px;flex-direction:row;justify-content:center;}
+.zona.chica b{font-size:17px;}
+.fotos-hd{display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px;font-size:14px;color:var(--suave);}
+.fotos-hd button{background:none;border:none;color:var(--suave);text-decoration:underline;font-size:13.5px;}
+.grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.vista{background:#d9dadc;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;height:min(62vh,640px);margin-top:14px;}
+.vista[hidden]{display:none;}
+.vista canvas{max-width:100%;max-height:100%;display:block;}
+.foto{cursor:pointer;outline:3px solid transparent;outline-offset:-3px;}
+.foto.sel{outline-color:var(--mostaza);}
+.foto{position:relative;background:#d9dadc;border-radius:10px;overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;}
+.foto canvas{max-width:100%;max-height:100%;display:block;}
+.foto .x{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:15px;line-height:1;opacity:0;transition:opacity .15s;}
+.foto:hover .x,.foto .x:focus-visible{opacity:1;}
+.foto .nom{position:absolute;left:0;right:0;bottom:0;padding:14px 8px 5px;font-size:11.5px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.55));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media (hover:none){.foto .x{opacity:1;}}
+@media (max-width:820px){
+  main{grid-template-columns:1fr;}
+  .panel{position:static;order:2;}
+  .grilla{grid-template-columns:1fr 1fr;}
+  .vista{height:auto;max-height:60vh;}
+}
+</style>
+</head>
+<body>
+<header class="cab">
+  <div class="cab-in">
+    <a class="volver" href="./">← Central</a>
+    <h1>Marca de <span>agua</span></h1>
+  </div>
+</header>
+
+<main>
+  <aside class="panel">
+    <div class="grupo">
+      <div class="lbl">Logo</div>
+      <div class="segm" id="s-logo">
+        <button data-v="propiedades">Propiedades</button>
+        <button data-v="tasaciones">Tasaciones</button>
+      </div>
+    </div>
+    <div class="grupo">
+      <div class="lbl">Letras del logo</div>
+      <div class="segm" id="s-version">
+        <button data-v="clara">Blancas</button>
+        <button data-v="oscura">Grises</button>
+      </div>
+      <div class="ayuda">Grises para fotos claras (paredes blancas, planos); blancas para fotos oscuras.</div>
+    </div>
+    <div class="grupo">
+      <div class="lbl">Intensidad del logo <b id="v-opac"></b></div>
+      <input type="range" id="r-opac" min="5" max="100" step="1">
+      <div class="ayuda">Cuanto más bajo, más suave se ve el logo.</div>
+    </div>
+    <div class="grupo">
+      <div class="lbl">Tamaño <b id="v-tam"></b></div>
+      <input type="range" id="r-tam" min="10" max="90" step="1">
+    </div>
+    <div class="grupo">
+      <div class="lbl">Posición</div>
+      <div class="pos" id="s-pos">
+        <button data-v="ai" aria-label="Arriba a la izquierda"></button><button disabled></button><button data-v="ad" aria-label="Arriba a la derecha"></button>
+        <button disabled></button><button data-v="c" aria-label="Centro"></button><button disabled></button>
+        <button data-v="bi" aria-label="Abajo a la izquierda"></button><button disabled></button><button data-v="bd" aria-label="Abajo a la derecha"></button>
+      </div>
+    </div>
+    <div class="acciones">
+      <button class="btn btn-prim" id="b-carpeta" disabled>Guardar en una carpeta</button>
+      <button class="btn btn-sec" id="b-descargar" disabled>Descargar</button>
+      <div class="estado" id="estado"></div>
+    </div>
+  </aside>
+
+  <section>
+    <div class="zona" id="zona" tabindex="0" role="button">
+      <b>Agregá las fotos</b>
+      <span>Arrastralas acá o tocá para elegirlas. JPG o PNG, todas las que quieras.</span>
+    </div>
+    <input type="file" id="archivos" accept="image/jpeg,image/png,image/webp" multiple hidden>
+    <div class="vista" id="vista" hidden><canvas id="vista-cv"></canvas></div>
+    <div class="fotos-hd" id="fotos-hd" hidden><span><span id="cuenta"></span> · tocá una para verla grande</span><button id="b-quitar">Quitar todas</button></div>
+    <div class="grilla" id="grilla"></div>
+  </section>
+</main>
+
+<script>
+/* Ajustes que se recuerdan entre usos */
+const PREF_KEY='metrica-marca-agua';
+const DEF={logo:'propiedades',version:'clara',opac:25,tam:50,pos:'c'};
+let cfg={...DEF};
+try{Object.assign(cfg,JSON.parse(localStorage.getItem(PREF_KEY)||'{}'));}catch(e){}
+const guardarCfg=()=>{try{localStorage.setItem(PREF_KEY,JSON.stringify(cfg));}catch(e){}};
+
+/* Logos: la versión "Grises" cambia las partes blancas por el gris mate de la marca */
+const LOGO_SRC={propiedades:'marca-propiedades.png',tasaciones:'marca-tasaciones.png'};
+const logos={};
+function cargarImg(src){return new Promise((ok,mal)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=mal;i.src=src;});}
+async function logoActual(){
+  const k=cfg.logo+'-'+cfg.version;
+  if(logos[k])return logos[k];
+  const img=await cargarImg(LOGO_SRC[cfg.logo]);
+  const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+  const g=c.getContext('2d');g.drawImage(img,0,0);
+  if(cfg.version==='oscura'){
+    const d=g.getImageData(0,0,c.width,c.height),p=d.data;
+    for(let i=0;i<p.length;i+=4){
+      const mx=Math.max(p[i],p[i+1],p[i+2]),mn=Math.min(p[i],p[i+1],p[i+2]);
+      if(mx-mn<40&&mx>150){p[i]=62;p[i+1]=67;p[i+2]=72;}
+    }
+    g.putImageData(d,0,0);
+  }
+  return logos[k]=c;
+}
+
+/* Dibuja la foto con el logo en un canvas del tamaño pedido */
+function dibujar(canvas,img,logo,ancho){
+  const k=ancho?Math.min(1,ancho/img.naturalWidth):1;
+  const w=Math.round(img.naturalWidth*k),h=Math.round(img.naturalHeight*k);
+  canvas.width=w;canvas.height=h;
+  const g=canvas.getContext('2d');
+  g.drawImage(img,0,0,w,h);
+  let lw=w*cfg.tam/100,lh=lw*logo.height/logo.width;
+  if(lh>h*.9){lh=h*.9;lw=lh*logo.width/logo.height;}
+  const m=Math.min(w,h)*.04;
+  const x=cfg.pos==='c'?(w-lw)/2:cfg.pos.endsWith('i')?m:w-lw-m;
+  const y=cfg.pos==='c'?(h-lh)/2:cfg.pos.startsWith('a')?m:h-lh-m;
+  g.globalAlpha=cfg.opac/100;
+  g.imageSmoothingQuality='high';
+  g.drawImage(logo,x,y,lw,lh);
+  g.globalAlpha=1;
+}
+
+/* Fotos cargadas */
+let fotos=[];  // {file, img, url, canvas}
+let sel=null;  // la que se ve grande
+const grilla=document.getElementById('grilla'),zona=document.getElementById('zona'),inp=document.getElementById('archivos');
+async function agregar(files){
+  const nuevas=[...files].filter(f=>/^image\/(jpeg|png|webp)$/.test(f.type));
+  const ignoradas=files.length-nuevas.length;
+  for(const file of nuevas){
+    const url=URL.createObjectURL(file);
+    try{
+      const img=await cargarImg(url);
+      const el=document.createElement('div');el.className='foto';
+      const cv=document.createElement('canvas');
+      const x=document.createElement('button');x.className='x';x.textContent='×';x.title='Quitar esta foto';
+      const nom=document.createElement('div');nom.className='nom';nom.textContent=file.name;
+      el.append(cv,x,nom);grilla.appendChild(el);
+      const f={file,img,url,canvas:cv,el};fotos.push(f);
+      x.onclick=ev=>{ev.stopPropagation();URL.revokeObjectURL(url);el.remove();fotos=fotos.filter(o=>o!==f);if(sel===f)sel=fotos[0]||null;actualizarUI();redibujar();};
+      el.onclick=()=>{sel=f;redibujar();};
+      if(!sel)sel=f;
+    }catch(e){URL.revokeObjectURL(url);}
+  }
+  actualizarUI();
+  await redibujar();
+  if(ignoradas)estado(ignoradas===1?'Una foto no se pudo usar: tiene que ser JPG o PNG.':ignoradas+' fotos no se pudieron usar: tienen que ser JPG o PNG.','err');
+}
+async function redibujar(){
+  const logo=await logoActual();
+  for(const f of fotos){dibujar(f.canvas,f.img,logo,400);f.el.classList.toggle('sel',f===sel);}
+  document.getElementById('vista').hidden=!sel;
+  if(sel)dibujar(document.getElementById('vista-cv'),sel.img,logo,1400);
+}
+function actualizarUI(){
+  const n=fotos.length;
+  zona.classList.toggle('chica',n>0);
+  zona.querySelector('b').textContent=n?'Agregar más fotos':'Agregá las fotos';
+  document.getElementById('fotos-hd').hidden=!n;
+  document.getElementById('cuenta').textContent=n===1?'1 foto':n+' fotos';
+  document.getElementById('b-carpeta').disabled=!n;
+  document.getElementById('b-descargar').disabled=!n;
+  if(!n)estado('');
+}
+document.getElementById('b-quitar').onclick=()=>{fotos.forEach(f=>URL.revokeObjectURL(f.url));fotos=[];sel=null;grilla.innerHTML='';actualizarUI();redibujar();};
+zona.onclick=()=>inp.click();
+zona.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inp.click();}};
+inp.onchange=()=>{agregar(inp.files);inp.value='';};
+['dragenter','dragover'].forEach(t=>document.addEventListener(t,e=>{e.preventDefault();zona.classList.add('sobre');}));
+['dragleave','drop'].forEach(t=>document.addEventListener(t,e=>{e.preventDefault();if(t==='drop'||!e.relatedTarget)zona.classList.remove('sobre');}));
+document.addEventListener('drop',e=>{if(e.dataTransfer?.files?.length)agregar(e.dataTransfer.files);});
+
+/* Controles */
+function segm(id,clave){
+  const box=document.getElementById(id);
+  const marcar=()=>box.querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===cfg[clave]));
+  box.addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;cfg[clave]=b.dataset.v;marcar();guardarCfg();redibujar();});
+  marcar();
+}
+segm('s-logo','logo');segm('s-version','version');segm('s-pos','pos');
+function rango(id,clave,vid){
+  const r=document.getElementById(id),v=document.getElementById(vid);
+  r.value=cfg[clave];v.textContent=cfg[clave]+'%';
+  let raf;
+  r.oninput=()=>{cfg[clave]=+r.value;v.textContent=r.value+'%';cancelAnimationFrame(raf);raf=requestAnimationFrame(redibujar);};
+  r.onchange=guardarCfg;
+}
+rango('r-opac','opac','v-opac');rango('r-tam','tam','v-tam');
+
+/* Exportar en tamaño original, mismo formato y mismo nombre */
+const est=document.getElementById('estado');
+function estado(t,cl){est.textContent=t;est.className='estado'+(cl?' '+cl:'');}
+async function blobDe(f,logo){
+  const c=document.createElement('canvas');dibujar(c,f.img,logo,0);
+  const tipo=f.file.type==='image/png'?'image/png':'image/jpeg';
+  const b=await new Promise(ok=>c.toBlob(ok,tipo,.92));
+  c.width=c.height=0;
+  return b;
+}
+function nombreSalida(f){
+  const base=f.file.name.replace(/\.[^.]+$/,'');
+  return base+(f.file.type==='image/png'?'.png':'.jpg');
+}
+function ocupado(si){document.getElementById('b-carpeta').disabled=si||!fotos.length;document.getElementById('b-descargar').disabled=si||!fotos.length;}
+
+const puedeCarpeta='showDirectoryPicker' in window;
+if(!puedeCarpeta){
+  document.getElementById('b-carpeta').hidden=true;
+  document.getElementById('b-descargar').classList.replace('btn-sec','btn-prim');
+  document.getElementById('b-descargar').textContent='Guardar fotos';
+}
+
+document.getElementById('b-carpeta').onclick=async()=>{
+  let dir;
+  try{dir=await window.showDirectoryPicker({id:'metrica-marca-agua',mode:'readwrite',startIn:'pictures'});}
+  catch(e){return;}  // cerró la ventana sin elegir
+  ocupado(true);
+  try{
+    const logo=await logoActual();let i=0;
+    for(const f of fotos){
+      estado('Guardando '+(++i)+' de '+fotos.length+'…');
+      let nombre=nombreSalida(f);
+      // si ya hay un archivo con ese nombre (por ejemplo la foto original), no se pisa
+      try{await dir.getFileHandle(nombre);nombre=nombre.replace(/(\.[^.]+)$/,' - marca de agua$1');}catch(e){}
+      const fh=await dir.getFileHandle(nombre,{create:true});
+      const w=await fh.createWritable();await w.write(await blobDe(f,logo));await w.close();
+    }
+    estado('Listo: '+fotos.length+(fotos.length===1?' foto guardada':' fotos guardadas')+' en la carpeta "'+dir.name+'".','ok');
+  }catch(e){estado('No se pudo guardar: '+(e.message||e)+'.','err');}
+  ocupado(false);
+};
+
+document.getElementById('b-descargar').onclick=async()=>{
+  ocupado(true);
+  try{
+    const logo=await logoActual();
+    const archivos=[];let i=0;
+    for(const f of fotos){estado('Preparando '+(++i)+' de '+fotos.length+'…');const b=await blobDe(f,logo);archivos.push(new File([b],nombreSalida(f),{type:b.type}));}
+    // en el celular: guardar en la galería o compartir; en la compu: una descarga por foto
+    if(navigator.canShare&&navigator.canShare({files:archivos})&&/android|iphone|ipad/i.test(navigator.userAgent)){
+      try{await navigator.share({files:archivos});estado('Listo.','ok');}catch(e){estado('');}
+    }else{
+      for(const a of archivos){const u=URL.createObjectURL(a);const l=document.createElement('a');l.href=u;l.download=a.name;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);await new Promise(r=>setTimeout(r,250));}
+      estado('Listo: se descargaron '+archivos.length+(archivos.length===1?' foto.':' fotos.'),'ok');
+    }
+  }catch(e){estado('No se pudo preparar: '+(e.message||e)+'.','err');}
+  ocupado(false);
+};
+</script>
+</body>
+</html>
