@@ -21,15 +21,21 @@ a{color:inherit;text-decoration:none;}
 button{font:inherit;cursor:pointer;}
 :focus-visible{outline:3px solid var(--mostaza);outline-offset:3px;border-radius:6px;}
 
-.cab{background:var(--gris);color:#fff;padding:calc(16px + env(safe-area-inset-top)) 20px 18px;}
-.cab-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:14px;}
-.volver{font-size:14px;font-weight:600;color:rgba(255,255,255,.7);white-space:nowrap;}
-.volver:hover{color:#fff;}
+.cab{background:var(--gris);color:#fff;padding:calc(16px + env(safe-area-inset-top)) 20px 14px;}
+.cab-in{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+.cab img{width:40px;height:40px;border-radius:8px;flex-shrink:0;}
+/* pestañas */
+.tabs{background:var(--gris);position:sticky;top:0;z-index:20;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+.tabs-in{max-width:1080px;margin:0 auto;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding:0 10px;}
+.tabs-in::-webkit-scrollbar{display:none;}
+.tab{padding:13px 12px 10px;font-size:14.5px;font-weight:600;color:rgba(255,255,255,.62);white-space:nowrap;border-bottom:3px solid transparent;flex-shrink:0;}
+.tab:hover{color:#fff;}
+.tab.on{color:#fff;border-bottom-color:var(--mostaza);}
 .cab h1{font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:clamp(24px,4.5vw,32px);letter-spacing:.02em;line-height:1;text-transform:uppercase;}
 .cab h1 span{color:var(--mostaza);}
 
-main{max-width:1180px;margin:0 auto;padding:22px 20px calc(40px + env(safe-area-inset-bottom));display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start;}
-.panel{background:var(--card);border:1px solid var(--borde);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:18px;position:sticky;top:16px;}
+main{max-width:1080px;margin:0 auto;padding:22px 20px calc(40px + env(safe-area-inset-bottom));display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start;}
+.panel{background:var(--card);border:1px solid var(--borde);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:18px;position:sticky;top:64px;}
 .grupo{display:flex;flex-direction:column;gap:8px;}
 .grupo>.lbl{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);display:flex;justify-content:space-between;}
 .grupo>.lbl b{color:var(--texto);font-size:13px;letter-spacing:0;}
@@ -58,6 +64,7 @@ input[type=range]{width:100%;accent-color:var(--mostaza);height:22px;}
 .zona.chica{padding:14px;flex-direction:row;justify-content:center;}
 .zona.chica b{font-size:17px;}
 .fotos-hd{display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px;font-size:14px;color:var(--suave);}
+.fotos-hd[hidden]{display:none;}
 .fotos-hd button{background:none;border:none;color:var(--suave);text-decoration:underline;font-size:13.5px;}
 .grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
 .vista{background:#d9dadc;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;height:min(62vh,640px);margin-top:14px;}
@@ -82,10 +89,17 @@ input[type=range]{width:100%;accent-color:var(--mostaza);height:22px;}
 <body>
 <header class="cab">
   <div class="cab-in">
-    <a class="volver" href="./">← Central</a>
-    <h1>Marca de <span>agua</span></h1>
+    <a href="./"><img src="icono-192.png" alt="Inicio"></a>
+    <h1>Central <span>Métrica</span></h1>
   </div>
 </header>
+<nav class="tabs" aria-label="Secciones"><div class="tabs-in">
+  <a class="tab" href="./#herramientas" data-tab="herramientas">Herramientas</a>
+  <a class="tab on" href="marca-de-agua.html" data-tab="marca-de-agua">Marca de agua</a>
+  <a class="tab" href="./#logos" data-tab="logos">Logos y recursos</a>
+  <a class="tab" href="./#colores" data-tab="colores">Colores y tipografías</a>
+  <a class="tab" href="./#datos" data-tab="datos">Datos útiles</a>
+</div></nav>
 
 <main>
   <aside class="panel">
