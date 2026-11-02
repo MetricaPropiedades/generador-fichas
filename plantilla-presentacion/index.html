@@ -273,13 +273,16 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 .crop-rect i[data-h=n]{left:calc(50% - 7px);top:-8px;cursor:ns-resize}.crop-rect i[data-h=s]{left:calc(50% - 7px);bottom:-8px;cursor:ns-resize}
 .crop-rect i[data-h=w]{top:calc(50% - 7px);left:-8px;cursor:ew-resize}.crop-rect i[data-h=e]{top:calc(50% - 7px);right:-8px;cursor:ew-resize}
 /* ordenar fotos */
-.or-grid button{position:relative;cursor:grab}
-.or-grid button.drag{opacity:.35}
-.or-grid button.over{border-color:var(--gold)}
-.or-grid .n{position:absolute;left:6px;top:6px;background:rgba(17,18,19,.85);color:#fff;font:700 12px/1 var(--body);padding:5px 7px;border-radius:999px}
-.or-grid .tag{position:absolute;left:6px;bottom:6px;background:var(--gold);color:var(--ink);font:700 11px/1 var(--body);padding:5px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.06em}
-.or-grid .mv{position:absolute;right:6px;bottom:6px;display:flex;gap:4px}
-.or-grid .mv span{width:26px;height:26px;display:grid;place-items:center;background:rgba(17,18,19,.85);color:#fff;border-radius:50%;font-size:12px;cursor:pointer}
+/* ordenar: las diapositivas de fotos en miniatura; se arrastra y una línea mostaza marca dónde cae */
+.or-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 16px;margin-top:16px;max-height:62vh;overflow:auto;padding:4px}
+.or-page{position:relative}
+.or-lbl{display:block;font:600 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.or-box{position:relative;width:calc(940px*var(--k));height:calc(682px*var(--k));overflow:hidden;background:var(--gray);border-radius:3px}
+.or-scale{position:absolute;left:0;top:0;width:940px;height:682px;transform:scale(var(--k));transform-origin:0 0}
+.or-scale figure[data-o]{cursor:grab}
+.or-scale figure.drag{opacity:.3}
+#or-line{position:fixed;z-index:260;width:4px;background:var(--gold);border-radius:2px;display:none;pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.or-ghost{position:fixed;z-index:270;width:130px;height:auto;pointer-events:none;transform:translate(-50%,-50%) rotate(-2deg);box-shadow:0 10px 30px rgba(0,0,0,.45);border:3px solid #fff;opacity:.92}
 .ch-grid button.ch-txt{display:grid;place-items:center;background:#e8e4da;font:800 22px/1 var(--display);text-transform:uppercase;color:#2B2B2B}
 /* PDF: una diapositiva por hoja, sin botones */
 @media print{
@@ -293,6 +296,7 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
   .tools,.txtbar,.panel,.edit-panel,.lb,.modal,#tip,.zoom,.pick,.ebtn,.btn-s,.edit-hint,.seg-ctl,.pencil,.tap-hint{display:none!important}
   input.num{border-bottom-color:transparent!important}
 }
+.editing .stage{top:calc(50% - 38px)}
 .editing [data-k]{outline:1.5px dashed rgba(210,156,30,.85);outline-offset:3px;cursor:text;min-width:20px}
 .editing [data-k]:focus{outline-style:solid}
 .editing [data-img]{cursor:pointer;outline:2px dashed var(--gold);outline-offset:-6px}
@@ -404,8 +408,8 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 <div class="panel" id="orden" role="dialog" aria-modal="true" aria-label="Ordenar fotos">
   <div class="card" style="width:min(1100px,94vw)">
     <h3>Ordenar fotos</h3>
-    <p>Arrastrá las fotos para cambiar el orden en que aparecen, o usá las flechas. Las marcadas como portada o ficha no se repiten en las diapositivas de fotos.</p>
-    <div class="ch-grid or-grid" id="or-grid"></div>
+    <p>Así quedan las diapositivas de fotos. Arrastrá una foto y soltala donde la quieras: la línea mostaza marca el lugar. Las fotos de portada y de ficha no aparecen acá porque no se repiten.</p>
+    <div class="or-grid" id="or-grid"></div><div id="or-line"></div>
     <div class="row"><button type="button" id="or-cancel">Cancelar</button><button type="button" class="gold" id="or-ok">Aplicar</button></div>
   </div>
 </div>
@@ -789,17 +793,17 @@ function sResumen(){const st=(svg,when,title,amt,p)=>{const a=v=>v.startsWith("d
 
 function sCierre(){const c=P.contacto;const wa=c.whatsapp.replace(/\D/g,"");return `
 <section class="slide s-black" id="sl-cierre"><div class="stage closing">
-  ${I("cierre.foto","Foto de cierre","bg")}${P.ficha.fotos.length?`<div class="pick" style="left:71%;z-index:40"><button type="button" data-choose="cierre">Elegir foto</button></div>`:""}
+  ${I("cierre.foto","Foto de cierre","bg")}<div class="pick" style="left:calc(42% + 56px);top:12px;bottom:auto;transform:none;z-index:40"><button type="button" data-choose="cierre">Elegir foto</button></div>
   <img class="logo" src="${P.meta.logo}" alt="Métrica Propiedades">
   <div class="closing-in">
     <span class="kicker">${get(P,"portada.direccion")} &nbsp;·&nbsp; ${get(P,"portada.localidad")}</span>
     ${E("cierre.titulo","h2")}
     <div class="foot">
-      <span class="fi"><svg viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1.2"/><circle cx="5.5" cy="7.5" r="1.6"/><path d="M3.3 11c.4-1.2 1.2-1.8 2.2-1.8s1.8.6 2.2 1.8M9.5 6.5h3M9.5 9h2.5"/></svg>${E("contacto.matricula")}</span>
-      <span class="fi"><svg viewBox="0 0 16 16"><path d="M8 14.5s-4.5-4.6-4.5-8a4.5 4.5 0 0 1 9 0c0 3.4-4.5 8-4.5 8z"/><circle cx="8" cy="6.4" r="1.6"/></svg>${E("contacto.direccion")}</span>
-      <span class="fi"><svg viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="13" height="9" rx="1"/><path d="M2 4.2l6 4.6 6-4.6"/></svg>${E("contacto.email")}</span>
-      <a class="fi fl" href="https://wa.me/${wa}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" class="fill"><path d="M20.5 3.5A11.8 11.8 0 0 0 1.9 17.7L.5 23.5l5.9-1.5A11.8 11.8 0 0 0 20.5 3.5zM12 21.5c-1.8 0-3.5-.5-5-1.4l-.4-.2-3.5.9.9-3.4-.2-.4A9.7 9.7 0 1 1 12 21.5zm5.3-7.2c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1a7.9 7.9 0 0 1-3.9-3.4c-.3-.5.3-.5.8-1.6.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3 1.8.8 2.5.8 3.4.7.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>${E("contacto.whatsapp")}<i>↗</i></a>
-      <a class="fi fl" href="https://${c.web.replace(/^https?:\/\//,"")}" target="_blank" rel="noopener"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c1.8 1.8 2.7 4 2.7 6.5S9.8 12.7 8 14.5M8 1.5C6.2 3.3 5.3 5.5 5.3 8s.9 4.7 2.7 6.5"/></svg>${E("contacto.web")}<i>↗</i></a>
+      <span class="fi"><svg viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1.2"/><circle cx="5.5" cy="7.5" r="1.6"/><path d="M3.3 11c.4-1.2 1.2-1.8 2.2-1.8s1.8.6 2.2 1.8M9.5 6.5h3M9.5 9h2.5"/></svg>${c.matricula}</span>
+      <span class="fi"><svg viewBox="0 0 16 16"><path d="M8 14.5s-4.5-4.6-4.5-8a4.5 4.5 0 0 1 9 0c0 3.4-4.5 8-4.5 8z"/><circle cx="8" cy="6.4" r="1.6"/></svg>${c.direccion}</span>
+      <span class="fi"><svg viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="13" height="9" rx="1"/><path d="M2 4.2l6 4.6 6-4.6"/></svg>${c.email}</span>
+      <a class="fi fl" href="https://wa.me/${wa}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" class="fill"><path d="M20.5 3.5A11.8 11.8 0 0 0 1.9 17.7L.5 23.5l5.9-1.5A11.8 11.8 0 0 0 20.5 3.5zM12 21.5c-1.8 0-3.5-.5-5-1.4l-.4-.2-3.5.9.9-3.4-.2-.4A9.7 9.7 0 1 1 12 21.5zm5.3-7.2c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1a7.9 7.9 0 0 1-3.9-3.4c-.3-.5.3-.5.8-1.6.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3 1.8.8 2.5.8 3.4.7.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>${c.whatsapp}<i>↗</i></a>
+      <a class="fi fl" href="https://${c.web.replace(/^https?:\/\//,"")}" target="_blank" rel="noopener"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c1.8 1.8 2.7 4 2.7 6.5S9.8 12.7 8 14.5M8 1.5C6.2 3.3 5.3 5.5 5.3 8s.9 4.7 2.7 6.5"/></svg>${c.web}<i>↗</i></a>
     </div>
   </div>
 </div></section>`}
@@ -1212,7 +1216,9 @@ function render(){
   $("#deck").innerHTML=[sPortada(),sFicha(),sDescMapa(),sGalerias(),sPlanos(),sInversion(),sGraficos(),sResumen(),sCierre()].join("");
   bindModel();renderModel();drawMap();fitDescription();fitPortada();aplicarRecortes();bindViewers();if(EDIT)enableEditing();updUndo();
 }
-function fit(){if(STATIC)return;document.documentElement.style.setProperty("--s",Math.min(innerWidth/1440,innerHeight/810))}
+// editando, la diapositiva sube y deja abajo una franja libre para las barras de herramientas
+const FRANJA=76;
+function fit(){if(STATIC)return;document.documentElement.style.setProperty("--s",Math.min(innerWidth/1440,(innerHeight-(EDIT?FRANJA:0))/810))}
 addEventListener("resize",fit);
 
 function bindViewers(){
@@ -1238,11 +1244,15 @@ document.addEventListener("keydown",e=>{if($("#lb").classList.contains("open")){
 /* ---------- elegir la foto de la ficha ---------- */
 const CH_TXT={ficha:["Foto de la ficha","Elegí la foto que acompaña los datos de la propiedad. Lo ideal es la fachada vista desde la calle. La foto de portada no aparece acá."],
   portada:["Foto de portada","Elegí la foto principal de la presentación. Esa foto no se repite en las diapositivas de fotos."],cierre:["Foto del cierre","Elegí la foto de la última diapositiva."]};
+const SUBIR='<button type="button" data-i="subir" class="ch-txt">+ Subir foto</button>';
 function openChooser(dest){const box=$("#ch-grid"),f=P.ficha,c=portadaIdx();$("#ch-h").textContent=CH_TXT[dest][0];$("#ch-p").textContent=CH_TXT[dest][1];
   if(dest==="ficha"){const fm=fichaMapa(),uno=f.fotos.length<2;
-    box.innerHTML=(f.mapa.lat?`<button type="button" data-i="mapa" class="ch-txt${fm?" on":""}">Mapa</button>`:"")+f.fotos.map((src,i)=>i===c&&!uno?"":`<button type="button" data-i="${uno?"foto":i}" class="${!fm&&i===fichaIdx()?"on":""}"><img src="${src}" alt="Foto ${i+1}"></button>`).join("")}
-  else box.innerHTML=f.fotos.map((src,i)=>`<button type="button" data-i="${i}" class="${P[dest].foto===src?"on":""}"><img src="${src}" alt="Foto ${i+1}"></button>`).join("");
-  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.i;guardar();
+    box.innerHTML=SUBIR+(f.mapa.lat?`<button type="button" data-i="mapa" class="ch-txt${fm?" on":""}">Mapa</button>`:"")+f.fotos.map((src,i)=>i===c&&!uno?"":`<button type="button" data-i="${uno?"foto":i}" class="${!fm&&i===fichaIdx()?"on":""}"><img src="${src}" alt="Foto ${i+1}"></button>`).join("")}
+  else box.innerHTML=SUBIR+f.fotos.map((src,i)=>`<button type="button" data-i="${i}" class="${P[dest].foto===src?"on":""}"><img src="${src}" alt="Foto ${i+1}"></button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.i;
+    if(v==="subir")return pickImage(src=>{guardar();if(dest==="ficha"){f.fotos.push(src);f.fotoFicha=f.fotos.length-1}else{P[dest].foto=src;if(P.recortes)delete P.recortes[dest+".foto"]}
+      $("#chooser").classList.remove("open");render()});
+    guardar();
     if(dest==="ficha")f.fotoFicha=/^\d+$/.test(v)?+v:v;else{P[dest].foto=f.fotos[+v];if(P.recortes)delete P.recortes[dest+".foto"]}
     $("#chooser").classList.remove("open");render()}));
   $("#chooser").classList.add("open")}
@@ -1298,16 +1308,28 @@ function reordenar(path,orden){const lista=get(P,path),rc=P.recortes||{},nuevo={
   if(path==="ficha.fotos"&&/^\d+$/.test(String(P.ficha.fotoFicha))){const p=orden.indexOf(+P.ficha.fotoFicha);P.ficha.fotoFicha=p>=0?p:""}
   set(P,path,orden.map(i=>lista[i]));P.recortes=nuevo}
 let ORD=null;
-function abrirOrden(){ORD=P.ficha.fotos.map((_,i)=>i);pintarOrden();$("#orden").classList.add("open")}
-function pintarOrden(){const f=P.ficha,c=portadaIdx(),fi=fichaMapa()?-1:fichaIdx(),g=$("#or-grid");
-  g.innerHTML=ORD.map((oi,pos)=>`<button type="button" draggable="true" data-pos="${pos}"><img src="${f.fotos[oi]}" alt="Foto ${pos+1}"><span class="n">${pos+1}</span>${oi===c?'<span class="tag">Portada</span>':oi===fi?'<span class="tag">Ficha</span>':""}<span class="mv"><span data-mv="-1" title="Antes">◀</span><span data-mv="1" title="Después">▶</span></span></button>`).join("");
-  g.querySelectorAll("button").forEach(b=>{const pos=+b.dataset.pos;
-    b.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",pos);b.classList.add("drag")});
-    b.addEventListener("dragend",()=>b.classList.remove("drag"));
-    b.addEventListener("dragover",e=>{e.preventDefault();b.classList.add("over")});
-    b.addEventListener("dragleave",()=>b.classList.remove("over"));
-    b.addEventListener("drop",e=>{e.preventDefault();const from=+e.dataTransfer.getData("text/plain");if(isNaN(from)||from===pos)return pintarOrden();const[m]=ORD.splice(from,1);ORD.splice(pos,0,m);pintarOrden()});
-    b.querySelectorAll("[data-mv]").forEach(x=>x.addEventListener("click",e=>{e.stopPropagation();const to=pos+(+x.dataset.mv);if(to<0||to>=ORD.length)return;[ORD[pos],ORD[to]]=[ORD[to],ORD[pos]];pintarOrden()}))})}
+function abrirOrden(){ORD=P.ficha.fotos.map((_,i)=>i);$("#orden").classList.add("open");pintarOrden()}
+// arma las diapositivas de fotos con el orden de prueba (sobre una copia de los datos) para verlas antes de aplicar
+function pintarOrden(){const g=$("#or-grid"),real=P;g.style.setProperty("--k",((g.clientWidth-24)/2)/GW);
+  P=clonar(P);reordenar("ficha.fotos",ORD);
+  try{const pages=paginate(galeriaItems());
+    g.innerHTML=pages.map((pg,pi)=>{let k=0;
+      const rows=pg.lay.rows.map((n,ri)=>{const h=pg.lay.heights[ri],its=pg.items.slice(k,k+n);k+=n;const sumA=its.reduce((x,y)=>x+aspectoK(y.k),0),avail=GW-GAP*(n-1);
+        return `<div class="grow" style="height:${h}px">${its.map(it=>`<figure style="width:${avail*aspectoK(it.k)/sumA}px"${it.t==="foto"?` data-o="${it.i}"`:""}><img src="${it.src}" data-img="${it.k}" alt="" draggable="false"></figure>`).join("")}</div>`}).join("");
+      return `<div class="or-page"><span class="or-lbl">Diapositiva ${pi===0?"Fotos":"Más fotos"}${pages.length>1?" · "+(pi+1)+" de "+pages.length:""}</span><div class="or-box"><div class="or-scale"><div class="gallery">${rows}</div></div></div></div>`}).join("")||'<p>No hay fotos para ordenar.</p>';
+    g.querySelectorAll("img[data-img]").forEach(img=>recortarImg(img,recorte(img.dataset.img)));
+  }finally{P=real}
+  g.querySelectorAll("figure[data-o]").forEach(fig=>fig.addEventListener("pointerdown",e=>{if(e.button)return;e.preventDefault();const from=+fig.dataset.o,line=$("#or-line");let ghost=null,dest=null;
+    const mv=ev=>{if(!ghost){ghost=document.createElement("img");ghost.className="or-ghost";ghost.src=fig.querySelector("img").src;document.body.appendChild(ghost);fig.classList.add("drag")}
+      ghost.style.left=ev.clientX+"px";ghost.style.top=ev.clientY+"px";
+      const f2=document.elementFromPoint(ev.clientX,ev.clientY)?.closest("#or-grid figure[data-o]");
+      if(!f2||+f2.dataset.o===from){line.style.display="none";dest=null;return}
+      const r=f2.getBoundingClientRect(),despues=ev.clientX>r.left+r.width/2;dest={o:+f2.dataset.o,despues};
+      Object.assign(line.style,{display:"block",left:(despues?r.right+1:r.left-5)+"px",top:r.top+"px",height:r.height+"px"})};
+    const up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up);line.style.display="none";if(ghost)ghost.remove();fig.classList.remove("drag");
+      if(!dest)return;const v=ORD[from],resto=ORD.filter((_,i)=>i!==from);let ti=resto.indexOf(ORD[dest.o])+(dest.despues?1:0);resto.splice(ti,0,v);ORD=resto;pintarOrden()};
+    addEventListener("pointermove",mv);addEventListener("pointerup",up)}));
+}
 $("#or-ok").addEventListener("click",()=>{guardar();reordenar("ficha.fotos",ORD);$("#orden").classList.remove("open");render()});
 $("#or-cancel").addEventListener("click",()=>$("#orden").classList.remove("open"));
 
@@ -1347,7 +1369,7 @@ function shrink(file,cb){const r=new FileReader();r.onload=()=>{const img=new Im
   cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);cb(file.type==="image/png"?cv.toDataURL("image/png"):cv.toDataURL("image/jpeg",.85))};img.src=r.result};r.readAsDataURL(file)}
 function pickImage(cb){const inp=$("#file-in");inp.value="";inp.onchange=()=>{if(inp.files[0])shrink(inp.files[0],cb)};inp.click()}
 function pickImages(cb){const inp=$("#file-multi");inp.value="";inp.onchange=()=>{const fs=[...inp.files],out=[];if(!fs.length)return;fs.forEach((f,i)=>shrink(f,src=>{out[i]=src;if(out.filter(Boolean).length===fs.length)cb(out)}))};inp.click()}
-$("#t-edit").addEventListener("click",()=>{EDIT=!EDIT;document.documentElement.classList.toggle("editing",EDIT);$("#t-edit").textContent=EDIT?"✓ Terminar edición":"✎ Editar";if(EDIT)resetModel();render()});
+$("#t-edit").addEventListener("click",()=>{EDIT=!EDIT;document.documentElement.classList.toggle("editing",EDIT);fit();$("#t-edit").textContent=EDIT?"✓ Terminar edición":"✎ Editar";if(EDIT)resetModel();render()});
 // formato de texto: actúa sobre lo seleccionado sin sacar el foco del texto
 const enTexto=()=>{const s=getSelection();if(!s.rangeCount)return null;const n=s.getRangeAt(0).commonAncestorContainer;return (n.nodeType===1?n:n.parentElement).closest("[data-k]")};
 const fmt=(sel,fn)=>document.querySelectorAll(sel).forEach(b=>b.addEventListener("mousedown",e=>{e.preventDefault();if(enTexto())fn(b)}));
