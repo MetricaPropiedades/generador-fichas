@@ -57,7 +57,7 @@ html.static{scroll-snap-type:none}
 .cover h1{font:900 104px/.96 var(--display);text-transform:uppercase}
 .cover .lead{font:300 20px/1.55 var(--body);color:var(--on-dark-2);max-width:600px;margin-top:26px}
 .cover .lead b{color:var(--on-dark);font-weight:600}
-.cover-media{position:relative;margin-top:30px;height:610px}
+.cover-media{position:relative;margin-top:30px;height:610px;align-self:center;justify-self:end}
 .cover-media img{width:100%;height:100%;object-fit:cover}
 .cap{position:absolute;z-index:2;left:18px;bottom:16px;font:600 11px/1.3 var(--body);letter-spacing:.22em;text-transform:uppercase;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.7)}
 
@@ -88,6 +88,8 @@ html.static{scroll-snap-type:none}
 .ch-grid button.ch-map{display:grid;place-items:center;background:#e8e4da;font:800 22px/1 var(--display);text-transform:uppercase;color:#2B2B2B}
 .pick{position:absolute;z-index:31;bottom:14px;left:50%;transform:translateX(-50%);display:none;gap:6px}
 .editing .pick{display:flex}
+.pick select{appearance:none;-webkit-appearance:none;background:rgba(17,18,19,.85) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center;color:#fff;border:0;border-radius:999px;padding:9px 30px 9px 13px;font:600 12px/1 var(--body);cursor:pointer}
+.pick select option{background:#fff;color:#111}
 .pick button{background:rgba(17,18,19,.85);color:#fff;border:0;border-radius:999px;padding:9px 13px;font:600 12px/1 var(--body);cursor:pointer;white-space:nowrap}
 
 /* ficha: descripción + mapa */
@@ -518,16 +520,16 @@ const ICON_KEYS=Object.keys(ICONS);
 const icon=k=>`<svg class="ic" viewBox="0 0 44 44">${ICONS[k]||ICONS.superficie}</svg>`;
 
 /* ---------- portada ---------- */
-function sPortada(){return `
+function sPortada(){const cj=portadaCaja();return `
 <section class="slide s-dark grain" id="sl-portada"><div class="stage">
-  <div class="cover">
+  <div class="cover" style="grid-template-columns:1fr ${cj.w}px">
     <div class="topbar">${E("meta.kicker","span","kicker")}<img src="${P.meta.logo}" alt="Métrica Propiedades"></div>
     <div class="cover-copy">
       <span class="kicker">${E("portada.direccion")} &nbsp;·&nbsp; ${E("portada.localidad")}</span>
       ${E("portada.titulo","h1")}
       ${E("portada.subtitulo","p","lead")}
     </div>
-    <figure class="cover-media">${I("portada.foto","Foto principal")}</figure>
+    <figure class="cover-media" style="width:${cj.w}px;height:${cj.h}px">${I("portada.foto","Foto principal")}${P.portada.foto?`<div class="pick">${selForma("portada",P.portada.fotoForma)}</div>`:""}</figure>
   </div>
 </div></section>`}
 
@@ -537,12 +539,19 @@ function fichaIdx(){const f=P.ficha,n=f.fotos.length;if(n<2)return 0;const i=+f.
 // con una sola foto (la de portada) la ficha muestra el mapa en vez de repetirla; también se puede elegir "Mapa" a mano
 function fichaMapa(){const f=P.ficha;if(!f.mapa.lat)return false;if(f.fotoFicha==="mapa")return true;return f.fotos.length<2&&f.fotoFicha!=="foto"}
 // el recuadro de la foto toma la forma de la foto (ancho si es horizontal, alto si es vertical), o la forma que se elija en Editar
-const FORMAS={cuadrada:1,horizontal:4/3,vertical:3/4},FORMA_ORDEN=["auto","cuadrada","horizontal","vertical"];
+const FORMAS={"1:1":"Cuadrada","4:3":"Horizontal","3:2":"Horizontal","16:9":"Panorámica","3:4":"Vertical","2:3":"Vertical"};
+const FORMA_VIEJA={cuadrada:"1:1",horizontal:"4:3",vertical:"3:4"};
+// "4:3" -> 1.333; "auto" o vacío -> null (se usa la forma de la foto)
+function ratioForma(v){v=FORMA_VIEJA[v]||v;const m=/^(\d+):(\d+)$/.exec(v||"");return m?m[1]/m[2]:null}
+function selForma(clave,valor){valor=FORMA_VIEJA[valor]||valor||"auto";
+  return `<select data-forma="${clave}" aria-label="Forma de la foto"><option value="auto"${valor==="auto"?" selected":""}>Automática (según la foto)</option>${Object.entries(FORMAS).map(([k,t])=>`<option value="${k}"${valor===k?" selected":""}>${k} ${t}</option>`).join("")}</select>`}
+// portada: el recuadro toma la forma elegida o la de la foto
+function portadaCaja(){const p=P.portada,a=Math.min(2,Math.max(.6,ratioForma(p.fotoForma)||ASPECT.get(p.foto)||.7)),w=Math.round(Math.min(560,610*a));return{w,h:Math.min(610,Math.round(w/a))}}
 function fichaCaja(){const f=P.ficha;if(fichaMapa())return{w:540,h:682};if(!f.fotos.length)return{w:470,h:682};
-  const a=Math.min(2.2,Math.max(.5,FORMAS[f.fotoForma]||ASPECT.get(f.fotos[fichaIdx()])||1)),w=Math.round(Math.min(650,682*a,a<1.15?600:650));return{w,h:Math.min(682,Math.round(w/a))}}
+  const a=Math.min(2.2,Math.max(.5,ratioForma(f.fotoForma)||ASPECT.get(f.fotos[fichaIdx()])||1)),w=Math.round(Math.min(650,682*a,a<1.15?600:650));return{w,h:Math.min(682,Math.round(w/a))}}
 function sFicha(){const f=P.ficha,fm=fichaMapa(),cj=fichaCaja();
   const flechas=!fm&&f.fotos.length>2,elegir=f.fotos.length>2||(f.fotos.length&&f.mapa.lat),forma=!fm&&f.fotos.length;
-  const pick=flechas||elegir||forma?`<div class="pick">${flechas?'<button type="button" data-pick="-1">◀</button>':""}${elegir?'<button type="button" data-choose="1">Elegir foto</button>':""}${forma?`<button type="button" data-forma="1">Forma: ${f.fotoForma&&FORMAS[f.fotoForma]?f.fotoForma:"auto"}</button>`:""}${flechas?'<button type="button" data-pick="1">▶</button>':""}</div>`:"";
+  const pick=flechas||elegir||forma?`<div class="pick">${flechas?'<button type="button" data-pick="-1">◀</button>':""}${elegir?'<button type="button" data-choose="1">Elegir foto</button>':""}${forma?selForma("ficha",f.fotoForma):""}${flechas?'<button type="button" data-pick="1">▶</button>':""}</div>`:"";
   const der=fm?`<div class="ficha-r fmap mapwrap" style="height:${cj.h}px;align-self:center"><div class="map"></div>${E("ficha.mapaLeyenda","p","map-cap")}
       <button type="button" class="ebtn add" data-add="mapa" style="position:absolute;z-index:600;top:10px;left:10px;margin:0">Editar ubicación y puntos</button>${pick}</div>`
     :`<div class="ficha-r" data-zoom="foto:${fichaIdx()}" style="height:${cj.h}px;align-self:center">${f.fotos.length?I("ficha.fotos."+fichaIdx(),"Foto de la propiedad")+ZOOM+pick:ADD("fotos","+ Fotos")}</div>`;
@@ -583,7 +592,7 @@ const GW=940,GH=682,GAP=10;           // tamaño del área de fotos dentro de la
 const ASPECT=new Map();               // proporción ancho/alto de cada imagen, medida al cargar
 const aspectOf=src=>ASPECT.get(src)||1.5;
 function measureImages(){
-  const srcs=[...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].filter(x=>x&&!ASPECT.has(x));
+  const srcs=[P.portada.foto,...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].filter(x=>x&&!ASPECT.has(x));
   return Promise.all(srcs.map(src=>new Promise(res=>{const im=new Image();im.onload=()=>{ASPECT.set(src,im.naturalWidth/im.naturalHeight||1.5);res()};im.onerror=()=>{ASPECT.set(src,1.5);res()};im.src=src})));
 }
 // todas las formas de partir k imágenes seguidas en r filas de 1 a 4 imágenes
@@ -1117,12 +1126,15 @@ function aplicarFicha(d){
 
 /* ---------- render all ---------- */
 function fitDescription(){const b=document.querySelector(".desc-box");if(!b)return;let fs=b.closest(".solo")?20:16;b.style.fontSize=fs+"px";while((b.scrollHeight>b.clientHeight+1||b.scrollWidth>b.clientWidth+1)&&fs>11){fs-=.5;b.style.fontSize=fs+"px"}}
+// título de portada: si la foto es ancha queda menos lugar; se achica la letra hasta que entre en 4 renglones
+function fitPortada(){const h=document.querySelector("#sl-portada h1"),c=document.querySelector("#sl-portada .cover-copy");if(!h)return;let fs=104;h.style.fontSize="";
+  while(fs>68&&(h.offsetHeight>fs*.96*4+4||c.scrollHeight>c.clientHeight+1)){fs-=4;h.style.fontSize=fs+"px"}}
 let MEASURING=false;
 function render(){
-  if(!MEASURING&&[...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].some(x=>x&&!ASPECT.has(x))){MEASURING=true;measureImages().then(()=>{MEASURING=false;render()});return}
+  if(!MEASURING&&[P.portada.foto,...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].some(x=>x&&!ASPECT.has(x))){MEASURING=true;measureImages().then(()=>{MEASURING=false;render()});return}
   document.title=String(P.meta.tituloPestana||"Presentación Métrica").replace(/<[^>]+>/g,"");
   $("#deck").innerHTML=[sPortada(),sFicha(),sDescMapa(),sGalerias(),sPlanos(),sInversion(),sGraficos(),sResumen(),sCierre()].join("");
-  bindModel();renderModel();drawMap();fitDescription();bindViewers();if(EDIT)enableEditing();
+  bindModel();renderModel();drawMap();fitDescription();fitPortada();bindViewers();if(EDIT)enableEditing();
 }
 function fit(){if(STATIC)return;document.documentElement.style.setProperty("--s",Math.min(innerWidth/1440,innerHeight/810))}
 addEventListener("resize",fit);
@@ -1154,7 +1166,7 @@ function enableEditing(){
   document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();get(P,b.dataset.del).splice(+b.dataset.i,1);render()}));
   document.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const f=P.ficha,n=f.fotos.length;let i=fichaIdx()+(+b.dataset.pick);if(i<1)i=n-1;if(i>n-1)i=1;f.fotoFicha=i;render()}));
   document.querySelectorAll("[data-choose]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();openChooser()}));
-  document.querySelectorAll("[data-forma]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const f=P.ficha;f.fotoForma=FORMA_ORDEN[(FORMA_ORDEN.indexOf(f.fotoForma||"auto")+1)%FORMA_ORDEN.length];render()}));
+  document.querySelectorAll("select[data-forma]").forEach(sel=>{sel.addEventListener("click",e=>e.stopPropagation());sel.addEventListener("change",()=>{P[sel.dataset.forma].fotoForma=sel.value;render()})});
   document.querySelectorAll("[data-icon]").forEach(n=>n.addEventListener("click",()=>{const s=P.ficha.stats[+n.dataset.icon];s.icono=ICON_KEYS[(ICON_KEYS.indexOf(s.icono)+1)%ICON_KEYS.length];render()}));
   document.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.add,f=P.ficha;
     if(k==="chip"){f.caracteristicas.push("Nueva característica");render()}
