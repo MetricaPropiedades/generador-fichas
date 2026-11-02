@@ -69,7 +69,10 @@ input[type=range]{width:100%;accent-color:var(--mostaza);height:22px;}
 .grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
 .vista{background:#d9dadc;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;height:min(62vh,640px);margin-top:14px;}
 .vista[hidden]{display:none;}
-.vista canvas{max-width:100%;max-height:100%;display:block;}
+.vista canvas{max-width:100%;max-height:100%;display:block;cursor:move;touch-action:none;}
+.vista-nota{font-size:13.5px;color:var(--suave);margin-top:8px;min-height:20px;}
+.vista-nota[hidden]{display:none;}
+.vista-nota button{background:none;border:none;color:var(--texto);font-weight:600;text-decoration:underline;font-size:13.5px;padding:0;}
 .foto{cursor:pointer;outline:3px solid transparent;outline-offset:-3px;}
 .foto.sel{outline-color:var(--mostaza);}
 .foto{position:relative;background:#d9dadc;border-radius:10px;overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;}
@@ -149,6 +152,7 @@ input[type=range]{width:100%;accent-color:var(--mostaza);height:22px;}
     </div>
     <input type="file" id="archivos" accept="image/jpeg,image/png,image/webp" multiple hidden>
     <div class="vista" id="vista" hidden><canvas id="vista-cv"></canvas></div>
+    <div class="vista-nota" id="vista-nota" hidden></div>
     <div class="fotos-hd" id="fotos-hd" hidden><span><span id="cuenta"></span> · tocá una para verla grande</span><button id="b-quitar">Quitar todas</button></div>
     <div class="grilla" id="grilla"></div>
   </section>
@@ -184,7 +188,8 @@ async function logoActual(){
 }
 
 /* Dibuja la foto con el logo en un canvas del tamaño pedido */
-function dibujar(canvas,img,logo,ancho){
+/* mano: posición movida a mano en esa foto (centro del logo, en proporción de la foto) */
+function dibujar(canvas,img,logo,ancho,mano){
   const k=ancho?Math.min(1,ancho/img.naturalWidth):1;
   const w=Math.round(img.naturalWidth*k),h=Math.round(img.naturalHeight*k);
   canvas.width=w;canvas.height=h;
@@ -195,12 +200,14 @@ function dibujar(canvas,img,logo,ancho){
   if(lw>w*.9){lw=w*.9;lh=lw*logo.height/logo.width;}
   if(lh>h*.9){lh=h*.9;lw=lh*logo.width/logo.height;}
   const m=Math.min(w,h)*.04;
-  const x=cfg.pos==='c'?(w-lw)/2:cfg.pos.endsWith('i')?m:w-lw-m;
-  const y=cfg.pos==='c'?(h-lh)/2:cfg.pos.startsWith('a')?m:h-lh-m;
+  let x=cfg.pos==='c'?(w-lw)/2:cfg.pos.endsWith('i')?m:w-lw-m;
+  let y=cfg.pos==='c'?(h-lh)/2:cfg.pos.startsWith('a')?m:h-lh-m;
+  if(mano){x=Math.min(Math.max(mano.x*w-lw/2,0),w-lw);y=Math.min(Math.max(mano.y*h-lh/2,0),h-lh);}
   g.globalAlpha=cfg.opac/100;
   g.imageSmoothingQuality='high';
   g.drawImage(logo,x,y,lw,lh);
   g.globalAlpha=1;
+  return {x,y,lw,lh,w,h};
 }
 
 /* Fotos cargadas */
@@ -231,10 +238,42 @@ async function agregar(files){
 }
 async function redibujar(){
   const logo=await logoActual();
-  for(const f of fotos){dibujar(f.canvas,f.img,logo,400);f.el.classList.toggle('sel',f===sel);}
-  document.getElementById('vista').hidden=!sel;
-  if(sel)dibujar(document.getElementById('vista-cv'),sel.img,logo,1400);
+  for(const f of fotos){dibujar(f.canvas,f.img,logo,400,f.mano);f.el.classList.toggle('sel',f===sel);}
+  dibujarVista(logo);
 }
+let rectVista=null;
+function dibujarVista(logo){
+  document.getElementById('vista').hidden=!sel;
+  const nota=document.getElementById('vista-nota');nota.hidden=!sel;
+  if(!sel)return;
+  rectVista=dibujar(document.getElementById('vista-cv'),sel.img,logo,1400,sel.mano);
+  nota.innerHTML=sel.mano?'Logo movido a mano en esta foto · <button type="button" id="b-volver">Volver a la posición elegida</button>'
+    :'Arrastrá el logo para moverlo solo en esta foto.';
+  const bv=document.getElementById('b-volver');
+  if(bv)bv.onclick=()=>{delete sel.mano;redibujar();};
+}
+
+/* Mover el logo a mano: se arrastra sobre la foto grande y vale solo para esa foto */
+const vcv=document.getElementById('vista-cv');let arrastre=null;
+function puntoEnVista(e){const r=vcv.getBoundingClientRect();return {x:(e.clientX-r.left)*vcv.width/r.width,y:(e.clientY-r.top)*vcv.height/r.height};}
+vcv.addEventListener('pointerdown',e=>{
+  if(!sel||!rectVista)return;
+  const p=puntoEnVista(e),R=rectVista;
+  const dentro=p.x>=R.x&&p.x<=R.x+R.lw&&p.y>=R.y&&p.y<=R.y+R.lh;
+  // si se toca el logo se lo agarra de donde está; si se toca afuera, el logo salta ahí
+  arrastre={dx:dentro?p.x-(R.x+R.lw/2):0,dy:dentro?p.y-(R.y+R.lh/2):0};
+  try{vcv.setPointerCapture(e.pointerId);}catch(_){}
+  moverA(p);
+});
+let rafMover;
+function moverA(p){
+  const R=rectVista;
+  sel.mano={x:(p.x-arrastre.dx)/R.w,y:(p.y-arrastre.dy)/R.h};
+  cancelAnimationFrame(rafMover);
+  rafMover=requestAnimationFrame(async()=>{const logo=await logoActual();dibujar(sel.canvas,sel.img,logo,400,sel.mano);dibujarVista(logo);});
+}
+vcv.addEventListener('pointermove',e=>{if(arrastre)moverA(puntoEnVista(e));});
+['pointerup','pointercancel'].forEach(t=>vcv.addEventListener(t,()=>{arrastre=null;}));
 function actualizarUI(){
   const n=fotos.length;
   zona.classList.toggle('chica',n>0);
@@ -274,7 +313,7 @@ rango('r-opac','opac','v-opac');rango('r-tam','tam','v-tam');
 const est=document.getElementById('estado');
 function estado(t,cl){est.textContent=t;est.className='estado'+(cl?' '+cl:'');}
 async function blobDe(f,logo){
-  const c=document.createElement('canvas');dibujar(c,f.img,logo,0);
+  const c=document.createElement('canvas');dibujar(c,f.img,logo,0,f.mano);
   const tipo=f.file.type==='image/png'?'image/png':'image/jpeg';
   const b=await new Promise(ok=>c.toBlob(ok,tipo,.92));
   c.width=c.height=0;
