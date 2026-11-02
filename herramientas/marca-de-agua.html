@@ -157,7 +157,7 @@ input[type=range]{width:100%;accent-color:var(--mostaza);height:22px;}
 <script>
 /* Ajustes que se recuerdan entre usos */
 const PREF_KEY='metrica-marca-agua';
-const DEF={logo:'propiedades',version:'clara',opac:25,tam:50,pos:'c'};
+const DEF={logo:'propiedades',version:'clara',opac:35,tam:35,pos:'c'};
 let cfg={...DEF};
 try{Object.assign(cfg,JSON.parse(localStorage.getItem(PREF_KEY)||'{}'));}catch(e){}
 const guardarCfg=()=>{try{localStorage.setItem(PREF_KEY,JSON.stringify(cfg));}catch(e){}};
@@ -190,7 +190,9 @@ function dibujar(canvas,img,logo,ancho){
   canvas.width=w;canvas.height=h;
   const g=canvas.getContext('2d');
   g.drawImage(img,0,0,w,h);
-  let lw=w*cfg.tam/100,lh=lw*logo.height/logo.width;
+  // el tamaño se mide sobre el lado largo: el logo se ve igual en fotos horizontales y verticales
+  let lw=Math.max(w,h)*cfg.tam/100,lh=lw*logo.height/logo.width;
+  if(lw>w*.9){lw=w*.9;lh=lw*logo.height/logo.width;}
   if(lh>h*.9){lh=h*.9;lw=lh*logo.width/logo.height;}
   const m=Math.min(w,h)*.04;
   const x=cfg.pos==='c'?(w-lw)/2:cfg.pos.endsWith('i')?m:w-lw-m;
