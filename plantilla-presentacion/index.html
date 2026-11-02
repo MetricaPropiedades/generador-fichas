@@ -1322,7 +1322,9 @@ function pintarOrden(){const g=$("#or-grid"),real=P;g.style.setProperty("--k",((
   g.querySelectorAll("figure[data-o]").forEach(fig=>fig.addEventListener("pointerdown",e=>{if(e.button)return;e.preventDefault();const from=+fig.dataset.o,line=$("#or-line");let ghost=null,dest=null;
     const mv=ev=>{if(!ghost){ghost=document.createElement("img");ghost.className="or-ghost";ghost.src=fig.querySelector("img").src;document.body.appendChild(ghost);fig.classList.add("drag")}
       ghost.style.left=ev.clientX+"px";ghost.style.top=ev.clientY+"px";
-      const f2=document.elementFromPoint(ev.clientX,ev.clientY)?.closest("#or-grid figure[data-o]");
+      // entre dos fotos (justo sobre la línea) vale la foto más cercana, así se puede soltar ahí mismo
+      const x=ev.clientX,y=ev.clientY,box=document.elementFromPoint(x,y)?.closest("#or-grid .or-box");let f2=null,bd=Infinity;
+      if(box)box.querySelectorAll("figure[data-o]").forEach(f=>{const r=f.getBoundingClientRect(),dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),dd=dx*dx+dy*dy*4;if(dd<bd){bd=dd;f2=f}});
       if(!f2||+f2.dataset.o===from){line.style.display="none";dest=null;return}
       const r=f2.getBoundingClientRect(),despues=ev.clientX>r.left+r.width/2;dest={o:+f2.dataset.o,despues};
       Object.assign(line.style,{display:"block",left:(despues?r.right+1:r.left-5)+"px",top:r.top+"px",height:r.height+"px"})};
