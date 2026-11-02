@@ -147,7 +147,7 @@ html.static{scroll-snap-type:none}
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);border-top:2px solid var(--ink);border-bottom:1px solid var(--line);margin:22px 0 40px}
 .kpi{padding:22px 16px 22px 0;min-width:0}
 .kpi + .kpi{padding-left:20px;border-left:1px solid var(--line)}
-.kpi .v{font:900 54px/1.05 var(--display);white-space:nowrap}
+.kpi .v{font:900 54px/1.05 var(--display);white-space:nowrap;overflow:hidden}
 .kpi .v small{font-size:24px;font-weight:700;margin-left:3px}
 .kpi .v.g{color:var(--gold-deep)}
 .kpi .k{font:600 11px/1.45 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:10px}
@@ -203,7 +203,7 @@ svg text{font-family:var(--body)}
 .tl .n svg{width:26px;height:26px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tl .when{display:block;font:600 11px/1.4 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold-soft);margin-top:24px}
 .tl b{display:block;font:800 25px/1.15 var(--display);text-transform:uppercase;margin:8px 0 10px}
-.tl .amt{font:800 30px/1.1 var(--display);margin-bottom:8px}
+.tl .amt{font:800 30px/1.1 var(--display);margin-bottom:8px;white-space:nowrap;overflow:hidden}
 .tl p{font-size:15px;line-height:1.55;color:var(--on-dark-2)}
 .tl-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:60px;padding-top:26px;border-top:1px solid rgba(244,241,235,.2)}
 .tl-foot .tot{font:900 52px/1 var(--display)}
@@ -246,9 +246,41 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 .tools{position:fixed;right:18px;bottom:18px;z-index:200;display:flex;gap:8px;align-items:center;font-family:var(--body)}
 .tools button{background:var(--ink);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:11px 16px;font:600 13px/1 var(--body);cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
 .tools button.primary{background:var(--gold);color:var(--ink);border-color:var(--gold)}
-.tools .fmt{display:none}
-.editing .tools .fmt{display:inline-block}
-.static .tools,.cliente .tools{display:none}
+/* barra de texto: aparte de la de archivo, a la izquierda y clara */
+.txtbar{position:fixed;left:18px;bottom:18px;z-index:200;display:none;gap:4px;align-items:center;background:#fff;border-radius:10px;padding:6px;box-shadow:0 6px 24px rgba(0,0,0,.35);font-family:var(--body)}
+.editing .txtbar{display:flex}
+.txtbar button{width:36px;height:36px;display:grid;place-items:center;background:none;border:0;border-radius:6px;color:var(--ink);font:700 16px/1 var(--body);cursor:pointer}
+.txtbar button:hover{background:#EEEAE2}
+.txtbar button:disabled{opacity:.3;cursor:default;background:none}
+.txtbar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.txtbar .sw span{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(0,0,0,.25)}
+.txtbar .sep{width:1px;height:24px;background:#DDD8CE;margin:0 4px}
+.static .tools,.cliente .tools,.static .txtbar,.cliente .txtbar{display:none!important}
+/* recorte */
+.ebtn.cropb{width:34px;height:34px;background:rgba(17,18,19,.85);color:#fff;font-size:17px;z-index:32}
+.ebtn.cropb:hover{background:var(--gold);color:var(--ink)}
+.ebtn.chg{background:rgba(17,18,19,.85);color:#fff;padding:9px 13px;z-index:32}
+.crop-card{width:min(1100px,94vw)!important}
+.crop-tools{display:flex;gap:12px;align-items:center;margin-top:12px;font-size:14px}
+.crop-tools select{margin-left:6px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;font:inherit}
+.panel .crop-tools button{background:none;color:var(--ink);border:1px solid var(--ink)}
+.crop-stage{position:relative;margin:14px auto 0;user-select:none;touch-action:none;overflow:hidden;background:#222}
+.crop-stage img{display:block;width:100%;height:100%;pointer-events:none}
+.crop-rect{position:absolute;box-shadow:0 0 0 9999px rgba(10,10,11,.6);outline:2px solid #fff;cursor:move}
+.crop-rect i{position:absolute;width:14px;height:14px;background:#fff;border:2px solid var(--gold);border-radius:2px}
+.crop-rect i[data-h=nw]{left:-8px;top:-8px;cursor:nwse-resize}.crop-rect i[data-h=ne]{right:-8px;top:-8px;cursor:nesw-resize}
+.crop-rect i[data-h=sw]{left:-8px;bottom:-8px;cursor:nesw-resize}.crop-rect i[data-h=se]{right:-8px;bottom:-8px;cursor:nwse-resize}
+.crop-rect i[data-h=n]{left:calc(50% - 7px);top:-8px;cursor:ns-resize}.crop-rect i[data-h=s]{left:calc(50% - 7px);bottom:-8px;cursor:ns-resize}
+.crop-rect i[data-h=w]{top:calc(50% - 7px);left:-8px;cursor:ew-resize}.crop-rect i[data-h=e]{top:calc(50% - 7px);right:-8px;cursor:ew-resize}
+/* ordenar fotos */
+.or-grid button{position:relative;cursor:grab}
+.or-grid button.drag{opacity:.35}
+.or-grid button.over{border-color:var(--gold)}
+.or-grid .n{position:absolute;left:6px;top:6px;background:rgba(17,18,19,.85);color:#fff;font:700 12px/1 var(--body);padding:5px 7px;border-radius:999px}
+.or-grid .tag{position:absolute;left:6px;bottom:6px;background:var(--gold);color:var(--ink);font:700 11px/1 var(--body);padding:5px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.06em}
+.or-grid .mv{position:absolute;right:6px;bottom:6px;display:flex;gap:4px}
+.or-grid .mv span{width:26px;height:26px;display:grid;place-items:center;background:rgba(17,18,19,.85);color:#fff;border-radius:50%;font-size:12px;cursor:pointer}
+.ch-grid button.ch-txt{display:grid;place-items:center;background:#e8e4da;font:800 22px/1 var(--display);text-transform:uppercase;color:#2B2B2B}
 /* PDF: una diapositiva por hoja, sin botones */
 @media print{
   @page{size:1440px 810px;margin:0}
@@ -258,7 +290,7 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
   .slide:last-child{break-after:auto;page-break-after:auto}
   /* el escenario va en el flujo normal: centrado con position absolute, Chrome lo parte entre hojas */
   .stage{position:relative!important;left:0!important;top:0!important;transform:none!important}
-  .tools,.panel,.edit-panel,.lb,.modal,#tip,.zoom,.pick,.ebtn,.btn-s,.edit-hint,.seg-ctl,.pencil,.tap-hint{display:none!important}
+  .tools,.txtbar,.panel,.edit-panel,.lb,.modal,#tip,.zoom,.pick,.ebtn,.btn-s,.edit-hint,.seg-ctl,.pencil,.tap-hint{display:none!important}
   input.num{border-bottom-color:transparent!important}
 }
 .editing [data-k]{outline:1.5px dashed rgba(210,156,30,.85);outline-offset:3px;cursor:text;min-width:20px}
@@ -308,10 +340,21 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 <body>
 <div id="deck"></div>
 
-<div class="tools" id="tools">
+<div class="txtbar" id="txtbar" role="toolbar" aria-label="Formato de texto">
+  <button type="button" id="t-undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+  <button type="button" id="t-redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+  <i class="sep"></i>
   <button type="button" class="fmt" id="t-bold" title="Negrita"><b>B</b></button>
-  <button type="button" class="fmt" id="t-gold" title="Resaltar en mostaza">Mostaza</button>
-  <button type="button" class="fmt" id="t-plain" title="Quitar formato">Quitar formato</button>
+  <button type="button" class="fmt" id="t-ital" title="Itálica"><i style="font-family:Georgia,serif">I</i></button>
+  <button type="button" class="fmt" id="t-light" title="Fino" style="font-weight:300">Aa</button>
+  <i class="sep"></i>
+  <button type="button" class="fmt sw" data-color="var(--gold)" title="Mostaza" aria-label="Color mostaza"><span style="background:#D29C1E"></span></button>
+  <button type="button" class="fmt sw" data-color="var(--ink)" title="Negro" aria-label="Color negro"><span style="background:#17181A"></span></button>
+  <button type="button" class="fmt sw" data-color="#FFFFFF" title="Blanco" aria-label="Color blanco"><span style="background:#fff"></span></button>
+  <i class="sep"></i>
+  <button type="button" class="fmt" id="t-plain" title="Quitar formato" aria-label="Quitar formato"><svg viewBox="0 0 24 24"><path d="M5 6h10M10 6l-3 13M14 13l6 6M20 13l-6 6"/></svg></button>
+</div>
+<div class="tools" id="tools">
   <button type="button" id="t-import">⤓ Importar ficha</button>
   <button type="button" id="t-edit">✎ Editar</button>
   <button type="button" id="t-pdf" title="Descargar en PDF: una hoja por diapositiva">PDF</button>
@@ -350,12 +393,30 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
     <p style="margin-top:22px"><button type="button" id="ep-ok">Listo</button></p>
   </div>
 </div>
-<div class="panel" id="chooser" role="dialog" aria-modal="true" aria-label="Elegir la foto de la ficha">
+<div class="panel" id="chooser" role="dialog" aria-modal="true" aria-label="Elegir foto">
   <div class="card" style="width:min(1100px,94vw)">
-    <h3>Foto de la ficha</h3>
-    <p>Elegí la foto que acompaña los datos de la propiedad. Lo ideal es la fachada vista desde la calle. La foto de portada no aparece acá.</p>
+    <h3 id="ch-h">Foto de la ficha</h3>
+    <p id="ch-p"></p>
     <div class="ch-grid" id="ch-grid"></div>
-    <div class="row"><button type="button" onclick="document.getElementById(chooser).classList.remove(open)">Cancelar</button></div>
+    <div class="row"><button type="button" id="ch-cancel">Cancelar</button></div>
+  </div>
+</div>
+<div class="panel" id="orden" role="dialog" aria-modal="true" aria-label="Ordenar fotos">
+  <div class="card" style="width:min(1100px,94vw)">
+    <h3>Ordenar fotos</h3>
+    <p>Arrastrá las fotos para cambiar el orden en que aparecen, o usá las flechas. Las marcadas como portada o ficha no se repiten en las diapositivas de fotos.</p>
+    <div class="ch-grid or-grid" id="or-grid"></div>
+    <div class="row"><button type="button" id="or-cancel">Cancelar</button><button type="button" class="gold" id="or-ok">Aplicar</button></div>
+  </div>
+</div>
+<div class="panel" id="crop" role="dialog" aria-modal="true" aria-label="Recortar foto">
+  <div class="card crop-card">
+    <h3>Recortar foto</h3>
+    <p>Mové el recuadro o estiralo desde las esquinas y los bordes. La foto original no se pierde: podés volver a abrir el recorte y agrandarlo, o volver a la foto completa.</p>
+    <div class="crop-tools"><label>Proporción <select id="cr-ratio"><option value="">Libre</option><option value="1:1">1:1 Cuadrada</option><option value="4:3">4:3 Horizontal</option><option value="3:2">3:2 Horizontal</option><option value="16:9">16:9 Panorámica</option><option value="3:4">3:4 Vertical</option><option value="2:3">2:3 Vertical</option></select></label>
+      <button type="button" id="cr-full">Foto completa</button></div>
+    <div class="crop-stage" id="cr-stage"><img id="cr-img" alt=""><div class="crop-rect" id="cr-rect"><i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i></div></div>
+    <div class="row"><button type="button" id="cr-cancel">Cancelar</button><button type="button" class="gold" id="cr-ok">Aplicar</button></div>
   </div>
 </div>
 <div id="tip"></div>
@@ -529,13 +590,15 @@ function sPortada(){const cj=portadaCaja();return `
       ${E("portada.titulo","h1")}
       ${E("portada.subtitulo","p","lead")}
     </div>
-    <figure class="cover-media" style="width:${cj.w}px;height:${cj.h}px">${I("portada.foto","Foto principal")}${P.portada.foto?`<div class="pick">${selForma("portada",P.portada.fotoForma)}</div>`:""}</figure>
+    <figure class="cover-media" style="width:${cj.w}px;height:${cj.h}px">${I("portada.foto","Foto principal")}${P.portada.foto?`<div class="pick">${P.ficha.fotos.length?'<button type="button" data-choose="portada">Elegir foto</button>':""}${selForma("portada",P.portada.fotoForma)}</div>`:""}</figure>
   </div>
 </div></section>`}
 
 /* ---------- ficha 1: datos ---------- */
 // la foto de la ficha es distinta de la de portada (fotos[0]); al importar se elige la que más parece tomada desde afuera
-function fichaIdx(){const f=P.ficha,n=f.fotos.length;if(n<2)return 0;const i=+f.fotoFicha;return i>=1&&i<n?i:1}
+function portadaIdx(){return P.ficha.fotos.indexOf(P.portada.foto)}
+function fichaIdx(){const f=P.ficha,n=f.fotos.length;if(n<2)return 0;const c=portadaIdx(),i=+f.fotoFicha;
+  if(String(f.fotoFicha)!==""&&Number.isInteger(i)&&i>=0&&i<n&&i!==c)return i;for(let k=1;k<n;k++)if(k!==c)return k;return 0}
 // con una sola foto (la de portada) la ficha muestra el mapa en vez de repetirla; también se puede elegir "Mapa" a mano
 function fichaMapa(){const f=P.ficha;if(!f.mapa.lat)return false;if(f.fotoFicha==="mapa")return true;return f.fotos.length<2&&f.fotoFicha!=="foto"}
 // el recuadro de la foto toma la forma de la foto (ancho si es horizontal, alto si es vertical), o la forma que se elija en Editar
@@ -546,12 +609,12 @@ function ratioForma(v){v=FORMA_VIEJA[v]||v;const m=/^(\d+):(\d+)$/.exec(v||"");r
 function selForma(clave,valor){valor=FORMA_VIEJA[valor]||valor||"auto";
   return `<select data-forma="${clave}" aria-label="Forma de la foto"><option value="auto"${valor==="auto"?" selected":""}>Automática (según la foto)</option>${Object.entries(FORMAS).map(([k,t])=>`<option value="${k}"${valor===k?" selected":""}>${k} ${t}</option>`).join("")}</select>`}
 // portada: el recuadro toma la forma elegida o la de la foto
-function portadaCaja(){const p=P.portada,a=Math.min(2,Math.max(.6,ratioForma(p.fotoForma)||ASPECT.get(p.foto)||.7)),w=Math.round(Math.min(560,610*a));return{w,h:Math.min(610,Math.round(w/a))}}
+function portadaCaja(){const p=P.portada,a=Math.min(2,Math.max(.6,ratioForma(p.fotoForma)||(p.foto?aspectoK("portada.foto"):.7))),w=Math.round(Math.min(560,610*a));return{w,h:Math.min(610,Math.round(w/a))}}
 function fichaCaja(){const f=P.ficha;if(fichaMapa())return{w:540,h:682};if(!f.fotos.length)return{w:470,h:682};
-  const a=Math.min(2.2,Math.max(.5,ratioForma(f.fotoForma)||ASPECT.get(f.fotos[fichaIdx()])||1)),w=Math.round(Math.min(650,682*a,a<1.15?600:650));return{w,h:Math.min(682,Math.round(w/a))}}
+  const a=Math.min(2.2,Math.max(.5,ratioForma(f.fotoForma)||aspectoK("ficha.fotos."+fichaIdx())||1)),w=Math.round(Math.min(650,682*a,a<1.15?600:650));return{w,h:Math.min(682,Math.round(w/a))}}
 function sFicha(){const f=P.ficha,fm=fichaMapa(),cj=fichaCaja();
   const flechas=!fm&&f.fotos.length>2,elegir=f.fotos.length>2||(f.fotos.length&&f.mapa.lat),forma=!fm&&f.fotos.length;
-  const pick=flechas||elegir||forma?`<div class="pick">${flechas?'<button type="button" data-pick="-1">◀</button>':""}${elegir?'<button type="button" data-choose="1">Elegir foto</button>':""}${forma?selForma("ficha",f.fotoForma):""}${flechas?'<button type="button" data-pick="1">▶</button>':""}</div>`:"";
+  const pick=flechas||elegir||forma?`<div class="pick">${flechas?'<button type="button" data-pick="-1">◀</button>':""}${elegir?'<button type="button" data-choose="ficha">Elegir foto</button>':""}${forma?selForma("ficha",f.fotoForma):""}${flechas?'<button type="button" data-pick="1">▶</button>':""}</div>`:"";
   const der=fm?`<div class="ficha-r fmap mapwrap" style="height:${cj.h}px;align-self:center"><div class="map"></div>${E("ficha.mapaLeyenda","p","map-cap")}
       <button type="button" class="ebtn add" data-add="mapa" style="position:absolute;z-index:600;top:10px;left:10px;margin:0">Editar ubicación y puntos</button>${pick}</div>`
     :`<div class="ficha-r" data-zoom="foto:${fichaIdx()}" style="height:${cj.h}px;align-self:center">${f.fotos.length?I("ficha.fotos."+fichaIdx(),"Foto de la propiedad")+ZOOM+pick:ADD("fotos","+ Fotos")}</div>`;
@@ -591,8 +654,11 @@ function sDescMapa(){const f=P.ficha,fm=fichaMapa();if(!f.descripcion&&(!f.mapa.
 const GW=940,GH=682,GAP=10;           // tamaño del área de fotos dentro de la diapositiva
 const ASPECT=new Map();               // proporción ancho/alto de cada imagen, medida al cargar
 const aspectOf=src=>ASPECT.get(src)||1.5;
+// recortes: P.recortes["ficha.fotos.3"]={x,y,w,h} (0 a 1 sobre la foto original, que no se toca)
+const recorte=k=>(P.recortes||{})[k]||null;
+function aspectoK(k){const a=ASPECT.get(get(P,k))||1.5,c=recorte(k);return c?a*c.w/c.h:a}
 function measureImages(){
-  const srcs=[P.portada.foto,...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].filter(x=>x&&!ASPECT.has(x));
+  const srcs=[P.portada.foto,P.cierre.foto,...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].filter(x=>x&&!ASPECT.has(x));
   return Promise.all(srcs.map(src=>new Promise(res=>{const im=new Image();im.onload=()=>{ASPECT.set(src,im.naturalWidth/im.naturalHeight||1.5);res()};im.onerror=()=>{ASPECT.set(src,1.5);res()};im.src=src})));
 }
 // todas las formas de partir k imágenes seguidas en r filas de 1 a 4 imágenes
@@ -611,7 +677,7 @@ function bestLayout(asp){
   return best;
 }
 function paginate(items){
-  const asp=items.map(it=>aspectOf(it.src)),pages=[];let i=0;
+  const asp=items.map(it=>aspectoK(it.k)),pages=[];let i=0;
   while(i<items.length){
     const rem=items.length-i;
     if(rem<=8&&rem>=3||rem<3){pages.push({items:items.slice(i),lay:bestLayout(asp.slice(i))});break}
@@ -622,11 +688,11 @@ function paginate(items){
   return pages;
 }
 function galeriaItems(){
-  const f=P.ficha,fi=fichaMapa()?-1:fichaIdx();
-  let items=f.fotos.map((src,i)=>({t:"foto",i,src})).filter(x=>x.i!==0&&x.i!==fi);
-  if(f.planos.length&&f.planos.length<=2)f.planos.forEach((p,i)=>items.push({t:"plano",i,src:p.img}));
+  const f=P.ficha,fi=fichaMapa()?-1:fichaIdx(),c=portadaIdx();
+  let items=f.fotos.map((src,i)=>({t:"foto",i,src,k:"ficha.fotos."+i})).filter(x=>x.i!==c&&x.i!==fi);
+  if(f.planos.length&&f.planos.length<=2)f.planos.forEach((p,i)=>items.push({t:"plano",i,src:p.img,k:"ficha.planos."+i+".img"}));
   // con muy pocas fotos, se suma la de portada para que la diapositiva quede ordenada
-  if(items.length>0&&items.length<3&&f.fotos[0]&&fi!==0)items.unshift({t:"foto",i:0,src:f.fotos[0]});
+  if(items.length>0&&items.length<3&&c>=0&&c!==fi)items.unshift({t:"foto",i:c,src:f.fotos[c],k:"ficha.fotos."+c});
   return items;
 }
 const ZOOM='<span class="zoom" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg></span>';
@@ -636,8 +702,8 @@ function sGalerias(){
   const pages=paginate(items),hasPl=f.planos.length&&f.planos.length<=2,vid=f.video;
   return pages.map((pg,pi)=>{let k=0;
     const rows=pg.lay.rows.map((n,ri)=>{const h=pg.lay.heights[ri];const its=pg.items.slice(k,k+n);k+=n;
-      const sumA=its.reduce((x,y)=>x+aspectOf(y.src),0),avail=GW-GAP*(n-1);
-      const cells=its.map((it,j)=>{const w=avail*aspectOf(it.src)/sumA;const first=pi===0&&ri===0&&j===0;
+      const sumA=its.reduce((x,y)=>x+aspectoK(y.k),0),avail=GW-GAP*(n-1);
+      const cells=its.map((it,j)=>{const w=avail*aspectoK(it.k)/sumA;const first=pi===0&&ri===0&&j===0;
         if(it.t==="plano")return `<figure class="plano" style="width:${w}px" data-zoom="plano:${it.i}">${I(`ficha.planos.${it.i}.img`,"Plano")}<figcaption>${E(`ficha.planos.${it.i}.nombre`)}${E(`ficha.planos.${it.i}.m2`)}</figcaption>${ZOOM}${X("ficha.planos",it.i)}</figure>`;
         const play=(first&&vid)?`<a class="play" href="${esc(vid)}" target="_blank" rel="noopener" data-video="${esc(vid.replace(/\/view.*$/,"/preview"))}"><span class="btn"><svg width="30" height="34" viewBox="0 0 30 34"><path d="M0 0l30 17L0 34z" fill="#17181A"/></svg></span><span class="lbl">Ver recorrido en video</span></a>`:"";
         return `<figure style="width:${w}px" data-zoom="foto:${it.i}">${I(`ficha.fotos.${it.i}`,"Foto")}${play}${ZOOM}${X("ficha.fotos",it.i)}</figure>`}).join("");
@@ -652,7 +718,7 @@ function sGalerias(){
       ${pi===0&&(f.fotosTexto||EDIT)?E("ficha.fotosTexto","p","sub"):""}
       ${(pi===0&&vid)?`<p class="video-note">Recorrido completo en video:<br><a href="${esc(vid)}" target="_blank" rel="noopener" data-video="${esc(vid.replace(/\/view.*$/,"/preview"))}">Ver el video ▸</a></p>`:""}
       <p class="tap-hint video-note">Tocá una foto para verla en grande.</p>
-      ${pi===0?`<div>${ADD("fotos","+ Fotos")}${ADD("plano","+ Plano")}${ADD("video",vid?"Cambiar video":"+ Video")}</div>`:""}
+      ${pi===0?`<div>${f.fotos.length>1?ADD("orden","Ordenar fotos"):""}${ADD("fotos","+ Fotos")}${ADD("plano","+ Plano")}${ADD("video",vid?"Cambiar video":"+ Video")}</div>`:""}
     </div>
     <div class="gallery">${rows}</div>
   </div>
@@ -723,7 +789,7 @@ function sResumen(){const st=(svg,when,title,amt,p)=>{const a=v=>v.startsWith("d
 
 function sCierre(){const c=P.contacto;const wa=c.whatsapp.replace(/\D/g,"");return `
 <section class="slide s-black" id="sl-cierre"><div class="stage closing">
-  ${I("cierre.foto","Foto de cierre","bg")}
+  ${I("cierre.foto","Foto de cierre","bg")}${P.ficha.fotos.length?`<div class="pick" style="left:71%;z-index:40"><button type="button" data-choose="cierre">Elegir foto</button></div>`:""}
   <img class="logo" src="${P.meta.logo}" alt="Métrica Propiedades">
   <div class="closing-in">
     <span class="kicker">${get(P,"portada.direccion")} &nbsp;·&nbsp; ${get(P,"portada.localidad")}</span>
@@ -746,7 +812,13 @@ const usdM=n=>n>=1e6?"USD "+nf(n/1e6,(Math.round(n/1e4)%10===0)?1:2).replace(/,0
 const usdK=n=>{const k=Math.round(n/100)/10;return "USD "+nf(k,k%1?1:0)+"<small>mil</small>"};
 const listY=a=>a.length<2?String(a[0]):a.length<=4?a.slice(0,-1).join(", ")+" y "+a[a.length-1]:a[0]+" a "+a[a.length-1];
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
-function resetModel(){const v=P.inversion;st={esc:v.escritura,saldo:v.saldo,cuotas:v.cuotas,ret:v.retorno,inicio:v.inicio,obra:v.obra,contado:false}}
+function resetModel(){const v=P.inversion;st={esc:v.escritura,saldo:v.saldo,cuotas:v.cuotas,ret:v.retorno,inicio:v.inicio,obra:v.obra,contado:!!v.contado}}
+// achica la letra de un texto hasta que entre a lo ancho en su caja
+function ajustarAncho(el,max,min){el.style.fontSize=max+"px";let f=max;while(el.scrollWidth>el.clientWidth+1&&f>min){f-=1;el.style.fontSize=f+"px"}}
+function ajustarNumeros(){
+  document.querySelectorAll(".kpi .v[data-b]").forEach(e=>ajustarAncho(e,54,22));
+  document.querySelectorAll(".seg .sb,.comp-obra .sb").forEach(e=>{if(e.offsetParent)ajustarAncho(e,24,11)});
+  document.querySelectorAll(".tl .amt").forEach(e=>ajustarAncho(e,30,14))}
 function calc(){
   const compra=st.esc+st.saldo,total=compra+st.obra,R=total*st.ret/100/12,S=st.inicio;
   const fin=!st.contado&&st.saldo>0&&st.cuotas>0,N=fin?st.cuotas:0,cuota=fin?st.saldo/N:0,escEff=fin?st.esc:compra,obraM=Math.max(S-1,0);
@@ -774,12 +846,14 @@ function renderModel(){
   const setIn=(id,v)=>{const e=document.getElementById(id);if(e&&document.activeElement!==e)e.value=v};
   setIn("in-ret",nf(st.ret,1));setIn("in-ini",st.inicio);setIn("in-cuo",st.cuotas);setIn("in-esc",nf(st.contado?c.compra:st.esc));setIn("in-sal",nf(st.saldo));setIn("in-obra",nf(st.obra));
   ["in-esc","in-sal","in-obra"].forEach(id=>{const e=document.getElementById(id);if(e)e.style.width=(e.value.length+0.8)+"ch"});
+  // los bloques tienen ancho fijo: no se estiran con los montos
   const buy=$("#comp-buy"),ob=$("#comp-obra"),se=$("#seg-esc"),ss=$("#seg-sal");
-  buy.style.flex=c.compra+" 1 0";ob.style.flex=st.obra+" 1 0";se.style.flex=Math.max(st.esc,1)+" 1 0";ss.style.flex=Math.max(st.saldo,1)+" 1 0";
+  buy.style.flex="4 1 0";ob.style.flex="1 1 0";se.style.flex="1 1 0";ss.style.flex="1 1 0";
   ss.style.display=st.contado||st.saldo<=0?"none":"";se.querySelector(".sl").textContent=st.contado?"Pago de contado al escriturar":"Pago al escriturar";
   if(st.contado)se.querySelector(".sp").textContent="100% de la compra";
   document.querySelectorAll(".seg-ctl button").forEach(b=>b.classList.toggle("on",(b.dataset.mode==="contado")===st.contado));
-  drawCuotas(c);drawPayback(c);
+  drawCuotas(c);drawPayback(c);ajustarNumeros();
+  P.inversion.contado=st.contado;
   if(EDIT){Object.assign(P.inversion,{escritura:st.esc,saldo:st.saldo,cuotas:st.cuotas,retorno:st.ret,inicio:st.inicio,obra:st.obra})}
 }
 const NS="http://www.w3.org/2000/svg";
@@ -820,14 +894,16 @@ function drawPayback(c){
 }
 const parseNum=v=>{const n=parseFloat(String(v).replace(/\./g,"").replace(",","."));return isFinite(n)?n:null};
 const LIM={ret:[1,40],inicio:[1,36],cuotas:[1,10],esc:[0,1e9],saldo:[0,1e9],obra:[0,1e9]};
-function setVal(k,v){if(v==null||isNaN(v))return;const[a,b]=LIM[k];st[k]=k==="ret"?Math.round(clamp(v,a,b)*10)/10:Math.round(clamp(v,a,b));renderModel()}
+function setVal(k,v){if(v==null||isNaN(v))return;if(EDIT)guardar();const[a,b]=LIM[k];st[k]=k==="ret"?Math.round(clamp(v,a,b)*10)/10:Math.round(clamp(v,a,b));renderModel()}
 function bindModel(){
   document.querySelectorAll("[data-step]").forEach(b=>b.addEventListener("click",()=>{const[k,d]=b.dataset.step.split(":");setVal(k,st[k]+parseFloat(d))}));
   [["in-ret","ret"],["in-ini","inicio"],["in-cuo","cuotas"],["in-esc","esc"],["in-sal","saldo"],["in-obra","obra"]].forEach(([id,k])=>{const e=document.getElementById(id);if(!e)return;
-    const commit=()=>{const v=k==="ret"?parseFloat(e.value.replace(",",".")):parseNum(e.value);if(k==="esc")st.contado=false;setVal(k,v)};
+    const commit=()=>{const v=k==="ret"?parseFloat(e.value.replace(",",".")):parseNum(e.value);
+      // de contado, el monto que se edita es la compra entera: se descuenta el saldo para no cambiar de forma de pago
+      if(k==="esc"&&st.contado&&v!=null){if(v>=st.saldo)return setVal("esc",v-st.saldo);if(EDIT)guardar();st.saldo=0;return setVal("esc",v)}setVal(k,v)};
     e.addEventListener("change",commit);e.addEventListener("keydown",ev=>{if(ev.key==="Enter")e.blur()});e.addEventListener("focus",()=>e.select())});
-  document.querySelectorAll(".seg-ctl button").forEach(b=>b.addEventListener("click",()=>{st.contado=b.dataset.mode==="contado";renderModel()}));
-  const r=$("#reset");if(r)r.addEventListener("click",()=>{resetModel();renderModel()});
+  document.querySelectorAll(".seg-ctl button").forEach(b=>b.addEventListener("click",()=>{const m=b.dataset.mode==="contado";if(m===st.contado)return;if(EDIT)guardar();st.contado=m;renderModel()}));
+  const r=$("#reset");if(r)r.addEventListener("click",()=>{if(EDIT)guardar();const m=st.contado;resetModel();st.contado=m;renderModel()});
 }
 
 /* ---------- map ---------- */
@@ -951,7 +1027,7 @@ async function importarAviso(url){
   try{
     const r=await fetch(API+"/aviso?url="+encodeURIComponent(url));const d=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(d.detail||"No se pudo leer el aviso");
-    const f=P.ficha,txt=(d.titulo||"")+" "+url;
+    guardar();P.recortes={};const f=P.ficha,txt=(d.titulo||"")+" "+url;
     const op=/venta/i.test(txt)?"Venta":/alquiler/i.test(txt)?"Alquiler":(f.operacion||"Alquiler");
     const partes=String(d.address||"").split(",").map(x=>x.trim()).filter(Boolean);
     f.operacion=op;f.kicker="Ficha de "+op.toLowerCase()+" · Local comercial";f.codigo=codigoAviso(d.url||url,d.fuente);
@@ -990,7 +1066,7 @@ async function importarPresentacion(file){
   const stEl=$("#imp-st");const say=(t,bad)=>{stEl.textContent=t;stEl.className="imp-status"+(bad?" bad":"")};
   try{const doc=new DOMParser().parseFromString(await file.text(),"text/html"),d=doc.getElementById("data");
     const datos=d&&JSON.parse(d.textContent);if(!datos||!datos.ficha||!datos.portada)throw new Error("Ese archivo no es una presentación de Métrica");
-    P=datos;resetModel();render();say("Listo: presentación cargada. Seguí editando con ✎ Editar.");
+    guardar();P=datos;resetModel();render();say("Listo: presentación cargada. Seguí editando con ✎ Editar.");
     setTimeout(()=>{$("#imp").classList.remove("open");document.getElementById("sl-portada").scrollIntoView()},1200);
   }catch(e){say((e.message||"No se pudo leer el archivo")+".",true)}
 }
@@ -1113,7 +1189,7 @@ async function importarPDF(file){
   }catch(e){say((e.message||"No se pudo leer el PDF")+".",true)}
 }
 function aplicarFicha(d){
-  const f=P.ficha;
+  guardar();P.recortes={};const f=P.ficha;
   f.operacion=d.op;f.kicker="Ficha de "+d.op.toLowerCase()+" · Local comercial";f.codigo=d.codigo||"";
   f.titulo=d.titulo;f.ubicacion=d.ubicacion;f.precio=d.precio;f.stats=d.stats;f.caracteristicas=d.caracteristicas;
   f.descripcion=d.descripcion;f.mapaLeyenda="Ubicación · "+(d.address||d.titulo);f.fotos=d.fotos;f.planos=d.planos;f.video="";
@@ -1131,10 +1207,10 @@ function fitPortada(){const h=document.querySelector("#sl-portada h1"),c=documen
   while(fs>68&&(h.offsetHeight>fs*.96*4+4||c.scrollHeight>c.clientHeight+1)){fs-=4;h.style.fontSize=fs+"px"}}
 let MEASURING=false;
 function render(){
-  if(!MEASURING&&[P.portada.foto,...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].some(x=>x&&!ASPECT.has(x))){MEASURING=true;measureImages().then(()=>{MEASURING=false;render()});return}
+  if(!MEASURING&&[P.portada.foto,P.cierre.foto,...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].some(x=>x&&!ASPECT.has(x))){MEASURING=true;measureImages().then(()=>{MEASURING=false;render()});return}
   document.title=String(P.meta.tituloPestana||"Presentación Métrica").replace(/<[^>]+>/g,"");
   $("#deck").innerHTML=[sPortada(),sFicha(),sDescMapa(),sGalerias(),sPlanos(),sInversion(),sGraficos(),sResumen(),sCierre()].join("");
-  bindModel();renderModel();drawMap();fitDescription();fitPortada();bindViewers();if(EDIT)enableEditing();
+  bindModel();renderModel();drawMap();fitDescription();fitPortada();aplicarRecortes();bindViewers();if(EDIT)enableEditing();updUndo();
 }
 function fit(){if(STATIC)return;document.documentElement.style.setProperty("--s",Math.min(innerWidth/1440,innerHeight/810))}
 addEventListener("resize",fit);
@@ -1144,9 +1220,14 @@ function bindViewers(){
   // fotos y planos en el orden en que aparecen en la presentación
   const list=[...document.querySelectorAll("[data-zoom]")].map(n=>n.dataset.zoom).filter((v,i,a)=>a.indexOf(v)===i);let cur=0;
   const show=i=>{cur=(i+list.length)%list.length;const[tp,ix]=list[cur].split(":");const f=P.ficha;
-    if(tp==="plano"){const p=f.planos[+ix];body.className="lb-body";body.innerHTML=`<img src="${p.img}" alt="">`;t.innerHTML=esc(p.nombre)+"<span>"+esc(p.m2)+"</span>"}
-    else{body.className="lb-body dark";body.innerHTML=`<img src="${f.fotos[+ix]}" alt="">`;const fotos=list.filter(x=>x.startsWith("foto"));t.innerHTML="Foto<span>"+(fotos.indexOf(list[cur])+1)+" de "+fotos.length+"</span>"}
-    lb.classList.add("open")};
+    const k=tp==="plano"?"ficha.planos."+ix+".img":"ficha.fotos."+ix,src=get(P,k),c=recorte(k);
+    if(tp==="plano"){const p=f.planos[+ix];body.className="lb-body";t.innerHTML=esc(p.nombre)+"<span>"+esc(p.m2)+"</span>"}
+    else{body.className="lb-body dark";const fotos=list.filter(x=>x.startsWith("foto"));t.innerHTML="Foto<span>"+(fotos.indexOf(list[cur])+1)+" de "+fotos.length+"</span>"}
+    lb.classList.add("open");
+    if(!c){body.innerHTML=`<img src="${src}" alt="">`;return}
+    const ac=aspectoK(k),aw=body.clientWidth,ah=body.clientHeight;let w=aw,h=w/ac;if(h>ah){h=ah;w=h*ac}
+    body.innerHTML=`<div style="position:relative;width:${w}px;height:${h}px;margin:auto;align-self:center;justify-self:center"><img src="${src}" alt="" style="position:absolute;inset:0;width:100%;height:100%"></div>`;
+    recortarImg(body.querySelector("img"),c)};
   document.querySelectorAll("[data-zoom]").forEach(n=>n.addEventListener("click",e=>{if(EDIT||e.target.closest(".play,.ebtn,.pick"))return;show(list.indexOf(n.dataset.zoom))}));
   $("#lb-x").onclick=()=>lb.classList.remove("open");$("#lb-p").onclick=()=>show(cur-1);$("#lb-n").onclick=()=>show(cur+1);
   document.querySelectorAll("[data-video]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();if(EDIT)return;$("#mf").src=a.dataset.video;$("#modal").classList.add("open")}));
@@ -1155,24 +1236,110 @@ $("#mx").onclick=()=>{$("#modal").classList.remove("open");$("#mf").src=""};
 document.addEventListener("keydown",e=>{if($("#lb").classList.contains("open")){if(e.key==="ArrowRight")$("#lb-n").click();if(e.key==="ArrowLeft")$("#lb-p").click()}if(e.key==="Escape"){$("#chooser").classList.remove("open");$("#lb").classList.remove("open");$("#modal").classList.remove("open");$("#mf").src=""}});
 
 /* ---------- elegir la foto de la ficha ---------- */
-function openChooser(){const box=$("#ch-grid"),f=P.ficha,fm=fichaMapa(),uno=f.fotos.length<2;
-  box.innerHTML=(f.mapa.lat?`<button type="button" data-i="mapa" class="ch-map${fm?" on":""}">Mapa</button>`:"")+f.fotos.map((src,i)=>i===0&&!uno?"":`<button type="button" data-i="${uno?"foto":i}" class="${!fm&&i===fichaIdx()?"on":""}"><img src="${src}" alt="Foto ${i}"></button>`).join("");
-  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.i;f.fotoFicha=/^d+$/.test(v)?+v:v;$("#chooser").classList.remove("open");render()}));$("#chooser").classList.add("open")}
+const CH_TXT={ficha:["Foto de la ficha","Elegí la foto que acompaña los datos de la propiedad. Lo ideal es la fachada vista desde la calle. La foto de portada no aparece acá."],
+  portada:["Foto de portada","Elegí la foto principal de la presentación. Esa foto no se repite en las diapositivas de fotos."],cierre:["Foto del cierre","Elegí la foto de la última diapositiva."]};
+function openChooser(dest){const box=$("#ch-grid"),f=P.ficha,c=portadaIdx();$("#ch-h").textContent=CH_TXT[dest][0];$("#ch-p").textContent=CH_TXT[dest][1];
+  if(dest==="ficha"){const fm=fichaMapa(),uno=f.fotos.length<2;
+    box.innerHTML=(f.mapa.lat?`<button type="button" data-i="mapa" class="ch-txt${fm?" on":""}">Mapa</button>`:"")+f.fotos.map((src,i)=>i===c&&!uno?"":`<button type="button" data-i="${uno?"foto":i}" class="${!fm&&i===fichaIdx()?"on":""}"><img src="${src}" alt="Foto ${i+1}"></button>`).join("")}
+  else box.innerHTML=f.fotos.map((src,i)=>`<button type="button" data-i="${i}" class="${P[dest].foto===src?"on":""}"><img src="${src}" alt="Foto ${i+1}"></button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.i;guardar();
+    if(dest==="ficha")f.fotoFicha=/^\d+$/.test(v)?+v:v;else{P[dest].foto=f.fotos[+v];if(P.recortes)delete P.recortes[dest+".foto"]}
+    $("#chooser").classList.remove("open");render()}));
+  $("#chooser").classList.add("open")}
+$("#ch-cancel").addEventListener("click",()=>$("#chooser").classList.remove("open"));
+
+/* ---------- recortar fotos ----------
+   El recorte se guarda aparte (P.recortes) y la foto original queda entera: se puede volver a abrir y agrandar. */
+function cajaImg(img){const b=img.dataset.box;if(b){const[l,t,w,h]=b.split(",").map(Number);return{l,t,w,h}}return{l:img.offsetLeft,t:img.offsetTop,w:img.offsetWidth,h:img.offsetHeight}}
+function recortarImg(img,c){
+  delete img.dataset.box;["position","left","top","right","bottom","width","height","maxWidth","maxHeight","objectFit","clipPath"].forEach(p=>img.style[p]="");
+  if(!c)return;const a=ASPECT.get(img.getAttribute("src"))||(img.naturalWidth/img.naturalHeight)||1.5;
+  const bl=img.offsetLeft,bt=img.offsetTop,bw=img.offsetWidth,bh=img.offsetHeight;if(!bw||!bh)return;
+  const sc=Math.max(bw/(c.w*a),bh/c.h),W=a*sc,H=sc,l=bl+bw/2-(c.x+c.w/2)*W,t=bt+bh/2-(c.y+c.h/2)*H;
+  img.dataset.box=[bl,bt,bw,bh].join(",");
+  Object.assign(img.style,{position:"absolute",left:l+"px",top:t+"px",right:"auto",bottom:"auto",width:W+"px",height:H+"px",maxWidth:"none",maxHeight:"none",objectFit:"fill",
+    clipPath:`inset(${bt-t}px ${l+W-bl-bw}px ${t+H-bt-bh}px ${bl-l}px)`});
+}
+function aplicarRecortes(){document.querySelectorAll("#deck img[data-img]").forEach(img=>recortarImg(img,recorte(img.dataset.img)))}
+const esFotoK=k=>/^(portada\.foto|cierre\.foto|ficha\.fotos\.\d+|ficha\.planos\.\d+\.img)$/.test(k);
+let CR=null;
+function abrirRecorte(key){const src=get(P,key);if(!src)return;const a=ASPECT.get(src)||1.5;
+  const maxW=Math.min(innerWidth*.94-56,1044),maxH=innerHeight*.58;let w=maxW,h=w/a;if(h>maxH){h=maxH;w=h*a}
+  const stg=$("#cr-stage");stg.style.width=w+"px";stg.style.height=h+"px";$("#cr-img").src=src;
+  CR={key,a,W:w,H:h,r:Object.assign({x:0,y:0,w:1,h:1},recorte(key))};$("#cr-ratio").value="";dibujarRect();$("#crop").classList.add("open")}
+function dibujarRect(){const r=CR.r;Object.assign($("#cr-rect").style,{left:r.x*CR.W+"px",top:r.y*CR.H+"px",width:r.w*CR.W+"px",height:r.h*CR.H+"px"})}
+const MINC=.05;
+function moverRecorte(mode,r0,dx,dy){let x1=r0.x,y1=r0.y,x2=r0.x+r0.w,y2=r0.y+r0.h;
+  if(mode==="move")return{x:clamp(r0.x+dx,0,1-r0.w),y:clamp(r0.y+dy,0,1-r0.h),w:r0.w,h:r0.h};
+  if(mode.includes("w"))x1=clamp(x1+dx,0,x2-MINC);if(mode.includes("e"))x2=clamp(x2+dx,x1+MINC,1);
+  if(mode.includes("n"))y1=clamp(y1+dy,0,y2-MINC);if(mode.includes("s"))y2=clamp(y2+dy,y1+MINC,1);
+  const Rt=ratioForma($("#cr-ratio").value);if(!Rt)return{x:x1,y:y1,w:x2-x1,h:y2-y1};
+  // con proporción fija: se ancla en el lado o la esquina opuesta y no se sale de la foto
+  const k=Rt/CR.a;let w=x2-x1,h=y2-y1;if(mode==="n"||mode==="s")w=h*k;else h=w/k;
+  const ax=mode.includes("w")?x2:mode.includes("e")?x1:(x1+x2)/2,ay=mode.includes("n")?y2:mode.includes("s")?y1:(y1+y2)/2;
+  const mw=mode.includes("w")?ax:mode.includes("e")?1-ax:2*Math.min(ax,1-ax),mh=mode.includes("n")?ay:mode.includes("s")?1-ay:2*Math.min(ay,1-ay);
+  const f=Math.min(1,mw/w,mh/h);w*=f;h*=f;
+  return{x:mode.includes("w")?ax-w:mode.includes("e")?ax:ax-w/2,y:mode.includes("n")?ay-h:mode.includes("s")?ay:ay-h/2,w,h}}
+$("#cr-rect").addEventListener("pointerdown",e=>{e.preventDefault();const mode=e.target.dataset.h||"move",x0=e.clientX,y0=e.clientY,r0={...CR.r};
+  const mv=ev=>{CR.r=moverRecorte(mode,r0,(ev.clientX-x0)/CR.W,(ev.clientY-y0)/CR.H);dibujarRect()};
+  const up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up)};addEventListener("pointermove",mv);addEventListener("pointerup",up)});
+$("#cr-ratio").addEventListener("change",()=>{const Rt=ratioForma($("#cr-ratio").value);if(!Rt)return;const k=Rt/CR.a,r=CR.r;let w=1,h=1/k;if(h>1){h=1;w=k}
+  const cx=r.x+r.w/2,cy=r.y+r.h/2;CR.r={x:clamp(cx-w/2,0,1-w),y:clamp(cy-h/2,0,1-h),w,h};dibujarRect()});
+$("#cr-full").addEventListener("click",()=>{$("#cr-ratio").value="";CR.r={x:0,y:0,w:1,h:1};dibujarRect()});
+$("#cr-cancel").addEventListener("click",()=>$("#crop").classList.remove("open"));
+$("#cr-ok").addEventListener("click",()=>{guardar();const r=CR.r,rd=v=>Math.round(v*1e4)/1e4;P.recortes=P.recortes||{};
+  if(r.w>.995&&r.h>.995)delete P.recortes[CR.key];else P.recortes[CR.key]={x:rd(r.x),y:rd(r.y),w:rd(r.w),h:rd(r.h)};
+  $("#crop").classList.remove("open");render()});
+
+/* ---------- ordenar fotos ---------- */
+// mueve una lista (fotos o planos) y sus recortes juntos; lo que no está en "orden" se quita
+function reordenar(path,orden){const lista=get(P,path),rc=P.recortes||{},nuevo={},re=new RegExp("^"+path.replace(/\./g,"\\.")+"\\.(\\d+)(\\..*)?$");
+  Object.keys(rc).forEach(k=>{const m=re.exec(k);if(!m){nuevo[k]=rc[k];return}const p=orden.indexOf(+m[1]);if(p>=0)nuevo[path+"."+p+(m[2]||"")]=rc[k]});
+  if(path==="ficha.fotos"&&/^\d+$/.test(String(P.ficha.fotoFicha))){const p=orden.indexOf(+P.ficha.fotoFicha);P.ficha.fotoFicha=p>=0?p:""}
+  set(P,path,orden.map(i=>lista[i]));P.recortes=nuevo}
+let ORD=null;
+function abrirOrden(){ORD=P.ficha.fotos.map((_,i)=>i);pintarOrden();$("#orden").classList.add("open")}
+function pintarOrden(){const f=P.ficha,c=portadaIdx(),fi=fichaMapa()?-1:fichaIdx(),g=$("#or-grid");
+  g.innerHTML=ORD.map((oi,pos)=>`<button type="button" draggable="true" data-pos="${pos}"><img src="${f.fotos[oi]}" alt="Foto ${pos+1}"><span class="n">${pos+1}</span>${oi===c?'<span class="tag">Portada</span>':oi===fi?'<span class="tag">Ficha</span>':""}<span class="mv"><span data-mv="-1" title="Antes">◀</span><span data-mv="1" title="Después">▶</span></span></button>`).join("");
+  g.querySelectorAll("button").forEach(b=>{const pos=+b.dataset.pos;
+    b.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",pos);b.classList.add("drag")});
+    b.addEventListener("dragend",()=>b.classList.remove("drag"));
+    b.addEventListener("dragover",e=>{e.preventDefault();b.classList.add("over")});
+    b.addEventListener("dragleave",()=>b.classList.remove("over"));
+    b.addEventListener("drop",e=>{e.preventDefault();const from=+e.dataTransfer.getData("text/plain");if(isNaN(from)||from===pos)return pintarOrden();const[m]=ORD.splice(from,1);ORD.splice(pos,0,m);pintarOrden()});
+    b.querySelectorAll("[data-mv]").forEach(x=>x.addEventListener("click",e=>{e.stopPropagation();const to=pos+(+x.dataset.mv);if(to<0||to>=ORD.length)return;[ORD[pos],ORD[to]]=[ORD[to],ORD[pos]];pintarOrden()}))})}
+$("#or-ok").addEventListener("click",()=>{guardar();reordenar("ficha.fotos",ORD);$("#orden").classList.remove("open");render()});
+$("#or-cancel").addEventListener("click",()=>$("#orden").classList.remove("open"));
+
+/* ---------- deshacer / rehacer ----------
+   Se guarda una copia de los datos antes de cada cambio. Las fotos no se duplican en memoria: la copia apunta a los mismos textos. */
+const HIST=[],REDO=[];
+const clonar=o=>Array.isArray(o)?o.map(clonar):o&&typeof o==="object"?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,clonar(v)])):o;
+function updUndo(){$("#t-undo").disabled=!HIST.length;$("#t-redo").disabled=!REDO.length}
+function guardar(){HIST.push(clonar(P));if(HIST.length>80)HIST.shift();REDO.length=0;updUndo()}
+function deshacer(){if(!HIST.length)return;REDO.push(clonar(P));P=HIST.pop();resetModel();render();updUndo()}
+function rehacer(){if(!REDO.length)return;HIST.push(clonar(P));P=REDO.pop();resetModel();render();updUndo()}
 
 /* ---------- editing ---------- */
 function enableEditing(){
-  document.querySelectorAll("[data-k]").forEach(n=>{n.contentEditable="true";n.addEventListener("blur",()=>{set(P,n.dataset.k,n.innerHTML.replace(/&nbsp;/g," ").trim())})});
-  document.querySelectorAll("[data-img]").forEach(n=>n.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();pickImage(src=>{set(P,n.dataset.img,src);render()})}));
-  document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();get(P,b.dataset.del).splice(+b.dataset.i,1);render()}));
-  document.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const f=P.ficha,n=f.fotos.length;let i=fichaIdx()+(+b.dataset.pick);if(i<1)i=n-1;if(i>n-1)i=1;f.fotoFicha=i;render()}));
-  document.querySelectorAll("[data-choose]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();openChooser()}));
-  document.querySelectorAll("select[data-forma]").forEach(sel=>{sel.addEventListener("click",e=>e.stopPropagation());sel.addEventListener("change",()=>{P[sel.dataset.forma].fotoForma=sel.value;render()})});
-  document.querySelectorAll("[data-icon]").forEach(n=>n.addEventListener("click",()=>{const s=P.ficha.stats[+n.dataset.icon];s.icono=ICON_KEYS[(ICON_KEYS.indexOf(s.icono)+1)%ICON_KEYS.length];render()}));
-  document.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.add,f=P.ficha;
+  document.querySelectorAll("[data-k]").forEach(n=>{n.contentEditable="true";n.addEventListener("blur",()=>{const v=n.innerHTML.replace(/&nbsp;/g," ").trim();if(v===String(get(P,n.dataset.k)??""))return;guardar();set(P,n.dataset.k,v)})});
+  document.querySelectorAll("[data-img]").forEach(n=>n.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();pickImage(src=>{guardar();set(P,n.dataset.img,src);if(P.recortes)delete P.recortes[n.dataset.img];render()})}));
+  document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();guardar();const p=b.dataset.del,i=+b.dataset.i,l=get(P,p);
+    if(p==="ficha.fotos"||p==="ficha.planos")reordenar(p,l.map((_,k)=>k).filter(k=>k!==i));else l.splice(i,1);render()}));
+  document.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const f=P.ficha,n=f.fotos.length,c=portadaIdx(),d=+b.dataset.pick;let i=fichaIdx();
+    do{i=(i+d+n)%n}while(i===c&&n>1);guardar();f.fotoFicha=i;render()}));
+  document.querySelectorAll("[data-choose]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();openChooser(b.dataset.choose)}));
+  document.querySelectorAll("select[data-forma]").forEach(sel=>{sel.addEventListener("click",e=>e.stopPropagation());sel.addEventListener("change",()=>{guardar();P[sel.dataset.forma].fotoForma=sel.value;render()})});
+  document.querySelectorAll("[data-icon]").forEach(n=>n.addEventListener("click",()=>{guardar();const s=P.ficha.stats[+n.dataset.icon];s.icono=ICON_KEYS[(ICON_KEYS.indexOf(s.icono)+1)%ICON_KEYS.length];render()}));
+  // tijera sobre cada foto
+  document.querySelectorAll("#deck img[data-img]").forEach(img=>{const k=img.dataset.img;if(!esFotoK(k)||!img.offsetParent)return;const b=cajaImg(img),btn=document.createElement("button");
+    btn.type="button";btn.className="ebtn cropb";btn.title="Recortar foto";btn.setAttribute("aria-label","Recortar foto");btn.textContent="✂";btn.style.left=(b.l+10)+"px";btn.style.top=(b.t+10)+"px";
+    btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();abrirRecorte(k)});img.offsetParent.appendChild(btn)});
+  document.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.add,f=P.ficha;if(k==="orden")return abrirOrden();if(k!=="fotos"&&k!=="plano")guardar();
     if(k==="chip"){f.caracteristicas.push("Nueva característica");render()}
     if(k==="stat"){f.stats.push({icono:"superficie",valor:"0",unidad:"m²",etiqueta:"Dato"});render()}
-    if(k==="fotos")pickImages(list=>{f.fotos.push(...list);render()});
-    if(k==="plano")pickImage(src=>{f.planos.push({nombre:"Plano",m2:"",img:src});render()});
+    if(k==="fotos")pickImages(list=>{guardar();f.fotos.push(...list);render()});
+    if(k==="plano")pickImage(src=>{guardar();f.planos.push({nombre:"Plano",m2:"",img:src});render()});
     if(k==="video"){const v=prompt("Pegá el link del video de Google Drive (compartido como 'Cualquier persona con el enlace'). Dejalo vacío para quitarlo.",f.video||"");if(v!==null){f.video=v.trim();render()}}
     if(k==="mapa")openMapEditor()}));
 }
@@ -1181,9 +1348,20 @@ function shrink(file,cb){const r=new FileReader();r.onload=()=>{const img=new Im
 function pickImage(cb){const inp=$("#file-in");inp.value="";inp.onchange=()=>{if(inp.files[0])shrink(inp.files[0],cb)};inp.click()}
 function pickImages(cb){const inp=$("#file-multi");inp.value="";inp.onchange=()=>{const fs=[...inp.files],out=[];if(!fs.length)return;fs.forEach((f,i)=>shrink(f,src=>{out[i]=src;if(out.filter(Boolean).length===fs.length)cb(out)}))};inp.click()}
 $("#t-edit").addEventListener("click",()=>{EDIT=!EDIT;document.documentElement.classList.toggle("editing",EDIT);$("#t-edit").textContent=EDIT?"✓ Terminar edición":"✎ Editar";if(EDIT)resetModel();render()});
-$("#t-bold").addEventListener("mousedown",e=>{e.preventDefault();document.execCommand("bold")});
-$("#t-plain").addEventListener("mousedown",e=>{e.preventDefault();document.execCommand("removeFormat");const n=getSelection().anchorNode?.parentElement;if(n&&n.classList.contains("gold"))n.replaceWith(...n.childNodes)});
-$("#t-gold").addEventListener("mousedown",e=>{e.preventDefault();const s=getSelection();if(!s.rangeCount||s.isCollapsed)return;const r=s.getRangeAt(0),sp=document.createElement("span");sp.className="gold";sp.appendChild(r.extractContents());r.insertNode(sp)});
+// formato de texto: actúa sobre lo seleccionado sin sacar el foco del texto
+const enTexto=()=>{const s=getSelection();if(!s.rangeCount)return null;const n=s.getRangeAt(0).commonAncestorContainer;return (n.nodeType===1?n:n.parentElement).closest("[data-k]")};
+const fmt=(sel,fn)=>document.querySelectorAll(sel).forEach(b=>b.addEventListener("mousedown",e=>{e.preventDefault();if(enTexto())fn(b)}));
+fmt("#t-bold",()=>document.execCommand("bold"));
+fmt("#t-ital",()=>document.execCommand("italic"));
+fmt("#t-light",()=>{const s=getSelection();if(s.isCollapsed)return;const r=s.getRangeAt(0),sp=document.createElement("span");sp.style.fontWeight="300";sp.appendChild(r.extractContents());r.insertNode(sp);s.selectAllChildren(sp)});
+const COLORES={"var(--gold)":"#D29C1E","var(--ink)":"#17181A","#FFFFFF":"#FFFFFF"};
+fmt(".txtbar .sw",b=>{document.execCommand("styleWithCSS",false,true);document.execCommand("foreColor",false,COLORES[b.dataset.color]||b.dataset.color)});
+fmt("#t-plain",()=>{const root=enTexto(),r=getSelection().getRangeAt(0);document.execCommand("removeFormat");
+  root.querySelectorAll("span.gold,span[style],b,strong,i,em,font").forEach(n=>{if(r.intersectsNode(n))n.replaceWith(...n.childNodes)})});
+$("#t-undo").addEventListener("click",()=>{const a=document.activeElement;if(a&&a.isContentEditable)a.blur();deshacer()});
+$("#t-redo").addEventListener("click",()=>{const a=document.activeElement;if(a&&a.isContentEditable)a.blur();rehacer()});
+document.addEventListener("keydown",e=>{if(!EDIT||!(e.ctrlKey||e.metaKey))return;const a=document.activeElement;if(a&&(a.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(a.tagName)))return;
+  const k=e.key.toLowerCase();if(k==="z"&&!e.shiftKey){e.preventDefault();deshacer()}else if(k==="y"||(k==="z"&&e.shiftKey)){e.preventDefault();rehacer()}});
 $("#t-save").addEventListener("click",()=>{
   if(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.k)document.activeElement.blur();
   const json=JSON.stringify(P,null,1).replace(/<\/script/gi,"<\\/script");
