@@ -246,7 +246,19 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 .tools button.primary{background:var(--gold);color:var(--ink);border-color:var(--gold)}
 .tools .fmt{display:none}
 .editing .tools .fmt{display:inline-block}
-.static .tools{display:none}
+.static .tools,.cliente .tools{display:none}
+/* PDF: una diapositiva por hoja, sin botones */
+@media print{
+  @page{size:1440px 810px;margin:0}
+  html{scroll-snap-type:none;background:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:none}
+  .slide{width:1440px;height:810px;break-inside:avoid;break-after:page;page-break-after:always}
+  .slide:last-child{break-after:auto;page-break-after:auto}
+  /* el escenario va en el flujo normal: centrado con position absolute, Chrome lo parte entre hojas */
+  .stage{position:relative!important;left:0!important;top:0!important;transform:none!important}
+  .tools,.panel,.edit-panel,.lb,.modal,#tip,.zoom,.pick,.ebtn,.btn-s,.edit-hint,.seg-ctl,.pencil,.tap-hint{display:none!important}
+  input.num{border-bottom-color:transparent!important}
+}
 .editing [data-k]{outline:1.5px dashed rgba(210,156,30,.85);outline-offset:3px;cursor:text;min-width:20px}
 .editing [data-k]:focus{outline-style:solid}
 .editing [data-img]{cursor:pointer;outline:2px dashed var(--gold);outline-offset:-6px}
@@ -300,7 +312,8 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
   <button type="button" class="fmt" id="t-plain" title="Quitar formato">Quitar formato</button>
   <button type="button" id="t-import">⤓ Importar ficha</button>
   <button type="button" id="t-edit">✎ Editar</button>
-  <button type="button" class="primary" id="t-save">Guardar copia</button>
+  <button type="button" id="t-pdf" title="Descargar en PDF: una hoja por diapositiva">PDF</button>
+  <button type="button" class="primary" id="t-save" title="Descargar la presentación para el cliente (sin estos botones)">Descargar</button>
 </div>
 <input type="file" id="file-in" accept="image/*" hidden>
 <input type="file" id="file-multi" accept="image/*" multiple hidden>
@@ -310,13 +323,13 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
   <div class="lb-body" id="lb-b"></div>
   <div class="lb-nav"><button type="button" id="lb-p">← Anterior</button><button type="button" id="lb-n">Siguiente →</button></div>
 </div>
-<div class="panel" id="imp" role="dialog" aria-modal="true" aria-label="Importar aviso">
+<div class="panel" id="imp" role="dialog" aria-modal="true" aria-label="Importar">
   <div class="card">
-    <h3>Importar ficha</h3>
-    <p>Pegá el link de ZonaProp, Argenprop, Mercado Libre o una ficha de Tokko, o subí el PDF de una ficha de Métrica. Se cargan los datos, la descripción, las fotos y la ubicación en el mapa. La portada solo cambia la dirección y la foto; la inversión y el cierre no se tocan.</p>
+    <h3>Importar</h3>
+    <p>Pegá el link de ZonaProp, Argenprop, Mercado Libre o una ficha de Tokko, o subí el PDF de una ficha de Métrica: se cargan los datos, la descripción, las fotos, la ubicación y la portada (la inversión no se toca). También podés subir una presentación descargada antes (.html) para seguir editándola.</p>
     <input type="text" id="imp-url" placeholder="https://www.zonaprop.com.ar/propiedades/...">
     <div class="imp-or"><span>o</span></div>
-    <label class="imp-file"><input type="file" id="imp-pdf" accept="application/pdf,.pdf" hidden><span>Subir PDF de una ficha</span></label>
+    <label class="imp-file"><input type="file" id="imp-pdf" accept="application/pdf,.pdf,text/html,.html,.htm" hidden><span>Subir PDF de una ficha o presentación guardada</span></label>
     <div class="imp-status" id="imp-st"></div>
     <div class="row"><button type="button" id="imp-cancel">Cancelar</button><button type="button" class="gold" id="imp-go">Importar</button></div>
   </div>
@@ -466,6 +479,8 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 const PRISTINE="<!DOCTYPE html>\n"+document.documentElement.outerHTML;
 const STATIC=location.search.includes("static");
 if(STATIC)document.documentElement.classList.add("static");
+// la presentación descargada es la que ve el cliente: sin botones (se pueden volver a mostrar abriéndola con ?editar)
+if(document.documentElement.dataset.cliente&&!location.search.includes("editar"))document.documentElement.classList.add("cliente");
 let P=JSON.parse(document.getElementById("data").textContent);
 let EDIT=false;
 const API="https://web-production-9a60eb.up.railway.app/api/publico";
@@ -521,11 +536,13 @@ function sPortada(){return `
 function fichaIdx(){const f=P.ficha,n=f.fotos.length;if(n<2)return 0;const i=+f.fotoFicha;return i>=1&&i<n?i:1}
 // con una sola foto (la de portada) la ficha muestra el mapa en vez de repetirla; también se puede elegir "Mapa" a mano
 function fichaMapa(){const f=P.ficha;if(!f.mapa.lat)return false;if(f.fotoFicha==="mapa")return true;return f.fotos.length<2&&f.fotoFicha!=="foto"}
-// el recuadro de la foto toma la forma de la foto: ancho si es horizontal, alto si es vertical
+// el recuadro de la foto toma la forma de la foto (ancho si es horizontal, alto si es vertical), o la forma que se elija en Editar
+const FORMAS={cuadrada:1,horizontal:4/3,vertical:3/4},FORMA_ORDEN=["auto","cuadrada","horizontal","vertical"];
 function fichaCaja(){const f=P.ficha;if(fichaMapa())return{w:540,h:682};if(!f.fotos.length)return{w:470,h:682};
-  const a=Math.min(2.2,Math.max(.5,ASPECT.get(f.fotos[fichaIdx()])||.69)),w=a>=1.15?600:Math.min(470,Math.round(682*a));return{w,h:Math.min(682,Math.round(w/a))}}
+  const a=Math.min(2.2,Math.max(.5,FORMAS[f.fotoForma]||ASPECT.get(f.fotos[fichaIdx()])||1)),w=Math.round(Math.min(650,682*a,a<1.15?600:650));return{w,h:Math.min(682,Math.round(w/a))}}
 function sFicha(){const f=P.ficha,fm=fichaMapa(),cj=fichaCaja();
-  const pick=f.fotos.length&&(f.fotos.length>2||f.mapa.lat)?`<div class="pick">${!fm&&f.fotos.length>2?'<button type="button" data-pick="-1">◀</button>':""}<button type="button" data-choose="1">Elegir foto</button>${!fm&&f.fotos.length>2?'<button type="button" data-pick="1">▶</button>':""}</div>`:"";
+  const flechas=!fm&&f.fotos.length>2,elegir=f.fotos.length>2||(f.fotos.length&&f.mapa.lat),forma=!fm&&f.fotos.length;
+  const pick=flechas||elegir||forma?`<div class="pick">${flechas?'<button type="button" data-pick="-1">◀</button>':""}${elegir?'<button type="button" data-choose="1">Elegir foto</button>':""}${forma?`<button type="button" data-forma="1">Forma: ${f.fotoForma&&FORMAS[f.fotoForma]?f.fotoForma:"auto"}</button>`:""}${flechas?'<button type="button" data-pick="1">▶</button>':""}</div>`:"";
   const der=fm?`<div class="ficha-r fmap mapwrap" style="height:${cj.h}px;align-self:center"><div class="map"></div>${E("ficha.mapaLeyenda","p","map-cap")}
       <button type="button" class="ebtn add" data-add="mapa" style="position:absolute;z-index:600;top:10px;left:10px;margin:0">Editar ubicación y puntos</button>${pick}</div>`
     :`<div class="ficha-r" data-zoom="foto:${fichaIdx()}" style="height:${cj.h}px;align-self:center">${f.fotos.length?I("ficha.fotos."+fichaIdx(),"Foto de la propiedad")+ZOOM+pick:ADD("fotos","+ Fotos")}</div>`;
@@ -958,7 +975,16 @@ async function importarAviso(url){
 $("#t-import").addEventListener("click",()=>{$("#imp").classList.add("open");$("#imp-st").textContent="";$("#imp-url").focus()});
 $("#imp-cancel").addEventListener("click",()=>$("#imp").classList.remove("open"));
 $("#imp-go").addEventListener("click",()=>{const u=$("#imp-url").value.trim();if(u)importarAviso(u)});
-$("#imp-pdf").addEventListener("change",e=>{const fl=e.target.files[0];e.target.value="";if(fl)importarPDF(fl)});
+$("#imp-pdf").addEventListener("change",e=>{const fl=e.target.files[0];e.target.value="";if(!fl)return;if(/\.html?$/i.test(fl.name)||fl.type==="text/html")importarPresentacion(fl);else importarPDF(fl)});
+// una presentación descargada antes: se toman sus datos y se sigue editando
+async function importarPresentacion(file){
+  const stEl=$("#imp-st");const say=(t,bad)=>{stEl.textContent=t;stEl.className="imp-status"+(bad?" bad":"")};
+  try{const doc=new DOMParser().parseFromString(await file.text(),"text/html"),d=doc.getElementById("data");
+    const datos=d&&JSON.parse(d.textContent);if(!datos||!datos.ficha||!datos.portada)throw new Error("Ese archivo no es una presentación de Métrica");
+    P=datos;resetModel();render();say("Listo: presentación cargada. Seguí editando con ✎ Editar.");
+    setTimeout(()=>{$("#imp").classList.remove("open");document.getElementById("sl-portada").scrollIntoView()},1200);
+  }catch(e){say((e.message||"No se pudo leer el archivo")+".",true)}
+}
 $("#imp-url").addEventListener("keydown",e=>{if(e.key==="Enter"){const u=e.target.value.trim();if(u)importarAviso(u)}});
 
 /* ---------- importar una ficha en PDF ----------
@@ -1128,6 +1154,7 @@ function enableEditing(){
   document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();get(P,b.dataset.del).splice(+b.dataset.i,1);render()}));
   document.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const f=P.ficha,n=f.fotos.length;let i=fichaIdx()+(+b.dataset.pick);if(i<1)i=n-1;if(i>n-1)i=1;f.fotoFicha=i;render()}));
   document.querySelectorAll("[data-choose]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();openChooser()}));
+  document.querySelectorAll("[data-forma]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const f=P.ficha;f.fotoForma=FORMA_ORDEN[(FORMA_ORDEN.indexOf(f.fotoForma||"auto")+1)%FORMA_ORDEN.length];render()}));
   document.querySelectorAll("[data-icon]").forEach(n=>n.addEventListener("click",()=>{const s=P.ficha.stats[+n.dataset.icon];s.icono=ICON_KEYS[(ICON_KEYS.indexOf(s.icono)+1)%ICON_KEYS.length];render()}));
   document.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.add,f=P.ficha;
     if(k==="chip"){f.caracteristicas.push("Nueva característica");render()}
@@ -1148,9 +1175,12 @@ $("#t-gold").addEventListener("mousedown",e=>{e.preventDefault();const s=getSele
 $("#t-save").addEventListener("click",()=>{
   if(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.k)document.activeElement.blur();
   const json=JSON.stringify(P,null,1).replace(/<\/script/gi,"<\\/script");
-  const html=PRISTINE.replace(/(<script id="data" type="application\/json">)[\s\S]*?(<\/script>)/,(m,a,b)=>a+"\n"+json+"\n"+b);
+  const html=PRISTINE.replace(/(<script id="data" type="application\/json">)[\s\S]*?(<\/script>)/,(m,a,b)=>a+"\n"+json+"\n"+b).replace(/<html(?![^>]*data-cliente)/,'<html data-cliente="1"');
   const blob=new Blob([html],{type:"text/html"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);
   a.download="Presentacion - "+String(P.meta.tituloPestana||"Metrica").replace(/<[^>]+>/g,"").replace(/[\\/:*?"<>|]/g,"")+".html";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)});
+
+$("#t-pdf").addEventListener("click",()=>{if(EDIT)$("#t-edit").click();const t=document.title;document.title="Presentacion - "+String(P.meta.tituloPestana||"Metrica").replace(/<[^>]+>/g,"");
+  setTimeout(()=>{window.print();document.title=t},400)});
 
 resetModel();fit();render();
 </script>
