@@ -56,6 +56,13 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .field select option{background:#242424;}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
 .field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+/* superficies personalizadas */
+.sup-x{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;}
+.sup-x .btn-danger{align-self:stretch;}
+.sup-nueva{display:flex;gap:6px;margin-bottom:8px;}
+.sup-nueva input{flex:1;min-width:0;background:transparent;border:1px dashed rgba(200,148,26,.45);border-radius:3px;color:rgba(255,255,255,.85);font-size:11px;padding:5px 7px;font-family:'Inter',sans-serif;}
+.sup-nueva input::placeholder{color:rgba(200,148,26,.75);}
+.sup-nueva input:focus{outline:none;border-style:solid;border-color:var(--gold);background:rgba(200,148,26,.07);}
 .tog{display:flex;gap:3px;margin-top:2px;}
 .tog button{flex:1;padding:5px;border-radius:3px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.42);font-size:10px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
 .tog button.on{background:rgba(200,148,26,.18);color:var(--gold);border-color:rgba(200,148,26,.38);}
@@ -187,6 +194,9 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
   .field input,.field textarea,.field select{font-size:16px;padding:12px;border-radius:6px;min-height:48px;}
   .field textarea{min-height:220px;line-height:1.5;}
   .field-row,.field-row3{grid-template-columns:1fr 1fr;gap:10px;}
+  .sup-x{gap:10px;margin-bottom:10px;}
+  .sup-nueva{gap:10px;margin-bottom:14px;}
+  .sup-nueva input{font-size:16px;padding:12px;border-radius:6px;min-height:48px;}
   .section-label{font-size:12px;margin:16px 0 8px;}
   .photo-grid-sb{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
   .photo-thumb-wrap{width:auto;height:auto;aspect-ratio:4/3;}
@@ -582,6 +592,7 @@ function renderSidebar(){
             '<input type="number" value="'+esc(l.supDescubierta)+'" step="0.01" data-id="'+l.id+'" data-f="supDescubierta" oninput="sLev(this)">'+
           '</div>'+
         '</div>'+
+        camposSupExtra(l)+
         '<div class="field-row">'+
           '<div class="field"><label>Baños</label>'+
             '<input type="text" value="'+esc(l.banos)+'" data-id="'+l.id+'" data-f="banos" oninput="sLev(this)">'+
@@ -659,6 +670,40 @@ function renderSidebar(){
 }
 
 
+/* superficies personalizadas (entrepiso, balcón, patio…): l.supExtra=[{nombre,m2}]; en la ficha salen solo las que tienen m² */
+function camposSupExtra(l){
+  return '<div id="supx-'+l.id+'">'+filasSupExtraSb(l)+'</div>'+
+    '<div class="sup-nueva">'+
+      '<input type="text" placeholder="+ Personalizado (ej: Entrepiso)" title="Escribí el tipo de superficie y apretá Enter" onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarSupExtra('+l.id+',this);}">'+
+      '<button class="btn-add" onclick="agregarSupExtra('+l.id+',this.previousElementSibling)">Agregar</button>'+
+    '</div>';
+}
+function filasSupExtraSb(l){
+  return (l.supExtra||[]).map((s,i)=>
+    '<div class="sup-x">'+
+      '<div class="field" style="margin:0"><input type="text" value="'+esc(s.nombre)+'" title="Tipo de superficie" oninput="setSupExtra('+l.id+','+i+',\'nombre\',this.value)"></div>'+
+      '<div class="field" style="margin:0"><input type="number" value="'+esc(s.m2)+'" step="0.01" placeholder="m²" oninput="setSupExtra('+l.id+','+i+',\'m2\',this.value)"></div>'+
+      '<button class="btn-danger" title="Quitar" onclick="quitarSupExtra('+l.id+','+i+')">✕</button>'+
+    '</div>').join('');
+}
+function refrescarSupExtra(l){const w=document.getElementById('supx-'+l.id);if(w)w.innerHTML=filasSupExtraSb(l);renderPreview();autoSave();}
+function agregarSupExtra(id,input){
+  const l=locals.find(l=>l.id===id),nombre=input.value.trim();if(!l||!nombre)return;
+  (l.supExtra=l.supExtra||[]).push({nombre,m2:''});
+  input.value='';refrescarSupExtra(l);
+  const filas=document.querySelectorAll('#supx-'+id+' .sup-x');
+  filas[filas.length-1]?.querySelector('input[type=number]').focus();
+}
+function setSupExtra(id,i,k,v){const l=locals.find(l=>l.id===id);if(!l||!l.supExtra?.[i])return;l.supExtra[i][k]=v;renderPreview();autoSave();}
+function quitarSupExtra(id,i){const l=locals.find(l=>l.id===id);if(!l||!l.supExtra)return;l.supExtra.splice(i,1);refrescarSupExtra(l);}
+function filasSupExtra(l){
+  return (l.supExtra||[]).filter(s=>s.nombre&&String(s.m2).trim()!=='').map(s=>{
+    let n=s.nombre.trim().replace(/^sup(\.|erficie)?\s+/i,'');
+    n=n.charAt(0).toUpperCase()+n.slice(1);
+    return ['Superficie '+esc(n),fN(s.m2)+' m²'];
+  });
+}
+
 /* campos del panel para un departamento */
 function camposDepto(l){
   const f=(lab,k,ph,tipo)=>'<div class="field"><label>'+lab+'</label><input type="'+(tipo||'text')+'" value="'+esc(l[k])+'"'+(ph?' placeholder="'+ph+'"':'')+(tipo==='number'?' step="0.01"':'')+' data-id="'+l.id+'" data-f="'+k+'" oninput="sLev(this)"></div>';
@@ -670,6 +715,7 @@ function camposDepto(l){
     '<div class="field-row">'+f('Toilettes','toilettes')+f('Cocheras','cocheras')+'</div>'+
     '<div class="field-row">'+f('Sup. cubierta m²','supCubierta','','number')+f('Sup. semicubierta m²','supSemi','','number')+'</div>'+
     '<div class="field-row">'+f('Sup. descubierta m²','supDescubierta','','number')+f('Sup. total m²','supTotal','','number')+'</div>'+
+    camposSupExtra(l)+
     '<div class="field-row">'+
       '<div class="field"><label>Disposición</label><select data-id="'+l.id+'" data-f="disposicion" onchange="sLev(this)">'+disp+'</select></div>'+
       f('Orientación','orientacion','Ej: Norte')+
@@ -692,6 +738,7 @@ function filasDepto(l){
   if(l.supCubierta)r.push(['Superficie Cubierta',m(l.supCubierta)]);
   if(l.supSemi)r.push(['Superficie Semicubierta',m(l.supSemi)]);
   if(l.supDescubierta)r.push(['Superficie Descubierta',m(l.supDescubierta)]);
+  filasSupExtra(l).forEach(x=>r.push(x));
   if(l.supTotal)r.push(['Superficie Total',m(l.supTotal)]);
   if(l.piso)r.push(['Piso / Unidad',esc(l.piso)]);
   if(l.disposicion)r.push(['Disposici\u00f3n',esc(l.disposicion)]);
@@ -749,6 +796,7 @@ function rLocal(l,idx){
   if(l.supSS)rows.push(['Superficie Subsuelo',fN(l.supSS)+' m\u00b2']);
   if(l.supDescubierta)rows.push(['Superficie Descubierta',fN(l.supDescubierta)+' m\u00b2']);
   if(l.supTerreno)rows.push(['Terreno',fN(l.supTerreno)+' m\u00b2']);
+  filasSupExtra(l).forEach(x=>rows.push(x));
   if(l.frente)rows.push(['Frente',fN(l.frente)+' m']);
   if(l.fondo)rows.push(['Fondo',fN(l.fondo)+' m']);
   if(l.espAereo)rows.push(['Espacio A\u00e9reo Propio',esc(l.espAereo)]);
