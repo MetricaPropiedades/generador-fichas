@@ -169,6 +169,27 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .fotos-resto{margin-bottom:4mm;}
 .planos-title{font-family:'Big Shoulders Display',sans-serif;font-size:13pt;font-weight:800;color:#C8941A;text-transform:uppercase;letter-spacing:.06em;margin:5mm 0 3mm;border-bottom:1.5px solid #C8941A;padding-bottom:2mm;}
 .photo-thumb-wrap{cursor:grab;}
+/* fichas guardadas (copia en Google Drive) */
+#guardadas-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;}
+#guardadas-modal[hidden]{display:none;}
+.gd-box{background:#1e1e1e;border:1px solid var(--sb-border);border-radius:8px;width:min(720px,100%);max-height:88vh;display:flex;flex-direction:column;}
+.gd-hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--sb-border);}
+.gd-hd h2{font-family:'Big Shoulders Display',sans-serif;font-size:20px;font-weight:800;color:#fff;flex:1;letter-spacing:.02em;}
+.gd-hd h2 span{color:var(--gold);}
+.gd-busca{margin:12px 16px 4px;background:rgba(255,255,255,.05);border:1px solid var(--sb-border);border-radius:4px;color:#fff;font-size:13px;padding:8px 10px;font-family:'Inter',sans-serif;}
+.gd-busca:focus{outline:none;border-color:var(--gold);}
+.gd-filtros{display:flex;gap:6px;padding:6px 16px 10px;flex-wrap:wrap;}
+.gd-filtros button{background:rgba(255,255,255,.05);border:1px solid var(--sb-border);color:rgba(255,255,255,.6);font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;cursor:pointer;font-family:'Inter',sans-serif;}
+.gd-filtros button.on{background:var(--gold);border-color:var(--gold);color:#1a1a1a;}
+.gd-lista{overflow-y:auto;padding:0 16px 14px;display:flex;flex-direction:column;gap:6px;}
+.gd-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid var(--sb-border);border-radius:6px;padding:10px 12px;}
+.gd-info{flex:1;min-width:0;}
+.gd-tit{color:#fff;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gd-meta{color:rgba(255,255,255,.4);font-size:11px;margin-top:2px;}
+.gd-chip{display:inline-block;background:rgba(200,148,26,.15);color:var(--gold);font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;margin-right:6px;text-transform:uppercase;letter-spacing:.04em;}
+.gd-item button{white-space:nowrap;}
+.gd-vacio{color:rgba(255,255,255,.4);font-size:13px;text-align:center;padding:28px 10px;line-height:1.6;}
+@media(max-width:820px){.gd-item{flex-wrap:wrap;}.gd-info{flex-basis:100%;}.gd-item button{flex:1;min-height:42px;}}
 .save-status{font-size:10px;color:rgba(255,255,255,.35);min-height:12px;}
 .save-status.mal{color:#e88;font-weight:600;}
 .tabs-inm{display:flex;gap:0;margin:-2px 0 10px;border-bottom:1px solid rgba(255,255,255,.1);}
@@ -253,6 +274,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
     <div class="sb-extra-btns">
       <button class="btn-sec" onclick="exportPDF()">⬇ PDF</button>
       <label class="btn-sec" style="cursor:pointer" title="Abrí un PDF hecho con este generador para seguir editándolo">📂 Abrir PDF<input type="file" accept=".pdf,.json" style="display:none" onchange="loadJSON(this)"></label>
+      <button class="btn-sec" onclick="abrirGuardadas()" title="Todas las fichas descargadas por el equipo">🗂 Guardadas</button>
     </div>
     <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:13px;"></div>
     <div id="save-status" class="save-status"></div>
@@ -269,6 +291,16 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 </aside>
 <div id="preview"><div id="doc"></div></div>
 <div id="mob-bar"><button id="mob-edit" class="on" onclick="vistaMovil(false)">✏️ Editar</button><button id="mob-ver" onclick="vistaMovil(true)">👁 Ver ficha</button></div>
+<div id="guardadas-modal" hidden onclick="if(event.target===this)cerrarGuardadas()">
+  <div class="gd-box">
+    <div class="gd-hd"><h2>Fichas <span>guardadas</span></h2><button class="btn-sec" onclick="cerrarGuardadas()">Cerrar</button></div>
+    <input class="gd-busca" id="gd-busca" type="search" placeholder="Buscar por dirección…" oninput="pintarGuardadas()">
+    <div class="gd-filtros" id="gd-filtros">
+      <button class="on" data-t="">Todas</button><button data-t="local">Locales</button><button data-t="depto">Departamentos</button>
+    </div>
+    <div class="gd-lista" id="gd-lista"></div>
+  </div>
+</div>
 <div id="cropper-modal" style="display:none">
   <div class="modal-box">
     <img id="cropper-img" src="" alt="">
@@ -1521,7 +1553,93 @@ async function _exportPDF(){
   const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([salida],{type:'application/pdf'})),download:nombreArchivo()});
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  subirCopia(salida);
 }
+
+/* ---- fichas guardadas ----
+   Cada PDF que se descarga se sube solo (sin preguntar) a Google Drive, a través de un programita de Google
+   (fichas-guardadas/Codigo-Google.gs). Una ficha por dirección: si se vuelve a descargar, reemplaza a la anterior.
+   El botón "Guardadas" lista las de todo el equipo y las abre para seguir editando (el PDF trae los datos adentro). */
+const GUARDADAS_URL='';
+const GUARDADAS_CLAVE='metrica-fichas-2026';
+let _guardadas=[],_gdFiltro='';
+function normDir(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/\bavenida\b/g,'av').replace(/\bav\./g,'av').replace(/\bcalle\b/g,'')
+    .replace(/[^a-z0-9]+/g,' ').trim();
+}
+/* misma ficha = mismo tipo, misma operación y mismas direcciones (en deptos, también piso/unidad) */
+function claveFicha(){
+  const dirs=locals.map(l=>normDir(l.address)+(tipoInmueble==='depto'&&l.piso?' '+normDir(l.piso):'')).filter(Boolean).sort();
+  return [tipoInmueble,tipoOperacion.toLowerCase(),...dirs].join('|').slice(0,400);
+}
+async function llamarGuardadas(q){
+  const r=await fetch(GUARDADAS_URL,{method:'POST',body:JSON.stringify({...q,clave:GUARDADAS_CLAVE})});
+  const j=await r.json();
+  if(!j.ok)throw new Error(j.error||'Error del servidor');
+  return j;
+}
+function aBase64(bytes){
+  return new Promise((ok,mal)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(',')[1]);fr.onerror=mal;fr.readAsDataURL(new Blob([bytes]));});
+}
+async function subirCopia(bytes){
+  if(!GUARDADAS_URL||!locals.some(l=>l.address))return;
+  const st=document.getElementById('save-status');
+  try{
+    const j=await llamarGuardadas({accion:'guardar',tipo:tipoInmueble,operacion:tipoOperacion,id:claveFicha(),
+      titulo:locals.map(l=>l.address).filter(Boolean).join(' · '),nombre:nombreArchivo(),pdf:await aBase64(bytes)});
+    if(st){st.classList.remove('mal');st.textContent=j.reemplazada?'✓ Ficha actualizada en Guardadas':'✓ Ficha agregada a Guardadas';}
+  }catch(e){console.warn('No se pudo guardar la copia',e);}
+}
+async function abrirGuardadas(){
+  document.getElementById('guardadas-modal').hidden=false;
+  const lista=document.getElementById('gd-lista');
+  if(!GUARDADAS_URL){lista.innerHTML='<div class="gd-vacio">Todavía no está conectado a Google Drive.</div>';return;}
+  lista.innerHTML='<div class="gd-vacio">Cargando…</div>';
+  try{_guardadas=(await llamarGuardadas({accion:'listar'})).fichas||[];pintarGuardadas();}
+  catch(e){lista.innerHTML='<div class="gd-vacio">No se pudo cargar la lista ('+esc(e.message)+'). Revisá la conexión y probá de nuevo.</div>';}
+}
+function cerrarGuardadas(){document.getElementById('guardadas-modal').hidden=true;}
+document.getElementById('gd-filtros').addEventListener('click',ev=>{
+  const b=ev.target.closest('button');if(!b)return;
+  _gdFiltro=b.dataset.t;document.querySelectorAll('#gd-filtros button').forEach(x=>x.classList.toggle('on',x===b));pintarGuardadas();
+});
+function pintarGuardadas(){
+  const q=normDir(document.getElementById('gd-busca').value);
+  const fs=_guardadas.filter(f=>(!_gdFiltro||f.tipo===_gdFiltro)&&(!q||normDir(f.titulo).includes(q)));
+  const lista=document.getElementById('gd-lista');
+  if(!fs.length){lista.innerHTML='<div class="gd-vacio">'+(_guardadas.length?'No hay fichas con esa búsqueda.':'Todavía no hay fichas guardadas.<br>Se guardan solas cada vez que alguien descarga un PDF.')+'</div>';return;}
+  const tipos={local:'Local',depto:'Depto',fondo:'Fondo',tasacion:'Tasación'};
+  lista.innerHTML=fs.map(f=>{
+    const d=new Date(f.fecha),fecha=d.toLocaleDateString('es-AR')+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+    return '<div class="gd-item"><div class="gd-info"><div class="gd-tit">'+esc(f.titulo||f.nombre)+'</div>'+
+      '<div class="gd-meta"><span class="gd-chip">'+(tipos[f.tipo]||'Ficha')+' · '+esc(f.operacion||'')+'</span>'+fecha+'</div></div>'+
+      '<button class="btn-add" data-gd="editar" data-id="'+esc(f.id)+'">Editar</button>'+
+      '<button class="btn-sec" data-gd="bajar" data-id="'+esc(f.id)+'">Descargar</button>'+
+      '<button class="btn-danger" data-gd="borrar" data-id="'+esc(f.id)+'" title="Quitar de Guardadas">✕</button></div>';
+  }).join('');
+}
+document.getElementById('gd-lista').addEventListener('click',async ev=>{
+  const b=ev.target.closest('[data-gd]');if(!b)return;
+  const f=_guardadas.find(x=>x.id===b.dataset.id);if(!f)return;
+  if(b.dataset.gd==='borrar'){
+    if(!confirm('¿Quitar "'+(f.titulo||f.nombre)+'" de Guardadas? (va a la papelera de Drive)'))return;
+    b.disabled=true;
+    try{await llamarGuardadas({accion:'borrar',id:f.id});_guardadas=_guardadas.filter(x=>x!==f);pintarGuardadas();}
+    catch(e){alert('No se pudo quitar: '+e.message);b.disabled=false;}
+    return;
+  }
+  if(b.dataset.gd==='editar'&&locals.length&&!confirm('Se va a reemplazar lo que tenés ahora en el generador por esta ficha. ¿Seguir?'))return;
+  const txt=b.textContent;b.disabled=true;b.textContent='Abriendo…';
+  try{
+    const j=await llamarGuardadas({accion:'abrir',id:f.id});
+    const bytes=Uint8Array.from(atob(j.pdf),c=>c.charCodeAt(0));
+    if(b.dataset.gd==='editar'){await abrirPDF(new Blob([bytes],{type:'application/pdf'}));cerrarGuardadas();}
+    else{const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),download:j.nombre||f.nombre});
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
+  }catch(e){alert('No se pudo abrir: '+e.message);}
+  b.disabled=false;b.textContent=txt;
+});
 
 
 function dragStart(ev,localId,idx,type){ev.dataTransfer.setData("dnd",JSON.stringify({localId,idx,type}));ev.dataTransfer.effectAllowed="move";}
