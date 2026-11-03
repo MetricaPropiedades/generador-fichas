@@ -315,7 +315,7 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',caracteristicas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',luminosidad:'',aptoCredito:'',aptoProfesional:'',mascotas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',luminosidad:'',aptoCredito:'',aptoProfesional:'',mascotas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
@@ -383,7 +383,6 @@ async function importarAviso(){
     /* la app manda las medidas con coma decimal ("62,3"); los campos numéricos necesitan punto */
     ['supCubierta','supPB','supPA','supSS','supTerreno','supSemi','supDescubierta','supTotal','frente','fondo']
       .forEach(k=>{if(l[k])l[k]=String(l[k]).replace(/\./g,'').replace(',','.');});
-    if(d.caracteristicas&&d.caracteristicas.length)l.caracteristicas=d.caracteristicas.join(' · ');
     if(tipoInmueble==='depto'){
       const am=amenitiesDe([(d.caracteristicas||[]).join(' '),d.comentarios].join(' '));if(am)l.amenities=am;
       rasgosDepto(l,[(d.caracteristicas||[]).join(' · '),d.comentarios].join(' \n '));
@@ -649,14 +648,11 @@ function renderSidebar(){
           '<div class="field"><label>Expensas</label>'+
             '<input type="text" value="'+esc(l.expensas)+'" data-id="'+l.id+'" data-f="expensas" oninput="sLev(this)">'+
           '</div>'+
-          '<div class="field"><label>Características</label>'+
-            '<input type="text" value="'+esc(l.caracteristicas)+'" placeholder="Luminoso · Aire acond." data-id="'+l.id+'" data-f="caracteristicas" oninput="sLev(this)">'+
-          '</div>'+
-        '</div>'+
-        '<div class="field-row">'+
           '<div class="field"><label>Condición</label>'+
             '<input type="text" value="'+esc(l.condicion)+'" placeholder="Excelente / Muy bueno" data-id="'+l.id+'" data-f="condicion" oninput="sLev(this)">'+
           '</div>'+
+        '</div>'+
+        '<div class="field-row">'+
           '<div class="field"><label>Plantas</label>'+
             '<input type="text" value="'+esc(l.plantas)+'" data-id="'+l.id+'" data-f="plantas" oninput="sLev(this)">'+
           '</div>'+
@@ -759,7 +755,7 @@ function camposDepto(l){
     '<div class="field-row">'+sel('Luminosidad','luminosidad',['Muy luminoso','Luminoso','Poco luminoso'])+sel('Apto crédito','aptoCredito',['Sí','No'])+'</div>'+
     '<div class="field-row">'+sel('Apto profesional','aptoProfesional',['Sí','No'])+sel('Permite mascotas','mascotas',['Sí','No'])+'</div>'+
     '<div class="field-row">'+f('Antigüedad','antiguedad','A estrenar / 10 años')+f('Expensas','expensas')+'</div>'+
-    '<div class="field-row">'+f('Condición','condicion','Excelente / Muy bueno')+f('Características','caracteristicas','Luminoso · Balcón')+'</div>'+
+    '<div class="field-row">'+f('Condición','condicion','Excelente / Muy bueno')+'</div>'+
     f('Amenities','amenities','Pileta · SUM · Gimnasio')+
     f('Servicios','servicios','Agua corriente · Gas natural · Cloaca');
 }
@@ -788,7 +784,6 @@ function filasDepto(l){
   if(l.aptoProfesional)r.push(['Apto Profesional',esc(l.aptoProfesional)]);
   if(l.mascotas)r.push(['Permite Mascotas',esc(l.mascotas)]);
   if(l.amenities)r.push(['Amenities',esc(l.amenities)]);
-  if(l.caracteristicas)r.push(['Caracter\u00edsticas',esc(l.caracteristicas)]);
   if(l.servicios)r.push(['Servicios',esc(l.servicios)]);
   return r;
 }
@@ -844,7 +839,6 @@ function rLocal(l,idx){
   if(l.expensas)rows.push(['Expensas',esc(l.expensas)]);
   if(l.plantas)rows.push(['Plantas',esc(l.plantas)]);
   if(l.condicion)rows.push(['Condici\u00f3n',esc(l.condicion)]);
-  if(l.caracteristicas)rows.push(['Caracter\u00edsticas',esc(l.caracteristicas)]);
   if(l.servicios)rows.push(['Servicios',esc(l.servicios)]);
   }
   const tableRows=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
@@ -1155,12 +1149,19 @@ async function triggerMapGen(){
 }
 
 function getState(){return{version:1,tipoOperacion,tipoInmueble,locals:locals.map(l=>({...l})),map:{showMap,geoCoords,capturedMapImg}};}
+/* "Características" ya no existe: si una ficha guardada la tenía, el texto se suma al principio de Comentarios */
+function pasarCaracteristicas(l){
+  const c=String(l.caracteristicas||'').trim();
+  if(c&&!String(l.comentarios||'').includes(c))l.comentarios=c+(l.comentarios?'\n\n'+l.comentarios:'');
+  delete l.caracteristicas;
+  return l;
+}
 function applyState(state){
   if(!state)return;
   const ti=state.tipoInmueble||'local';
   if(ti!==tipoInmueble){autoSave();tipoInmueble=ti;}
   actualizarUIInmueble();
-  locals=(state.locals||[]).map(l=>({...l}));
+  locals=(state.locals||[]).map(l=>pasarCaracteristicas({...l}));
   nextId=locals.length?Math.max(...locals.map(l=>l.id))+1:1;
   if(state.tipoOperacion)setTipo(state.tipoOperacion);
   const m=state.map||{};
