@@ -163,7 +163,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .foto-principal .ph-cover{aspect-ratio:1/1;}
 .foto-principal .placeholder-slot{aspect-ratio:1/1;padding:0;margin:0;display:flex;align-items:center;justify-content:center;}
 /* el resto de las fotos: horizontales de a 2 por fila (4:3), verticales de a 3 (3:4) */
-.fotos-fila{display:flex;justify-content:center;gap:2mm;margin-bottom:2mm;}
+.fotos-fila{display:flex;justify-content:flex-start;gap:2mm;margin-bottom:2mm;}
 .fotos-fila .ph-cover{flex:0 0 calc((100% - 2mm)/2);aspect-ratio:4/3;}
 .fotos-fila.v .ph-cover{flex:0 0 calc((100% - 4mm)/3);aspect-ratio:3/4;}
 .fotos-resto{margin-bottom:4mm;}
@@ -849,7 +849,7 @@ function rLocal(l,idx){
   const cuadro=p=>'<div class="ph-cover" style="background-image:url(\''+p.photo+'\')"></div>';
   const fotoPrincipal='<div class="foto-principal">'+(l.photos.length?cuadro(l.photos[0])
     :'<div class="placeholder-slot">📷 Imagen del '+NOMBRES[tipoInmueble].uno.toLowerCase()+'</div>')+'</div>';
-  /* las demás, a lo ancho debajo: horizontales de a 2 y verticales de a 3, cada grupo en el orden elegido;
+  /* las demás, a lo ancho debajo: horizontales de a 2 y verticales de a 3 (la fila incompleta, alineada a la izquierda), cada grupo en el orden elegido;
      va primero el grupo de la foto que esté primera */
   let photosHtml='';
   const resto=l.photos.slice(1);
