@@ -106,6 +106,8 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .prop-table .precio-row td{font-weight:800;font-size:14.5pt;border-top:2px solid #ddd;}
 .prop-table .precio-row td:last-child{color:var(--gold);}
 .prop-comments{font-size:8pt;color:#555;line-height:1.65;margin-bottom:4mm;padding:2.5mm 4mm;background:#fafafa;border-left:3px solid var(--gold);border-radius:2px;white-space:pre-wrap;}
+/* palabras o links larguísimos (sin espacios) se cortan para no salirse de la hoja; html2canvas entiende break-word */
+.prop-comments,.prop-table td,.local-addr{overflow-wrap:break-word;word-break:break-word;}
 .photos-grid-1{margin-bottom:4mm;}
 .photos-grid-1 img{width:100%;height:auto;border-radius:3px;display:block;}
 .photos-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:2mm;margin-bottom:4mm;}
@@ -846,7 +848,7 @@ function rLocal(l,idx){
   if(l.servicios)rows.push(['Servicios',esc(l.servicios)]);
   }
   const tableRows=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
-  const precioRow='<tr class="precio-row"><td>Precio de '+tipoOperacion.toLowerCase()+'</td><td>'+(l.precio?esc(l.currency)+' '+esc(l.precio):dash)+'</td></tr>';
+  const precioRow='<tr class="precio-row"><td>Precio de '+tipoOperacion.toLowerCase()+'</td><td>'+(l.precio?(/\d/.test(l.precio)?esc(l.currency)+' ':'')+esc(l.precio):dash)+'</td></tr>';
   const tableHtml='<table class="prop-table"><tbody>'+tableRows+precioRow+'</tbody></table>';
 
   /* la primera foto es la principal: cuadrada, al lado de los datos (se recorta con ✂ en el panel) */
