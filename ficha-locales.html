@@ -191,6 +191,18 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .gd-vacio{color:rgba(255,255,255,.4);font-size:13px;text-align:center;padding:28px 10px;line-height:1.6;}
 @media(max-width:820px){.gd-item{flex-wrap:wrap;}.gd-info{flex-basis:100%;}.gd-item button{flex:1;min-height:42px;}}
 .save-status{font-size:10px;color:rgba(255,255,255,.35);min-height:12px;}
+#gd-status{font-size:12px;font-weight:600;color:#8fd19e;margin-top:6px;}
+#gd-status:empty{display:none;}
+#gd-status.mal{color:#e88;}
+/* acceso a las fichas guardadas: distinto de los botones de la ficha actual */
+.btn-guardadas{display:flex;align-items:center;gap:10px;width:100%;margin-top:10px;padding:10px 12px;background:rgba(200,148,26,.1);border:1px solid rgba(200,148,26,.55);border-radius:6px;color:#fff;cursor:pointer;text-align:left;font-family:'Inter',sans-serif;}
+.btn-guardadas:hover{background:rgba(200,148,26,.18);border-color:var(--gold);}
+.btn-guardadas .bg-ico{font-size:20px;line-height:1;}
+.btn-guardadas b{display:block;font-size:13px;color:var(--gold);}
+.btn-guardadas small{display:block;font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;}
+.btn-guardadas .bg-flecha{margin-left:auto;font-size:22px;color:var(--gold);line-height:1;}
+.fila-op{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:end;}
+.fila-op .btn-sec{width:100%;padding:5px 7px;}
 .save-status.mal{color:#e88;font-weight:600;}
 .tabs-inm{display:flex;gap:0;margin:-2px 0 10px;border-bottom:1px solid rgba(255,255,255,.1);}
 .tabs-inm button{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.45);font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:7px 4px 8px;cursor:pointer;margin-bottom:-1px;}
@@ -263,19 +275,19 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
       <button id="tab-depto" onclick="setInmueble('depto')">Departamentos</button>
     </div>
     <div class="sb-title" id="sb-title-label">Ficha de Alquiler</div>
-    <div class="tog" style="margin-top:6px">
-      <button id="tog-alq" class="on" onclick="setTipo('Alquiler')">Alquiler</button>
-      <button id="tog-vta" onclick="setTipo('Venta')">Venta</button>
-    </div>
     <div class="sb-actions">
       <button class="btn-add" id="btn-add-item" onclick="addLocal()">+ Agregar local</button>
-      <button class="btn-sec" onclick="triggerMapGen()">🗺 Mapa</button>
     </div>
     <div class="sb-extra-btns">
-      <button class="btn-sec" onclick="exportPDF()">⬇ PDF</button>
+      <button class="btn-sec" onclick="exportPDF()">⬇ Descargar PDF</button>
       <label class="btn-sec" style="cursor:pointer" title="Abrí un PDF hecho con este generador para seguir editándolo">📂 Abrir PDF<input type="file" accept=".pdf,.json" style="display:none" onchange="loadJSON(this)"></label>
-      <button class="btn-sec" onclick="abrirGuardadas()" title="Todas las fichas descargadas por el equipo">🗂 Guardadas</button>
     </div>
+    <button class="btn-guardadas" onclick="abrirGuardadas()">
+      <span class="bg-ico">🗂</span>
+      <span><b>Fichas guardadas</b><small>Todas las fichas del equipo · se guardan solas al descargar</small></span>
+      <span class="bg-flecha">›</span>
+    </button>
+    <div id="gd-status"></div>
     <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:13px;"></div>
     <div id="save-status" class="save-status"></div>
     <div class="sb-import">
@@ -353,8 +365,6 @@ function setTipo(t){
   tipoOperacion=t;
   document.getElementById('sb-title-label').textContent='Ficha de '+t;
   if(document.getElementById('btn-add-item'))actualizarUIInmueble();
-  document.getElementById('tog-alq').classList.toggle('on',t==='Alquiler');
-  document.getElementById('tog-vta').classList.toggle('on',t==='Venta');
   renderSidebar();renderPreview();autoSave();
 }
 function addLocal(){locals.push(defaultLocal());renderSidebar();renderPreview();}
@@ -622,6 +632,13 @@ function renderSidebar(){
       '<div class="sb-local-body'+(l.collapsed?' collapsed':'')+'">'+
         '<div class="field"><label>Dirección</label>'+
           '<input type="text" value="'+esc(l.address)+'" placeholder="Ej: Av. Corrientes 1234, CABA" data-id="'+l.id+'" data-f="address" oninput="sLev(this)">'+
+        '</div>'+
+        '<div class="fila-op">'+
+          '<div class="field"><label>Operación</label><div class="tog">'+
+            '<button class="'+(tipoOperacion==='Alquiler'?'on':'')+'" onclick="setTipo(\'Alquiler\')">Alquiler</button>'+
+            '<button class="'+(tipoOperacion==='Venta'?'on':'')+'" onclick="setTipo(\'Venta\')">Venta</button>'+
+          '</div></div>'+
+          '<div class="field"><label>Mapa</label><button class="btn-sec" onclick="triggerMapGen()">🗺 '+(showMap?'Actualizar mapa':'Agregar mapa')+'</button></div>'+
         '</div>'+
         (tipoInmueble==='depto'?camposDepto(l):(
         '<div class="field-row">'+
@@ -1584,12 +1601,14 @@ function aBase64(bytes){
 }
 async function subirCopia(bytes){
   if(!GUARDADAS_URL||!locals.some(l=>l.address))return;
-  const st=document.getElementById('save-status');
+  const st=document.getElementById('gd-status');
+  st.className='';st.textContent='Guardando copia en Fichas guardadas…';
   try{
     const j=await llamarGuardadas({accion:'guardar',tipo:tipoInmueble,operacion:tipoOperacion,id:claveFicha(),
       titulo:locals.map(l=>l.address).filter(Boolean).join(' · '),nombre:nombreArchivo(),pdf:await aBase64(bytes)});
-    if(st){st.classList.remove('mal');st.textContent=j.reemplazada?'✓ Ficha actualizada en Guardadas':'✓ Ficha agregada a Guardadas';}
-  }catch(e){console.warn('No se pudo guardar la copia',e);}
+    const h=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+    st.textContent=(j.reemplazada?'✓ Ficha actualizada en Guardadas · ':'✓ Ficha agregada a Guardadas · ')+h;
+  }catch(e){console.warn('No se pudo guardar la copia',e);st.className='mal';st.textContent='⚠ No se pudo guardar la copia en Fichas guardadas (el PDF sí se descargó).';}
 }
 async function abrirGuardadas(){
   document.getElementById('guardadas-modal').hidden=false;
