@@ -531,8 +531,8 @@ function openCropper(typeCode,localId,idx){const types=["photo","plano"];const t
   
   if(!src)return;
   _cropTarget={type,localId,idx};
-  /* la principal sale cuadrada en la ficha: se recorta cuadrada */
-  _cropOpts={viewMode:1,autoCropArea:.9,movable:true,zoomable:true,aspectRatio:type==='photo'&&idx===0?1:NaN};
+  /* el recuadro arranca abarcando toda la imagen (también después de rotar); la principal sale cuadrada en la ficha: se recorta cuadrada */
+  _cropOpts={viewMode:1,autoCropArea:1,movable:true,zoomable:true,aspectRatio:type==='photo'&&idx===0?1:NaN};
   const cimg=document.getElementById('cropper-img');cimg.src=src;
   document.getElementById('cropper-modal').style.display='flex';
   if(_cropper){_cropper.destroy();_cropper=null;}
