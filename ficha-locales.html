@@ -9,7 +9,7 @@
 <meta property="og:url" content="https://metricapropiedades.github.io/generador-fichas/ficha-locales.html">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Barlow:wght@400;500;600;700;800&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -177,6 +177,55 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .fotos-resto{margin-bottom:4mm;}
 .planos-title{font-family:'Big Shoulders Display',sans-serif;font-size:13pt;font-weight:800;color:#C8941A;text-transform:uppercase;letter-spacing:.06em;margin:5mm 0 3mm;border-bottom:1.5px solid #C8941A;padding-bottom:2mm;}
 .photo-thumb-wrap{cursor:grab;}
+
+/* ===== Departamentos: mismo formato que la ficha de la App de búsquedas (buscador/static/ficha.css) ===== */
+#doc.fz{--fz-mostaza:#C8941A;--fz-gris:#4F5254;--fz-ink:#2A2E32;--fz-tenue:#7D8287;--fz-line:#E4E3E0;--fz-suave:#F8F7F5;
+  font-family:'Montserrat',Calibri,sans-serif;font-size:13px;line-height:1.55;color:var(--fz-ink);}
+#doc.fz .encabezado{position:relative;line-height:0;}
+#doc.fz .encabezado img,#doc.fz .pie img{width:100%;display:block;}
+#doc.fz .titulo-doc{position:absolute;left:4.2%;top:50%;transform:translateY(-50%);line-height:1;font-family:'Big Shoulders Display',sans-serif;
+  font-size:15px;font-weight:500;letter-spacing:.26em;text-transform:uppercase;color:#D9DADB;}
+#doc.fz .pie{line-height:0;}
+#doc.fz .cuerpo{padding:30px 38px 34px;}
+#doc.fz .cuerpo+.cuerpo{border-top:6px solid var(--fz-suave);}
+#doc.fz .cabecera-prop{display:flex;justify-content:space-between;align-items:flex-start;gap:34px;border-bottom:1px solid var(--fz-line);padding-bottom:18px;}
+#doc.fz .identidad{min-width:0;}
+#doc.fz .cabecera-prop h2{font-family:'Big Shoulders Display',sans-serif;font-size:34px;font-weight:600;letter-spacing:.01em;line-height:1.02;margin:5px 0 4px;overflow-wrap:break-word;}
+#doc.fz .ubicacion{color:var(--fz-gris);font-size:13.5px;}
+#doc.fz .linea-precio{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px;}
+#doc.fz .linea-precio .op{font-family:'Big Shoulders Display',sans-serif;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8A6510;border-bottom:2px solid var(--fz-mostaza);padding-bottom:2px;}
+#doc.fz .linea-precio .valor{font-family:'Big Shoulders Display',sans-serif;font-size:27px;font-weight:600;line-height:1;}
+#doc.fz .agente{text-align:right;min-width:215px;border-left:1px solid var(--fz-line);padding-left:22px;}
+#doc.fz .agente .etiqueta{font-family:'Big Shoulders Display',sans-serif;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--fz-mostaza);}
+#doc.fz .agente .nombre{font-weight:600;font-size:14px;margin-top:4px;}
+#doc.fz .agente .contacto{color:var(--fz-gris);font-size:11px;white-space:nowrap;}
+#doc.fz .rotulo,#doc.fz .sec-title{font-family:'Big Shoulders Display',sans-serif;font-size:15px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--fz-tenue);margin:26px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--fz-line);position:relative;}
+#doc.fz .rotulo::after,#doc.fz .sec-title::after{content:"";position:absolute;left:0;bottom:-1px;width:46px;height:2px;background:var(--fz-mostaza);}
+#doc.fz .descripcion{color:var(--fz-gris);white-space:pre-wrap;font-size:12.5px;line-height:1.65;overflow-wrap:break-word;word-break:break-word;}
+#doc.fz .fz-principal{height:380px;margin-top:24px;aspect-ratio:auto;border-radius:0;}
+#doc.fz .fz-principal-vacia{height:380px;margin-top:24px;background:var(--fz-suave);display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px;}
+#doc.fz .fz-fotos{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+#doc.fz .fz-fotos .ph-cover{height:240px;aspect-ratio:auto;border-radius:0;}
+#doc.fz .datos-bloque{margin:24px 0 6px;border-top:1px solid var(--fz-line);border-bottom:1px solid var(--fz-line);}
+#doc.fz .datos-icono{display:grid;grid-template-columns:repeat(6,1fr);gap:20px 10px;padding:20px 0;}
+#doc.fz .dato-ico{text-align:center;}
+#doc.fz .dato-ico svg{width:26px;height:26px;color:var(--fz-gris);display:block;margin:0 auto 8px;}
+#doc.fz .dato-ico .valor{font-size:14px;font-weight:600;line-height:1.2;overflow-wrap:break-word;}
+#doc.fz .dato-ico .rot{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fz-tenue);margin-top:2px;}
+#doc.fz .adicionales{display:grid;grid-template-columns:repeat(4,1fr);gap:9px 22px;padding:14px 0 16px;border-top:1px solid var(--fz-line);}
+#doc.fz .datos-icono+.adicionales{}
+#doc.fz .datos-bloque>.adicionales:first-child{border-top:0;}
+#doc.fz .adicional{display:flex;align-items:flex-start;gap:7px;font-size:12px;line-height:1.35;}
+#doc.fz .adicional svg{width:13px;height:13px;flex:0 0 13px;margin-top:2px;color:var(--fz-mostaza);}
+#doc.fz .planos-section{margin:0;}
+#doc.fz .doc-map-section{padding:0 38px 34px;}
+#doc.fz .doc-map-section .sec-title{margin-top:0;}
+#doc.fz #leaflet-map{height:320px!important;border-radius:0!important;border-color:var(--fz-line)!important;}
+/* agente a cargo (panel, solo departamentos) */
+#agente-box{margin-top:10px;border:1px solid var(--sb-border);border-radius:6px;padding:8px 10px 2px;}
+#agente-box[hidden]{display:none;}
+#agente-box .sb-title{font-size:11px;margin-bottom:6px;}
 /* fichas guardadas (copia en Google Drive) */
 #guardadas-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;}
 #guardadas-modal[hidden]{display:none;}
@@ -297,6 +346,14 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
       <span class="bg-flecha">›</span>
     </button>
     <div id="gd-status"></div>
+    <div id="agente-box" hidden>
+      <div class="sb-title">Agente a cargo</div>
+      <div class="field"><input type="text" id="ag-nombre" placeholder="Nombre" oninput="setAgente()"></div>
+      <div class="field-row">
+        <div class="field"><input type="text" id="ag-email" placeholder="Email" oninput="setAgente()"></div>
+        <div class="field"><input type="text" id="ag-tel" placeholder="Teléfono" oninput="setAgente()"></div>
+      </div>
+    </div>
     <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:13px;"></div>
     <div id="save-status" class="save-status"></div>
     <div class="sb-import">
@@ -381,6 +438,8 @@ function actualizarUIInmueble(){
   document.getElementById('tab-local').classList.toggle('on',tipoInmueble==='local');
   document.getElementById('tab-depto').classList.toggle('on',tipoInmueble==='depto');
   document.getElementById('tab-deposito').classList.toggle('on',tipoInmueble==='deposito');
+  document.getElementById('agente-box').hidden=tipoInmueble!=='depto';
+  ['nombre','email','tel'].forEach(k=>{const i=document.getElementById('ag-'+k);if(i&&document.activeElement!==i)i.value=agente[k]||'';});
   try{localStorage.setItem('metrica_fichas_tab',tipoInmueble);}catch(e){}
   document.getElementById('btn-add-item').textContent='+ Agregar '+NOMBRES[tipoInmueble].uno.toLowerCase();
   document.title='Ficha de '+tipoOperacion+' de '+NOMBRES[tipoInmueble].uno+' — Métrica Propiedades';
@@ -437,6 +496,7 @@ async function importarAviso(){
       .forEach(k=>{if(l[k])l[k]=String(l[k]).replace(/\./g,'').replace(',','.');});
     if(tipoInmueble==='depto'){
       const am=amenitiesDe([(d.caracteristicas||[]).join(' '),d.comentarios].join(' '));if(am)l.amenities=am;
+      if(d.caracteristicas&&d.caracteristicas.length)l.adicionales=d.caracteristicas.join(' · ');
       rasgosDepto(l,[(d.caracteristicas||[]).join(' · '),d.comentarios].join(' \n '));
       const txt=String(d.comentarios||'').toLowerCase();
       if(!l.disposicion)l.disposicion=/contrafrente/.test(txt)?'Contrafrente':(/al frente|a la calle/.test(txt)?'Frente':'');
@@ -585,7 +645,7 @@ function openCropper(typeCode,localId,idx){const types=["photo","plano"];const t
   if(!src)return;
   _cropTarget={type,localId,idx};
   /* el recuadro arranca abarcando toda la imagen (también después de rotar); la principal sale cuadrada en la ficha: se recorta cuadrada */
-  _cropOpts={viewMode:1,autoCropArea:1,movable:true,zoomable:true,aspectRatio:type==='photo'&&idx===0?1:NaN};
+  _cropOpts={viewMode:1,autoCropArea:1,movable:true,zoomable:true,aspectRatio:type!=='photo'?NaN:(tipoInmueble==='depto'?(idx===0?718/380:353/240):(idx===0?1:NaN))};
   const cimg=document.getElementById('cropper-img');cimg.src=src;
   document.getElementById('cropper-modal').style.display='flex';
   if(_cropper){_cropper.destroy();_cropper=null;}
@@ -788,7 +848,8 @@ function camposDepto(l){
     '<div class="field-row">'+sel('Apto profesional','aptoProfesional',['Sí','No'])+sel('Permite mascotas','mascotas',['Sí','No'])+'</div>'+
     '<div class="field-row">'+f('Antigüedad','antiguedad','A estrenar / 10 años')+f('Expensas','expensas')+'</div>'+
     '<div class="field-row">'+f('Condición','condicion','Excelente / Muy bueno')+'</div>'+
-    f('Amenities','amenities','Pileta · SUM · Gimnasio');
+    f('Amenities','amenities','Pileta · SUM · Gimnasio')+
+    f('Adicionales','adicionales','Aire acondicionado · Parrilla · Calefacción');
 }
 /* filas de la tabla de la ficha (solo las que tienen dato) */
 function filasDepto(l){
@@ -907,6 +968,117 @@ function rLocal(l,idx){
   '</div>';
 }
 
+
+/* ===== Departamentos con el formato de la ficha de la App de búsquedas =====
+   Encabezado y pie oficiales, dirección grande con la ubicación debajo, precio, agente a cargo, foto principal ancha,
+   datos con ícono, adicionales con tilde, descripción, fotos de a 2 y mapa. Mismos íconos que la app
+   (buscador/fichas.py → ICONOS); los que la app no tiene están dibujados acá con el mismo trazo. */
+const ICONOS={
+  /* los de la app */
+  total:'<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/>',
+  cubierta:'<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>',
+  ambientes:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+  dormitorios:'<path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/>',
+  banos:'<path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-.5C4.683 3 4 3.683 4 4.5V17a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><line x1="10" x2="8" y1="5" y2="7"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="7" x2="7" y1="19" y2="21"/><line x1="17" x2="17" y1="19" y2="21"/>',
+  toilettes:'<path d="m4 4 2.5 2.5"/><path d="M13.5 6.5a4.95 4.95 0 0 0-7 7"/><path d="M15 5 5 15"/><path d="M14 17v.01"/><path d="M10 16v.01"/><path d="M13 13v.01"/><path d="M16 10v.01"/><path d="M11 20v.01"/><path d="M17 14v.01"/><path d="M20 11v.01"/>',
+  cocheras:'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+  antiguedad:'<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>',
+  expensas:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>',
+  edificio:'<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>',
+  orientacion:'<path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/><circle cx="12" cy="12" r="10"/>',
+  luz:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  dato:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  /* nuevos, para los campos del generador que la app no tiene */
+  semicubierta:'<path d="M2 10 12 4l10 6"/><path d="M5 9v11"/><path d="M19 9v11"/><path d="M2 20h20"/>',
+  superficie:'<path d="M5 3a2 2 0 0 0-2 2"/><path d="M19 3a2 2 0 0 1 2 2"/><path d="M21 19a2 2 0 0 1-2 2"/><path d="M5 21a2 2 0 0 1-2-2"/><path d="M9 3h1"/><path d="M9 21h1"/><path d="M14 3h1"/><path d="M14 21h1"/><path d="M3 9v1"/><path d="M21 9v1"/><path d="M3 14v1"/><path d="M21 14v1"/>',
+  disposicion:'<path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/>',
+  disponibilidad:'<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>',
+  condicion:'<path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/><path d="M19 17v4"/><path d="M17 19h4"/>',
+  /* listos para locales y depósitos, si después se pasan a este formato */
+  frente:'<path d="M3 21h18"/><path d="M5 21V8h14v13"/><path d="M3 8l2-5h14l2 5"/><path d="M9 21v-6h6v6"/>',
+  terreno:'<path d="M3 20h18"/><path d="m3 20 5-9 4 5 3-4 6 8"/><circle cx="17" cy="6" r="2"/>',
+  planta:'<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 12 10 5 10-5"/><path d="m2 17 10 5 10-5"/>',
+  subsuelo:'<path d="M2 8h20"/><path d="M12 12v8"/><path d="m8 16 4 4 4-4"/>',
+  posicion:'<path d="M3 3v18h18"/><path d="M7 3v14h14"/>',
+  aereo:'<path d="M12 22V8"/><path d="m5 12 7-7 7 7"/><path d="M5 21h14"/>',
+  altura:'<path d="M8 3h8"/><path d="M8 21h8"/><path d="M12 3v18"/><path d="m9 6 3-3 3 3"/><path d="m9 18 3 3 3-3"/>',
+  porton:'<path d="M3 21V7l9-4 9 4v14"/><path d="M6 21V11h12v10"/><path d="M6 14h12"/><path d="M6 17h12"/>',
+  pisoIndustrial:'<rect width="18" height="18" x="3" y="3" rx="1"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/>',
+  incendio:'<path d="M12 2c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-7.5Z"/><path d="M8 22h8"/>'
+};
+const SVG_ICO=k=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">'+(ICONOS[k]||ICONOS.dato)+'</svg>';
+const SVG_TILDE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg>';
+
+let agente={nombre:'',email:'',tel:''};
+try{agente={...agente,...JSON.parse(localStorage.getItem('metrica_agente')||'{}')};}catch(e){}
+function guardarAgente(){try{localStorage.setItem('metrica_agente',JSON.stringify(agente));}catch(e){}}
+function setAgente(){
+  ['nombre','email','tel'].forEach(k=>{agente[k]=document.getElementById('ag-'+k).value;});
+  guardarAgente();renderPreview();
+}
+
+function rHeaderApp(){
+  const N=NOMBRES[tipoInmueble];
+  return '<header class="encabezado"><img src="ficha-encabezado.jpg" alt="Métrica Propiedades">'+
+    '<span class="titulo-doc">Ficha de '+esc(tipoOperacion)+' · '+(locals.length>1?N.varios:N.uno)+'</span></header>';
+}
+/* datos con ícono, en el orden de la app; lo que no está cargado no aparece */
+function datosIconoDepto(l){
+  const out=[],m=v=>fN(v)+' m²';
+  const sumar=(ico,valor,rot)=>{if(String(valor||'').trim())out.push([ico,valor,rot]);};
+  sumar('total',l.supTotal&&m(l.supTotal),'superficie total');
+  sumar('cubierta',l.supCubierta&&m(l.supCubierta),'cubierta');
+  sumar('semicubierta',l.supSemi&&m(l.supSemi),'semicubierta');
+  (l.supExtra||[]).filter(s=>s.nombre&&String(s.m2).trim()!=='').forEach(s=>sumar('superficie',m(s.m2),s.nombre.trim()));
+  sumar('ambientes',esc(l.ambientes),'ambientes');
+  sumar('dormitorios',esc(l.dormitorios),'dormitorios');
+  sumar('banos',esc(l.banos),'baños');
+  sumar('toilettes',esc(l.toilettes),'toilette');
+  sumar('cocheras',esc(l.cocheras),'cocheras');
+  sumar('antiguedad',esc(l.antiguedad),'antigüedad');
+  sumar('expensas',esc(l.expensas),'expensas');
+  sumar('edificio',esc(l.piso),'piso / unidad');
+  sumar('disposicion',esc(l.disposicion),'disposición');
+  sumar('orientacion',esc(l.orientacion),'orientación');
+  sumar('luz',esc(l.luminosidad),'luminosidad');
+  sumar('disponibilidad',esc(l.disponibilidad),'disponibilidad');
+  sumar('condicion',esc(l.condicion),'condición');
+  return out;
+}
+/* lo que la propiedad "tiene": apto crédito/profesional, mascotas, amenities y adicionales del aviso, sin repetir */
+function adicionalesDepto(l){
+  const lista=[];
+  const sumar=x=>{x=String(x||'').trim().replace(/\.$/,'');if(x&&!lista.some(y=>y.toLowerCase()===x.toLowerCase()))lista.push(x.charAt(0).toUpperCase()+x.slice(1));};
+  if(l.aptoCredito==='Sí')sumar('Apto crédito');
+  if(l.aptoProfesional==='Sí')sumar('Apto profesional');
+  if(l.mascotas==='Sí')sumar('Permite mascotas');
+  [l.amenities,l.adicionales].forEach(s=>String(s||'').split(/\s*[·,;]\s*/).forEach(sumar));
+  return lista;
+}
+function rDeptoApp(l){
+  const partes=String(l.address||'').split(','),calle=partes.shift().trim(),ubic=partes.join(',').trim();
+  const precio=l.precio?((/\d/.test(l.precio)?esc(l.currency)+' ':'')+esc(l.precio)):'Consultar';
+  const ag=agente.nombre?'<aside class="agente"><div class="etiqueta">Agente a cargo</div><div class="nombre">'+esc(agente.nombre)+'</div>'+
+    (agente.email?'<div class="contacto">'+esc(agente.email)+'</div>':'')+(agente.tel?'<div class="contacto">'+esc(agente.tel)+'</div>':'')+'</aside>':'';
+  const cuadro=(p,cl)=>'<div class="ph-cover '+(cl||'')+'" style="background-image:url(\''+p.photo+'\')"></div>';
+  const datos=datosIconoDepto(l),adic=adicionalesDepto(l);
+  let h='<section class="cuerpo">'+
+    '<div class="cabecera-prop"><div class="identidad"><h2>'+(esc(calle)||'Dirección no especificada')+'</h2>'+
+      (ubic?'<div class="ubicacion">'+esc(ubic)+'</div>':'')+
+      '<div class="linea-precio"><span class="op">'+esc(tipoOperacion)+'</span><span class="valor">'+precio+'</span></div></div>'+ag+'</div>'+
+    (l.photos.length?cuadro(l.photos[0],'fz-principal'):'<div class="fz-principal-vacia">📷 Foto principal del departamento</div>');
+  if(datos.length||adic.length){
+    h+='<div class="datos-bloque">'+
+      (datos.length?'<div class="datos-icono">'+datos.map(d=>'<div class="dato-ico">'+SVG_ICO(d[0])+'<div class="valor">'+d[1]+'</div><div class="rot">'+esc(d[2])+'</div></div>').join('')+'</div>':'')+
+      (adic.length?'<div class="adicionales">'+adic.map(a=>'<div class="adicional">'+SVG_TILDE+'<span>'+esc(a)+'</span></div>').join('')+'</div>':'')+
+    '</div>';
+  }
+  if(l.comentarios)h+='<h3 class="rotulo">Descripción</h3><div class="descripcion">'+esc(l.comentarios)+'</div>';
+  if(l.photos.length>1)h+='<h3 class="rotulo">Fotos</h3><div class="fz-fotos">'+l.photos.slice(1).map(p=>cuadro(p)).join('')+'</div>';
+  if(l.planos&&l.planos.length)h+='<h3 class="rotulo">Planos</h3><div class="planos-section">'+l.planos.map(p=>'<div class="plano-full"><img src="'+p.plano+'" alt="Plano"></div>').join('')+'</div>';
+  return h+'</section>';
+}
+
 function rMap(){
   const imgHtml=capturedMapImg?'<img class="map-capture" src="'+capturedMapImg+'" alt="">':'';
   return '<div class="doc-map-section">'+
@@ -928,7 +1100,7 @@ function esVertical(p){const r=ratioOf(p);return r>0&&r<0.95;}
 /* Orden automático (más prolijo): después de la principal, las horizontales juntas y las verticales juntas,
    primero el grupo de la que esté primera. Se hace mientras nadie haya movido fotos a mano (l.ordenManual). */
 function acomodarFotos(l){
-  if(l.ordenManual||l.photos.length<3||l.photos.some(p=>!p.w))return false;
+  if(tipoInmueble==='depto'||l.ordenManual||l.photos.length<3||l.photos.some(p=>!p.w))return false;
   const resto=l.photos.slice(1),v0=esVertical(resto[0]);
   const orden=[...resto.filter(p=>esVertical(p)===v0),...resto.filter(p=>esVertical(p)!==v0)];
   if(orden.every((p,i)=>p===resto[i]))return false;
@@ -956,7 +1128,11 @@ function renderPreview(){
   locals.forEach(l=>{if(acomodarFotos(l))renderPhotosSb(l.id);});
   const localsHtml=locals.length?locals.map((l,i)=>rLocal(l,i)).join(''):'<div style="padding:20mm 13mm;text-align:center;color:#ccc;font-size:9pt">Agregá '+NOMBRES[tipoInmueble].art+' desde el panel izquierdo.</div>';
   const mapHtml=(showMap||capturedMapImg)?rMap():'';
-  document.getElementById('doc').innerHTML=rHeader()+localsHtml+mapHtml+rFooter();
+  const docEl=document.getElementById('doc'),fz=tipoInmueble==='depto';
+  docEl.classList.toggle('fz',fz);
+  docEl.innerHTML=fz
+    ?rHeaderApp()+(locals.length?locals.map(rDeptoApp).join(''):localsHtml)+mapHtml+'<footer class="pie"><img src="ficha-pie.jpg" alt="Mat. CUCICBA 7173 · www.metricapropiedades.com"></footer>'
+    :rHeader()+localsHtml+mapHtml+rFooter();
   if(showMap){clearTimeout(_mapInitTimer);_mapInitTimer=setTimeout(()=>initMapFromCache(),80);}
   autoSave();
 }
@@ -1189,7 +1365,7 @@ async function triggerMapGen(){
   initMapFromCache();autoSave();_mapRunning=false;
 }
 
-function getState(){return{version:1,tipoOperacion,tipoInmueble,locals:locals.map(l=>({...l})),map:{showMap,geoCoords,capturedMapImg}};}
+function getState(){return{version:1,tipoOperacion,tipoInmueble,agente:{...agente},locals:locals.map(l=>({...l})),map:{showMap,geoCoords,capturedMapImg}};}
 /* "Características" ya no existe: si una ficha guardada la tenía, el texto se suma al principio de Comentarios */
 function pasarCaracteristicas(l){
   const c=String(l.caracteristicas||'').trim();
@@ -1207,6 +1383,7 @@ function applyState(state){
   if(state.tipoOperacion)setTipo(state.tipoOperacion);
   const m=state.map||{};
   showMap=m.showMap||false;geoCoords=m.geoCoords||{locals:[]};capturedMapImg=m.capturedMapImg||null;
+  if(state.agente&&state.agente.nombre){agente={...state.agente};guardarAgente();actualizarUIInmueble();}
   renderSidebar();renderPreview();
   if(showMap)setTimeout(()=>initMapFromCache(),300);
 }
