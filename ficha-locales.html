@@ -281,6 +281,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
     <div class="tabs-inm">
       <button id="tab-local" class="on" onclick="setInmueble('local')">Locales</button>
       <button id="tab-depto" onclick="setInmueble('depto')">Departamentos</button>
+      <button id="tab-deposito" onclick="setInmueble('deposito')">Depósitos</button>
     </div>
     <div class="sb-title" id="sb-title-label">Ficha de Alquiler</div>
     <div class="sb-actions">
@@ -316,7 +317,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
     <div class="gd-hd"><h2>Fichas <span>guardadas</span></h2><button class="btn-sec" onclick="cerrarGuardadas()">Cerrar</button></div>
     <input class="gd-busca" id="gd-busca" type="search" placeholder="Buscar por dirección…" oninput="pintarGuardadas()">
     <div class="gd-filtros" id="gd-filtros">
-      <button class="on" data-t="">Todas</button><button data-t="local">Locales</button><button data-t="depto">Departamentos</button>
+      <button class="on" data-t="">Todas</button><button data-t="local">Locales</button><button data-t="depto">Departamentos</button><button data-t="deposito">Depósitos</button>
     </div>
     <div class="gd-lista" id="gd-lista"></div>
   </div>
@@ -339,12 +340,12 @@ const LOGO_B64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAwAAAAFuCAYAAAA24H
 let locals=[], nextId=1, _autoSaveEnabled=false, _mapDebounce=null, _mapRunning=false, _mapInitTimer=null;
 let showMap=false, geoCoords={locals:[]}, capturedMapImg=null, geoCache={};
 let tipoOperacion='Alquiler';
-let tipoInmueble='local';   /* 'local' o 'depto': cada pestaña tiene su propio borrador */
+let tipoInmueble='local';   /* 'local', 'depto' o 'deposito': cada pestaña tiene su propio borrador */
 let leafletMap=null;
 let _cropTarget={type:'',localId:0,idx:0}, _cropper=null, _cropOpts={};
-const DRAFT_KEYS={local:'metrica_fichas_locales_v1',depto:'metrica_fichas_deptos_v1'};
+const DRAFT_KEYS={local:'metrica_fichas_locales_v1',depto:'metrica_fichas_deptos_v1',deposito:'metrica_fichas_depositos_v1'};
 function draftKey(){return DRAFT_KEYS[tipoInmueble]||DRAFT_KEYS.local;}
-const NOMBRES={local:{uno:'Local',varios:'Locales',art:'un local'},depto:{uno:'Departamento',varios:'Departamentos',art:'un departamento'}};
+const NOMBRES={local:{uno:'Local',varios:'Locales',art:'un local'},depto:{uno:'Departamento',varios:'Departamentos',art:'un departamento'},deposito:{uno:'Depósito',varios:'Depósitos',art:'un depósito'}};
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fN(n){return Number(n).toLocaleString('es-AR');}
@@ -367,7 +368,7 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supEP:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',luminosidad:'',aptoCredito:'',aptoProfesional:'',mascotas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supEP:'',supSS:'',altura:'',tipoPiso:'',porton:'',incendio:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',luminosidad:'',aptoCredito:'',aptoProfesional:'',mascotas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
@@ -379,6 +380,7 @@ function addLocal(){locals.push(defaultLocal());renderSidebar();renderPreview();
 function actualizarUIInmueble(){
   document.getElementById('tab-local').classList.toggle('on',tipoInmueble==='local');
   document.getElementById('tab-depto').classList.toggle('on',tipoInmueble==='depto');
+  document.getElementById('tab-deposito').classList.toggle('on',tipoInmueble==='deposito');
   try{localStorage.setItem('metrica_fichas_tab',tipoInmueble);}catch(e){}
   document.getElementById('btn-add-item').textContent='+ Agregar '+NOMBRES[tipoInmueble].uno.toLowerCase();
   document.title='Ficha de '+tipoOperacion+' de '+NOMBRES[tipoInmueble].uno+' — Métrica Propiedades';
@@ -692,6 +694,7 @@ function renderSidebar(){
             '<input type="number" value="'+esc(l.supTerreno)+'" step="0.01" data-id="'+l.id+'" data-f="supTerreno" oninput="sLev(this)">'+
           '</div>'+
         '</div>'+
+        (tipoInmueble==='deposito'?camposDeposito(l):'')+
         '<div class="field"><label>Expensas</label>'+
           '<input type="text" value="'+esc(l.expensas)+'" data-id="'+l.id+'" data-f="expensas" oninput="sLev(this)">'+
         '</div>'
@@ -756,6 +759,13 @@ function filasSupExtra(l){
     n=n.charAt(0).toUpperCase()+n.slice(1);
     return ['Superficie '+esc(n),fN(s.m2)+' m²'];
   });
+}
+
+/* campos propios de un depósito (el resto son los de locales) */
+function camposDeposito(l){
+  const f=(lab,k,ph)=>'<div class="field"><label>'+lab+'</label><input type="text" value="'+esc(l[k])+'" placeholder="'+ph+'" data-id="'+l.id+'" data-f="'+k+'" oninput="sLev(this)"></div>';
+  return '<div class="field-row">'+f('Altura','altura','Ej: 8 m mínimo')+f('Piso','tipoPiso','Ej: Hormigón armado')+'</div>'+
+    '<div class="field-row">'+f('Portón','porton','Ej: Apto camión semi')+f('Contra incendios','incendio','Ej: A confirmar')+'</div>';
 }
 
 /* campos del panel para un departamento */
@@ -853,6 +863,12 @@ function rLocal(l,idx){
   filasSupExtra(l).forEach(x=>rows.push(x));
   if(l.frente)rows.push(['Frente',fN(l.frente)+' m']);
   if(l.supTerreno)rows.push(['Terreno',fN(l.supTerreno)+' m\u00b2']);
+  if(tipoInmueble==='deposito'){
+    if(l.altura)rows.push(['Altura',esc(l.altura)]);
+    if(l.tipoPiso)rows.push(['Piso',esc(l.tipoPiso)]);
+    if(l.porton)rows.push(['Port\u00f3n',esc(l.porton)]);
+    if(l.incendio)rows.push(['Sistema contra incendios',esc(l.incendio)]);
+  }
   if(l.expensas)rows.push(['Expensas',esc(l.expensas)]);
   }
   const tableRows=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
@@ -1449,7 +1465,7 @@ async function importarPdfAjeno(pdf,bytes){
 }
 function nombreArchivo(){
   const dir=(locals[0]&&locals[0].address)||'local';
-  return ('Ficha '+tipoOperacion+' - '+dir).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)+'.pdf';
+  return ('Ficha '+tipoOperacion+(tipoInmueble==='deposito'?' Depósito':'')+' - '+dir).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)+'.pdf';
 }
 /* Las fotos y planos van al PDF con su archivo original, encima de la imagen de la hoja: si quedaran dentro
    de esa imagen se re-dibujan y re-comprimen y se ven pixeladas. Se recortan igual que en pantalla (cover). */
@@ -1607,7 +1623,7 @@ function pintarGuardadas(){
   const fs=_guardadas.filter(f=>(!_gdFiltro||f.tipo===_gdFiltro)&&(!q||normDir(f.titulo).includes(q)));
   const lista=document.getElementById('gd-lista');
   if(!fs.length){lista.innerHTML='<div class="gd-vacio">'+(_guardadas.length?'No hay fichas con esa búsqueda.':'Todavía no hay fichas guardadas.<br>Se guardan solas cada vez que alguien descarga un PDF.')+'</div>';return;}
-  const tipos={local:'Local',depto:'Depto',fondo:'Fondo',tasacion:'Tasación'};
+  const tipos={local:'Local',depto:'Depto',deposito:'Depósito',fondo:'Fondo',tasacion:'Tasación'};
   lista.innerHTML=fs.map(f=>{
     const d=new Date(f.fecha),fecha=d.toLocaleDateString('es-AR')+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
     return '<div class="gd-item"><div class="gd-info"><div class="gd-tit">'+esc(f.titulo||f.nombre)+'</div>'+
@@ -1658,8 +1674,8 @@ function sLbt(el){el.parentElement.querySelectorAll('button').forEach(b=>b.class
 async function init(){
   /* ?tipo=depto o ?tipo=local (desde la app de herramientas) elige la pestaña; si no, la última usada */
   const tq=new URLSearchParams(location.search).get('tipo');
-  if(tq==='local'||tq==='depto')tipoInmueble=tq;
-  else{try{const tb=localStorage.getItem('metrica_fichas_tab');if(tb==='local'||tb==='depto')tipoInmueble=tb;}catch(e){}}
+  if(DRAFT_KEYS[tq])tipoInmueble=tq;
+  else{try{const tb=localStorage.getItem('metrica_fichas_tab');if(DRAFT_KEYS[tb])tipoInmueble=tb;}catch(e){}}
   const parsed=await leerBorrador();
   if(parsed?.locals?.length>0){applyState(parsed);_autoSaveEnabled=true;return;}
   showMap=true;actualizarUIInmueble();addLocal();_autoSaveEnabled=true;
