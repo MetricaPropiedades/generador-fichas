@@ -533,6 +533,7 @@ function removeLocal(id){locals=locals.filter(l=>l.id!==id);renderSidebar();rend
 function setL(id,field,value){
   const l=locals.find(l=>l.id===id);if(!l)return;
   l[field]=value;
+  if(field==='espAereo')l.espAereoElegido=true;
   if(field==='address'&&showMap){clearTimeout(_mapDebounce);_mapDebounce=setTimeout(function(){triggerMapGen();},1800);}
   const hdr=document.querySelector('.sb-local[data-id="'+id+'"] .sb-local-addr');
   if(hdr)hdr.textContent=l.address||'Local '+(locals.findIndex(x=>x.id===id)+1);
@@ -729,8 +730,8 @@ function renderSidebar(){
           '</div>'+
           '<div class="field"><label>Espacio aéreo</label>'+
             '<div class="tog">'+
-              '<button class="'+(l.espAereo==='No'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="No" onclick="sLbt(this)">No</button>'+
-              '<button class="'+(l.espAereo==='Sí'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="Sí" onclick="sLbt(this)">Sí</button>'+
+              '<button class="'+(aereoVisible(l)&&l.espAereo==='No'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="No" onclick="sLbt(this)">No</button>'+
+              '<button class="'+(aereoVisible(l)&&l.espAereo==='Sí'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="Sí" onclick="sLbt(this)">Sí</button>'+
             '</div>'+
           '</div>'+
         '</div>'+
@@ -920,7 +921,7 @@ function rLocal(l,idx){
   if(tipoInmueble==='depto'){filasDepto(l).forEach(r=>rows.push(r));}else{
   if(l.disponibilidad)rows.push(['Disponibilidad',esc(l.disponibilidad)]);
   if(l.posicion)rows.push(['Posici\u00f3n Relativa',esc(l.posicion)]);
-  if(l.espAereo)rows.push(['Espacio A\u00e9reo Propio',esc(l.espAereo)]);
+  if(l.espAereo&&aereoVisible(l))rows.push(['Espacio A\u00e9reo Propio',esc(l.espAereo)]);
   if(l.supCubierta)rows.push(['Superficie Cubierta',fN(l.supCubierta)+' m\u00b2']);
   if(l.supPB)rows.push(['Superficie PB',fN(l.supPB)+' m\u00b2']);
   if(l.supEP)rows.push(['Superficie Entrepiso',fN(l.supEP)+' m\u00b2']);
@@ -1875,6 +1876,8 @@ function dragDrop(ev,localId,toIdx,type){
   z.addEventListener('dragleave',()=>z.classList.remove('soltar'));
   z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('soltar');const f=[...e.dataTransfer.files].find(f=>/\.pdf$/i.test(f.name)||f.type==='application/pdf');if(f)abrirPDF(f);});
 })();
+/* en depósitos el espacio aéreo sale en la ficha solo si alguien tocó Sí o No (en locales sigue como siempre) */
+function aereoVisible(l){return tipoInmueble!=='deposito'||!!l.espAereoElegido;}
 function sLev(el){setL(+el.dataset.id,el.dataset.f,el.value);}
 function sLbt(el){el.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el));setL(+el.dataset.id,el.dataset.f,el.dataset.v);}
 async function init(){
