@@ -411,6 +411,15 @@ const NOMBRES={local:{uno:'Local',varios:'Locales',art:'un local'},depto:{uno:'D
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fN(n){return Number(n).toLocaleString('es-AR');}
+/* medidas de la ficha: "1902" → "1.902 m²"; si escribieron texto ("1902 aprox.", "a confirmar") va tal cual,
+   con el número con su punto de miles y la unidad al lado si no la pusieron */
+function medida(v,u){
+  u=u||'m²';
+  const s=esc(String(v==null?'':v).trim());if(!s)return '';
+  if(/^\d+(?:[.,]\d+)?$/.test(s))return fN(s.replace(',','.'))+' '+u;
+  const conUnidad=/m²|m2\b|mts|metros|\bm\b/i.test(s);
+  return s.replace(/\d[\d.,]*/,n=>(/^\d+$/.test(n)?fN(n):n)+(conUnidad?'':' '+u));
+}
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
 function compressImage(file){
@@ -533,7 +542,7 @@ function removeLocal(id){locals=locals.filter(l=>l.id!==id);renderSidebar();rend
 function setL(id,field,value){
   const l=locals.find(l=>l.id===id);if(!l)return;
   l[field]=value;
-  if(field==='espAereo')l.espAereoElegido=true;
+  if(field==='espAereo'){const antes=l.espAereoElegido;l.espAereoElegido=true;if(!antes&&tipoInmueble==='deposito')renderSidebar();}
   if(field==='address'&&showMap){clearTimeout(_mapDebounce);_mapDebounce=setTimeout(function(){triggerMapGen();},1800);}
   const hdr=document.querySelector('.sb-local[data-id="'+id+'"] .sb-local-addr');
   if(hdr)hdr.textContent=l.address||'Local '+(locals.findIndex(x=>x.id===id)+1);
@@ -728,7 +737,8 @@ function renderSidebar(){
           '<div class="field"><label>Posición relativa</label>'+
             '<select data-id="'+l.id+'" data-f="posicion" onchange="sLev(this)">'+posOptions+'</select>'+
           '</div>'+
-          '<div class="field"><label>Espacio aéreo</label>'+
+          '<div class="field"><label class="sup-x-lab"><span>Espacio aéreo</span>'+
+            (tipoInmueble==='deposito'&&l.espAereoElegido?'<button class="sup-x-del" title="Sacar de la ficha" onclick="quitarAereo('+l.id+')">✕</button>':'')+'</label>'+
             '<div class="tog">'+
               '<button class="'+(aereoVisible(l)&&l.espAereo==='No'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="No" onclick="sLbt(this)">No</button>'+
               '<button class="'+(aereoVisible(l)&&l.espAereo==='Sí'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="Sí" onclick="sLbt(this)">Sí</button>'+
@@ -737,30 +747,30 @@ function renderSidebar(){
         '</div>'+
         '<div class="field-row3">'+
           '<div class="field"><label>Sup. Total m²</label>'+
-            '<input type="number" value="'+esc(l.supCubierta)+'" step="0.01" data-id="'+l.id+'" data-f="supCubierta" oninput="sLev(this)">'+
+            '<input type="text" value="'+esc(l.supCubierta)+'" data-id="'+l.id+'" data-f="supCubierta" oninput="sLev(this)">'+
           '</div>'+
           '<div class="field"><label>Sup. PB m²</label>'+
-            '<input type="number" value="'+esc(l.supPB)+'" step="0.01" data-id="'+l.id+'" data-f="supPB" oninput="sLev(this)">'+
+            '<input type="text" value="'+esc(l.supPB)+'" data-id="'+l.id+'" data-f="supPB" oninput="sLev(this)">'+
           '</div>'+
           '<div class="field"><label>Sup. Entrepiso m²</label>'+
-            '<input type="number" value="'+esc(l.supEP)+'" step="0.01" data-id="'+l.id+'" data-f="supEP" oninput="sLev(this)">'+
+            '<input type="text" value="'+esc(l.supEP)+'" data-id="'+l.id+'" data-f="supEP" oninput="sLev(this)">'+
           '</div>'+
         '</div>'+
         '<div class="field-row">'+
           '<div class="field"><label>Sup. 1er piso m²</label>'+
-            '<input type="number" value="'+esc(l.supPA)+'" step="0.01" data-id="'+l.id+'" data-f="supPA" oninput="sLev(this)">'+
+            '<input type="text" value="'+esc(l.supPA)+'" data-id="'+l.id+'" data-f="supPA" oninput="sLev(this)">'+
           '</div>'+
           '<div class="field"><label>Sup. Subsuelo m²</label>'+
-            '<input type="number" value="'+esc(l.supSS)+'" step="0.01" data-id="'+l.id+'" data-f="supSS" oninput="sLev(this)">'+
+            '<input type="text" value="'+esc(l.supSS)+'" data-id="'+l.id+'" data-f="supSS" oninput="sLev(this)">'+
           '</div>'+
         '</div>'+
         camposSupExtra(l)+
         '<div class="field-row">'+
           '<div class="field"><label>Frente del '+NOMBRES[tipoInmueble].uno.toLowerCase()+' (m)</label>'+
-            '<input type="number" value="'+esc(l.frente)+'" step="0.5" data-id="'+l.id+'" data-f="frente" oninput="sLev(this)">'+
+            '<input type="text" value="'+esc(l.frente)+'" data-id="'+l.id+'" data-f="frente" oninput="sLev(this)">'+
           '</div>'+
           '<div class="field"><label>Terreno m²</label>'+
-            '<input type="number" value="'+esc(l.supTerreno)+'" step="0.01" data-id="'+l.id+'" data-f="supTerreno" oninput="sLev(this)">'+
+            '<input type="text" value="'+esc(l.supTerreno)+'" data-id="'+l.id+'" data-f="supTerreno" oninput="sLev(this)">'+
           '</div>'+
         '</div>'+
         (tipoInmueble==='deposito'?camposDeposito(l):'')+
@@ -810,7 +820,7 @@ function filasSupExtraSb(l){
   return (l.supExtra||[]).map((s,i)=>
     '<div class="field"><label class="sup-x-lab"><span>'+esc(s.nombre)+' m²</span>'+
       '<button class="sup-x-del" title="Quitar" onclick="quitarSupExtra('+l.id+','+i+')">✕</button></label>'+
-      '<input type="number" value="'+esc(s.m2)+'" step="0.01" oninput="setSupExtra('+l.id+','+i+',\'m2\',this.value)"></div>').join('');
+      '<input type="text" value="'+esc(s.m2)+'" oninput="setSupExtra('+l.id+','+i+',\'m2\',this.value)"></div>').join('');
 }
 function refrescarSupExtra(l){const w=document.getElementById('supx-'+l.id);if(w)w.innerHTML=filasSupExtraSb(l);renderPreview();autoSave();}
 function agregarSupExtra(id,input){
@@ -826,7 +836,7 @@ function filasSupExtra(l){
   return (l.supExtra||[]).filter(s=>s.nombre&&String(s.m2).trim()!=='').map(s=>{
     let n=s.nombre.trim().replace(/^sup(\.|erficie)?\s+/i,'');
     n=n.charAt(0).toUpperCase()+n.slice(1);
-    return ['Superficie '+esc(n),fN(s.m2)+' m²'];
+    return ['Superficie '+esc(n),medida(s.m2)];
   });
 }
 
@@ -846,8 +856,8 @@ function camposDepto(l){
   return '<div class="field-row">'+f('Disponibilidad','disponibilidad','Ej: Inmediata')+f('Piso / unidad','piso','Ej: 5º B')+'</div>'+
     '<div class="field-row3">'+f('Ambientes','ambientes')+f('Dormitorios','dormitorios')+f('Baños','banos')+'</div>'+
     '<div class="field-row">'+f('Toilettes','toilettes')+f('Cocheras','cocheras')+'</div>'+
-    '<div class="field-row">'+f('Sup. cubierta m²','supCubierta','','number')+f('Sup. semicubierta m²','supSemi','','number')+'</div>'+
-    '<div class="field-row">'+f('Sup. total m²','supTotal','','number')+'</div>'+
+    '<div class="field-row">'+f('Sup. cubierta m²','supCubierta')+f('Sup. semicubierta m²','supSemi')+'</div>'+
+    '<div class="field-row">'+f('Sup. total m²','supTotal')+'</div>'+
     camposSupExtra(l)+
     '<div class="field-row">'+
       '<div class="field"><label>Disposición</label><select data-id="'+l.id+'" data-f="disposicion" onchange="sLev(this)">'+disp+'</select></div>'+
@@ -862,7 +872,7 @@ function camposDepto(l){
 }
 /* filas de la tabla de la ficha (solo las que tienen dato) */
 function filasDepto(l){
-  const r=[],m=v=>fN(v)+' m\u00b2';
+  const r=[],m=v=>medida(v);
   if(l.disponibilidad)r.push(['Disponibilidad',esc(l.disponibilidad)]);
   if(l.ambientes)r.push(['Ambientes',esc(l.ambientes)]);
   if(l.dormitorios)r.push(['Dormitorios',esc(l.dormitorios)]);
@@ -922,14 +932,14 @@ function rLocal(l,idx){
   if(l.disponibilidad)rows.push(['Disponibilidad',esc(l.disponibilidad)]);
   if(l.posicion)rows.push(['Posici\u00f3n Relativa',esc(l.posicion)]);
   if(l.espAereo&&aereoVisible(l))rows.push(['Espacio A\u00e9reo Propio',esc(l.espAereo)]);
-  if(l.supCubierta)rows.push(['Superficie Cubierta',fN(l.supCubierta)+' m\u00b2']);
-  if(l.supPB)rows.push(['Superficie PB',fN(l.supPB)+' m\u00b2']);
-  if(l.supEP)rows.push(['Superficie Entrepiso',fN(l.supEP)+' m\u00b2']);
-  if(l.supPA)rows.push(['1er Piso',fN(l.supPA)+' m\u00b2']);
-  if(l.supSS)rows.push(['Superficie Subsuelo',fN(l.supSS)+' m\u00b2']);
+  if(l.supCubierta)rows.push(['Superficie Cubierta',medida(l.supCubierta)]);
+  if(l.supPB)rows.push(['Superficie PB',medida(l.supPB)]);
+  if(l.supEP)rows.push(['Superficie Entrepiso',medida(l.supEP)]);
+  if(l.supPA)rows.push(['1er Piso',medida(l.supPA)]);
+  if(l.supSS)rows.push(['Superficie Subsuelo',medida(l.supSS)]);
   filasSupExtra(l).forEach(x=>rows.push(x));
-  if(l.frente)rows.push(['Frente del '+NOMBRES[tipoInmueble].uno,fN(l.frente)+' m']);
-  if(l.supTerreno)rows.push(['Terreno',fN(l.supTerreno)+' m\u00b2']);
+  if(l.frente)rows.push(['Frente del '+NOMBRES[tipoInmueble].uno,medida(l.frente,'m')]);
+  if(l.supTerreno)rows.push(['Terreno',medida(l.supTerreno)]);
   if(tipoInmueble==='deposito'){
     if(l.altura)rows.push(['Altura',esc(l.altura)]);
     if(l.tipoPiso)rows.push(['Piso',esc(l.tipoPiso)]);
@@ -1041,7 +1051,7 @@ function rHeaderApp(){
 }
 /* datos con ícono, en el orden de la app; lo que no está cargado no aparece */
 function datosIconoDepto(l){
-  const out=[],m=v=>fN(v)+' m²';
+  const out=[],m=v=>medida(v);
   const sumar=(ico,valor,rot)=>{if(String(valor||'').trim())out.push([ico,valor,rot]);};
   sumar('total',l.supTotal&&m(l.supTotal),'superficie total');
   sumar('cubierta',l.supCubierta&&m(l.supCubierta),'cubierta');
@@ -1878,6 +1888,8 @@ function dragDrop(ev,localId,toIdx,type){
 })();
 /* en depósitos el espacio aéreo sale en la ficha solo si alguien tocó Sí o No (en locales sigue como siempre) */
 function aereoVisible(l){return tipoInmueble!=='deposito'||!!l.espAereoElegido;}
+/* la ✕ deshace el Sí/No tocado sin querer: vuelve a no salir en la ficha */
+function quitarAereo(id){const l=locals.find(x=>x.id===id);if(!l)return;l.espAereoElegido=false;renderSidebar();renderPreview();autoSave();}
 function sLev(el){setL(+el.dataset.id,el.dataset.f,el.value);}
 function sLbt(el){el.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el));setL(+el.dataset.id,el.dataset.f,el.dataset.v);}
 async function init(){
