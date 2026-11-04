@@ -687,7 +687,7 @@ function renderSidebar(){
         '</div>'+
         camposSupExtra(l)+
         '<div class="field-row">'+
-          '<div class="field"><label>Frente (m)</label>'+
+          '<div class="field"><label>Frente del '+NOMBRES[tipoInmueble].uno.toLowerCase()+' (m)</label>'+
             '<input type="number" value="'+esc(l.frente)+'" step="0.5" data-id="'+l.id+'" data-f="frente" oninput="sLev(this)">'+
           '</div>'+
           '<div class="field"><label>Terreno m²</label>'+
@@ -778,7 +778,7 @@ function camposDepto(l){
     '<div class="field-row3">'+f('Ambientes','ambientes')+f('Dormitorios','dormitorios')+f('Baños','banos')+'</div>'+
     '<div class="field-row">'+f('Toilettes','toilettes')+f('Cocheras','cocheras')+'</div>'+
     '<div class="field-row">'+f('Sup. cubierta m²','supCubierta','','number')+f('Sup. semicubierta m²','supSemi','','number')+'</div>'+
-    '<div class="field-row">'+f('Sup. descubierta m²','supDescubierta','','number')+f('Sup. total m²','supTotal','','number')+'</div>'+
+    '<div class="field-row">'+f('Sup. total m²','supTotal','','number')+'</div>'+
     camposSupExtra(l)+
     '<div class="field-row">'+
       '<div class="field"><label>Disposición</label><select data-id="'+l.id+'" data-f="disposicion" onchange="sLev(this)">'+disp+'</select></div>'+
@@ -788,8 +788,7 @@ function camposDepto(l){
     '<div class="field-row">'+sel('Apto profesional','aptoProfesional',['Sí','No'])+sel('Permite mascotas','mascotas',['Sí','No'])+'</div>'+
     '<div class="field-row">'+f('Antigüedad','antiguedad','A estrenar / 10 años')+f('Expensas','expensas')+'</div>'+
     '<div class="field-row">'+f('Condición','condicion','Excelente / Muy bueno')+'</div>'+
-    f('Amenities','amenities','Pileta · SUM · Gimnasio')+
-    f('Servicios','servicios','Agua corriente · Gas natural · Cloaca');
+    f('Amenities','amenities','Pileta · SUM · Gimnasio');
 }
 /* filas de la tabla de la ficha (solo las que tienen dato) */
 function filasDepto(l){
@@ -801,7 +800,6 @@ function filasDepto(l){
   if(l.toilettes)r.push(['Toilettes',esc(l.toilettes)]);
   if(l.supCubierta)r.push(['Superficie Cubierta',m(l.supCubierta)]);
   if(l.supSemi)r.push(['Superficie Semicubierta',m(l.supSemi)]);
-  if(l.supDescubierta)r.push(['Superficie Descubierta',m(l.supDescubierta)]);
   filasSupExtra(l).forEach(x=>r.push(x));
   if(l.supTotal)r.push(['Superficie Total',m(l.supTotal)]);
   if(l.piso)r.push(['Piso / Unidad',esc(l.piso)]);
@@ -816,7 +814,6 @@ function filasDepto(l){
   if(l.aptoProfesional)r.push(['Apto Profesional',esc(l.aptoProfesional)]);
   if(l.mascotas)r.push(['Permite Mascotas',esc(l.mascotas)]);
   if(l.amenities)r.push(['Amenities',esc(l.amenities)]);
-  if(l.servicios)r.push(['Servicios',esc(l.servicios)]);
   return r;
 }
 /* apto crédito, apto profesional, mascotas y luminosidad a partir del texto del aviso */
@@ -861,7 +858,7 @@ function rLocal(l,idx){
   if(l.supPA)rows.push(['1er Piso',fN(l.supPA)+' m\u00b2']);
   if(l.supSS)rows.push(['Superficie Subsuelo',fN(l.supSS)+' m\u00b2']);
   filasSupExtra(l).forEach(x=>rows.push(x));
-  if(l.frente)rows.push(['Frente',fN(l.frente)+' m']);
+  if(l.frente)rows.push(['Frente del '+NOMBRES[tipoInmueble].uno,fN(l.frente)+' m']);
   if(l.supTerreno)rows.push(['Terreno',fN(l.supTerreno)+' m\u00b2']);
   if(tipoInmueble==='deposito'){
     if(l.altura)rows.push(['Altura',esc(l.altura)]);
@@ -1464,8 +1461,8 @@ async function importarPdfAjeno(pdf,bytes){
   }
 }
 function nombreArchivo(){
-  const dir=(locals[0]&&locals[0].address)||'local';
-  return ('Ficha '+tipoOperacion+(tipoInmueble==='deposito'?' Depósito':'')+' - '+dir).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)+'.pdf';
+  const N=NOMBRES[tipoInmueble],dir=(locals[0]&&locals[0].address)||'';
+  return ('Ficha de '+tipoOperacion+' de '+(locals.length>1?N.varios:N.uno)+(dir?' - '+dir:'')).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)+'.pdf';
 }
 /* Las fotos y planos van al PDF con su archivo original, encima de la imagen de la hoja: si quedaran dentro
    de esa imagen se re-dibujan y re-comprimen y se ven pixeladas. Se recortan igual que en pantalla (cover). */
@@ -1515,7 +1512,13 @@ function vistaMovil(ver){
 }
 window.addEventListener('resize',ajustarZoomFicha);
 /* el PDF se arma con la ficha visible y a tamaño real, aunque en el celular estés en la pantalla de edición */
+let _destinoPdf=null;
 async function exportPDF(){
+  _destinoPdf=null;
+  if(window.showSaveFilePicker){
+    try{_destinoPdf=await window.showSaveFilePicker({id:'metrica-fichas',suggestedName:nombreArchivo(),types:[{description:'PDF',accept:{'application/pdf':['.pdf']}}]});}
+    catch(e){if(e.name==='AbortError')return;_destinoPdf=null;}
+  }
   const doc=document.getElementById('doc'),z=doc.style.zoom,oculto=esMovil()&&!document.body.classList.contains('ver-ficha');
   if(oculto)document.body.classList.add('ver-ficha');
   doc.style.zoom='';
@@ -1562,9 +1565,13 @@ async function _exportPDF(){
   const datos=new TextEncoder().encode(JSON.stringify(getState()));
   pdf.catalog.set(PDFLib.PDFName.of(CLAVE_DATOS_PDF),pdf.context.register(pdf.context.flateStream(datos)));
   const salida=await pdf.save();
-  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([salida],{type:'application/pdf'})),download:nombreArchivo()});
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  let guardado=false;
+  if(_destinoPdf){try{const w=await _destinoPdf.createWritable();await w.write(salida);await w.close();guardado=true;}catch(e){console.warn('No se pudo escribir donde se eligió',e);}}
+  if(!guardado){   /* celular, Safari/Firefox o si falló: descarga común */
+    const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([salida],{type:'application/pdf'})),download:nombreArchivo()});
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  }
   subirCopia(salida);
 }
 
