@@ -339,9 +339,116 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
 .ep-side button{background:var(--ink);color:#fff;border:0;border-radius:6px;padding:9px 12px;font:600 13px/1 var(--body);cursor:pointer}
 .ep-side button.gold{background:var(--gold);color:var(--ink)}
 .ep-side .help{color:var(--muted);font-size:12.5px;margin-top:6px}
+
+/* ---------- celular ----------
+   En el teléfono las diapositivas van una debajo de la otra, a lo ancho de la pantalla, y cada una se edita desde una hoja
+   con letra y botones grandes. Las diapositivas son las mismas que en la compu: el resultado no cambia. */
+.m-only,.m-edit,.m-hint,.msheet{display:none}
+html.movil{scroll-snap-type:none}
+@media (orientation:landscape){html.movil:not(.editing){scroll-snap-type:y mandatory}}
+.movil .slide{height:calc(810px*var(--s));margin-bottom:6px}
+.movil.editing .stage{top:50%}
+.movil:not(.cliente):not(.static) body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.movil .txtbar{display:none!important}
+.movil .tools{left:0;right:0;bottom:0;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(17,18,19,.97);border-top:1px solid rgba(255,255,255,.12)}
+.movil .tools button{min-height:58px;padding:10px 4px;font-size:16px;line-height:1.15;border-radius:12px;box-shadow:none}
+.movil .tools button:disabled{opacity:.35}
+.movil.editing .tools .m-only{display:block}
+.movil.editing #t-import,.movil.editing #t-pdf{display:none}
+.movil.editing #deck .stage{pointer-events:none}
+.movil.editing #deck .slide{cursor:pointer}
+/* los controles chiquitos de la compu no van: en el celular todo se cambia desde la hoja */
+.movil #deck .ebtn,.movil #deck .pick{display:none!important}
+.movil.editing #deck [data-k],.movil.editing #deck [data-img]{outline:none}
+.movil.editing .m-edit{display:flex;position:absolute;right:10px;bottom:10px;z-index:50;align-items:center;gap:6px;border:0;border-radius:999px;padding:14px 20px;background:var(--gold);color:var(--ink);font:700 18px/1 var(--body);box-shadow:0 4px 16px rgba(0,0,0,.45)}
+.m-hint{position:relative;background:#2B2B2B;color:var(--on-dark);font:500 17px/1.4 var(--body);padding:14px 52px 14px 16px;margin-bottom:6px}
+.m-hint b{color:var(--gold)}
+.m-hint button{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:44px;height:44px;border:0;background:none;color:var(--on-dark);font-size:24px}
+@media (orientation:portrait){.movil:not(.editing):not(.cliente) .m-hint.ver{display:block}}
+.movil.editing .m-hint.ed{display:block}
+.m-hint.no{display:none!important}
+/* hoja de edición de una diapositiva */
+html.hoja{overflow:hidden}
+.msheet{position:fixed;inset:0;z-index:205;flex-direction:column;background:#EDE9E1;color:var(--ink);font-family:var(--body)}
+.msheet.open{display:flex}
+.ms-top{display:flex;align-items:center;gap:8px;padding:10px 10px;padding-top:calc(10px + env(safe-area-inset-top));background:var(--ink);color:#fff}
+.ms-top b{flex:1;min-width:0;font:800 24px/1.05 var(--display);text-transform:uppercase;letter-spacing:.02em;text-align:center}
+.ms-top button{min-height:54px;padding:0 16px;border:0;border-radius:12px;background:#3A3C3E;color:#fff;font:700 17px/1 var(--body)}
+.ms-top button.gold{background:var(--gold);color:var(--ink)}
+.ms-top button:disabled{opacity:.35}
+.ms-fmt{display:none;flex-wrap:wrap;gap:6px;padding:8px 10px;background:#fff;border-bottom:1px solid var(--line)}
+.msheet.txt .ms-fmt{display:flex}
+.ms-fmt button{flex:1 1 22%;min-height:50px;display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid #CFCAC0;border-radius:10px;background:#fff;color:var(--ink);font:600 16px/1 var(--body)}
+.ms-fmt .dot{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(0,0,0,.3)}
+.ms-body{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 48px}
+.ms-prev{position:relative;width:100%;overflow:hidden;border-radius:8px;background:var(--black);box-shadow:0 2px 10px rgba(0,0,0,.25);pointer-events:none}
+.ms-prev>.slide{position:absolute;inset:0;height:100%!important;margin:0!important}
+.ms-note{font-size:17px;line-height:1.5;color:var(--muted);margin-top:12px}
+.ms-sec{font:800 22px/1.1 var(--display);text-transform:uppercase;letter-spacing:.04em;color:var(--gold-deep);margin:28px 0 2px}
+.ms-f{margin-top:14px}
+.ms-f>span{display:block;font:600 17px/1.3 var(--body);margin-bottom:6px}
+.ms-txt,.ms-area,.ms-num,.ms-sel{display:block;width:100%;min-height:58px;padding:13px 14px;border:2px solid #CFCAC0;border-radius:12px;background:#fff;color:var(--ink);font:400 19px/1.45 var(--body);outline:none}
+.ms-txt:focus,.ms-area:focus,.ms-num:focus{border-color:var(--gold)}
+.ms-txt.osc{background:var(--char);color:var(--on-dark);border-color:#55585A}
+.ms-area{min-height:240px;resize:vertical}
+.ms-sel{font-weight:500;font-size:18px}
+.ms-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ms-btn{flex:1 1 auto;min-height:56px;padding:12px 16px;border:0;border-radius:12px;background:var(--ink);color:#fff;font:600 17px/1.2 var(--body)}
+.ms-btn.gold{background:var(--gold);color:var(--ink)}
+.ms-btn.lin{background:#fff;color:var(--ink);border:2px solid var(--ink)}
+.ms-btn.rojo{background:#fff;color:#B0291B;border:2px solid #B0291B}
+.ms-card{background:#fff;border-radius:14px;padding:14px;margin-top:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.ms-card>img{width:100%;max-height:280px;object-fit:contain;background:#2B2B2B;border-radius:8px}
+.ms-card h5{font:700 18px/1.2 var(--body);margin-bottom:10px}
+.ms-ico{display:flex;align-items:center;gap:12px}
+.ms-ico h5{margin:0}
+.ms-icob{width:64px;height:64px;flex:none;display:grid;place-items:center;border:2px solid #CFCAC0;border-radius:12px;background:var(--paper)}
+.ms-icob svg{width:40px;height:40px;fill:none;stroke:var(--gold-deep);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ms-step{display:flex;align-items:center;gap:10px}
+.ms-step button{width:62px;height:62px;flex:none;border:0;border-radius:50%;background:var(--gold);color:var(--ink);font:700 32px/1 var(--body)}
+.ms-step .ms-num,.ms-usd .ms-num{font-weight:700;font-size:24px;text-align:center}
+.ms-usd{display:flex;align-items:center;gap:10px}
+.ms-usd b{font:700 20px/1 var(--body)}
+.ms-seg{display:flex;gap:8px}
+.ms-seg button{flex:1;min-height:60px;border:2px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);font:700 17px/1.2 var(--body)}
+.ms-seg button.on{background:var(--ink);color:#fff}
+/* ventanas (importar, elegir, recortar, ordenar, mapa) a pantalla completa y con botones grandes */
+.movil .panel{place-items:stretch}
+.movil .panel .card{width:100%!important;min-height:100%;border-radius:0;padding:20px 16px 0;overflow:auto;display:flex;flex-direction:column}
+.movil .panel h3{font-size:30px}
+.movil .panel p{font-size:16px;line-height:1.5}
+.movil .panel input[type=text]{font-size:17px;padding:15px}
+.movil .panel button,.movil .imp-file{min-height:56px;padding:14px 20px;font-size:17px;border-radius:12px}
+.movil .panel .row{position:sticky;bottom:0;margin-top:auto;padding:12px 0 calc(12px + env(safe-area-inset-bottom));background:var(--paper)}
+.movil .panel .row button{flex:1}
+.movil .ch-grid{grid-template-columns:1fr 1fr;max-height:none;overflow:visible}
+.movil .crop-tools{flex-wrap:wrap;font-size:17px}
+.movil .crop-tools select{font-size:17px;padding:12px}
+.movil .crop-rect i{width:30px;height:30px;border-width:3px}
+.movil .crop-rect i[data-h=nw]{left:-15px;top:-15px}.movil .crop-rect i[data-h=ne]{right:-15px;top:-15px}
+.movil .crop-rect i[data-h=sw]{left:-15px;bottom:-15px}.movil .crop-rect i[data-h=se]{right:-15px;bottom:-15px}
+.movil .crop-rect i[data-h=n]{left:calc(50% - 15px);top:-15px}.movil .crop-rect i[data-h=s]{left:calc(50% - 15px);bottom:-15px}
+.movil .crop-rect i[data-h=w]{top:calc(50% - 15px);left:-15px}.movil .crop-rect i[data-h=e]{top:calc(50% - 15px);right:-15px}
+.movil .or-grid{grid-template-columns:1fr;max-height:none;overflow:visible}
+.movil .or-scale figure[data-o]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.movil .or-scale figure.listo{outline:6px solid var(--gold);outline-offset:-6px}
+.movil .edit-panel{grid-template-columns:1fr;grid-template-rows:42vh 1fr}
+.movil .ep-side{font-size:17px;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+.movil .ep-side h3{font-size:28px}
+.movil .ep-side input[type=text]{font-size:17px;padding:14px}
+.movil .ep-side button{min-height:54px;padding:12px 18px;font-size:17px;border-radius:12px}
+.movil .ep-side .help{font-size:15px}
+.movil .lb-nav button{padding:16px 24px;font-size:17px}
+.movil .lb-x,.movil .mx{font-size:22px;padding:10px}
+@media print{
+  .m-edit,.m-hint,.msheet{display:none!important}
+  .movil .slide{height:810px;margin:0}
+}
 </style>
 </head>
 <body>
+<div class="m-hint ver" id="m-hint-ver">Para ver las diapositivas más grandes, <b>girá el teléfono</b>.<button type="button" aria-label="Cerrar aviso">×</button></div>
+<div class="m-hint ed" id="m-hint-ed">Tocá la diapositiva que quieras cambiar.<button type="button" aria-label="Cerrar aviso">×</button></div>
 <div id="deck"></div>
 
 <div class="txtbar" id="txtbar" role="toolbar" aria-label="Formato de texto">
@@ -359,6 +466,8 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
   <button type="button" class="fmt" id="t-plain" title="Quitar formato" aria-label="Quitar formato"><svg viewBox="0 0 24 24"><path d="M5 6h10M10 6l-3 13M14 13l6 6M20 13l-6 6"/></svg></button>
 </div>
 <div class="tools" id="tools">
+  <button type="button" class="m-only" id="m-undo">↶ Deshacer</button>
+  <button type="button" class="m-only" id="m-redo">↷ Rehacer</button>
   <button type="button" id="t-import">⤓ Importar ficha</button>
   <button type="button" id="t-edit">✎ Editar</button>
   <button type="button" id="t-pdf" title="Descargar en PDF: una hoja por diapositiva">PDF</button>
@@ -422,6 +531,19 @@ a.fl:hover{color:var(--gold);text-decoration:underline}
     <div class="crop-stage" id="cr-stage"><img id="cr-img" alt=""><div class="crop-rect" id="cr-rect"><i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i></div></div>
     <div class="row"><button type="button" id="cr-cancel">Cancelar</button><button type="button" class="gold" id="cr-ok">Aplicar</button></div>
   </div>
+</div>
+<div class="msheet" id="msheet" role="dialog" aria-modal="true" aria-label="Editar diapositiva">
+  <div class="ms-top"><button type="button" id="ms-undo">↶ Deshacer</button><b id="ms-h"></b><button type="button" class="gold" id="ms-ok">✓ Listo</button></div>
+  <div class="ms-fmt" id="ms-fmt">
+    <button type="button" data-f="bold"><b>B</b> Negrita</button>
+    <button type="button" data-f="italic"><i style="font-family:Georgia,serif">I</i> Itálica</button>
+    <button type="button" data-f="light" style="font-weight:300">Fino</button>
+    <button type="button" data-f="plain">Sin formato</button>
+    <button type="button" data-f="#D29C1E"><span class="dot" style="background:#D29C1E"></span>Mostaza</button>
+    <button type="button" data-f="#17181A"><span class="dot" style="background:#17181A"></span>Negro</button>
+    <button type="button" data-f="#FFFFFF"><span class="dot" style="background:#fff"></span>Blanco</button>
+  </div>
+  <div class="ms-body" id="ms-body"></div>
 </div>
 <div id="tip"></div>
 
@@ -1215,10 +1337,13 @@ function render(){
   document.title=String(P.meta.tituloPestana||"Presentación Métrica").replace(/<[^>]+>/g,"");
   $("#deck").innerHTML=[sPortada(),sFicha(),sDescMapa(),sGalerias(),sPlanos(),sInversion(),sGraficos(),sResumen(),sCierre()].join("");
   bindModel();renderModel();drawMap();fitDescription();fitPortada();aplicarRecortes();bindViewers();if(EDIT)enableEditing();updUndo();
+  if(EDIT&&esMovil())marcarMovil();if(MS.open)pintarHoja();
 }
-// editando, la diapositiva sube y deja abajo una franja libre para las barras de herramientas
-const FRANJA=76;
-function fit(){if(STATIC)return;document.documentElement.style.setProperty("--s",Math.min(innerWidth/1440,(innerHeight-(EDIT?FRANJA:0))/810))}
+// editando, la diapositiva sube y deja abajo una franja libre para las barras de herramientas;
+// en el celular la barra queda siempre abajo y las diapositivas ocupan el ancho de la pantalla
+const FRANJA=76,BARRA_MOVIL=84;
+function fit(){if(STATIC)return;const m=esMovil(),barra=m?(document.documentElement.classList.contains("cliente")?0:BARRA_MOVIL):(EDIT?FRANJA:0);
+  document.documentElement.style.setProperty("--s",Math.min(innerWidth/1440,(innerHeight-barra)/810))}
 addEventListener("resize",fit);
 
 function bindViewers(){
@@ -1274,7 +1399,7 @@ function aplicarRecortes(){document.querySelectorAll("#deck img[data-img]").forE
 const esFotoK=k=>/^(portada\.foto|cierre\.foto|ficha\.fotos\.\d+|ficha\.planos\.\d+\.img)$/.test(k);
 let CR=null;
 function abrirRecorte(key){const src=get(P,key);if(!src)return;const a=ASPECT.get(src)||1.5;
-  const maxW=Math.min(innerWidth*.94-56,1044),maxH=innerHeight*.58;let w=maxW,h=w/a;if(h>maxH){h=maxH;w=h*a}
+  const maxW=esMovil()?innerWidth-32:Math.min(innerWidth*.94-56,1044),maxH=innerHeight*.58;let w=maxW,h=w/a;if(h>maxH){h=maxH;w=h*a}
   const stg=$("#cr-stage");stg.style.width=w+"px";stg.style.height=h+"px";$("#cr-img").src=src;
   CR={key,a,W:w,H:h,r:Object.assign({x:0,y:0,w:1,h:1},recorte(key))};$("#cr-ratio").value="";dibujarRect();$("#crop").classList.add("open")}
 function dibujarRect(){const r=CR.r;Object.assign($("#cr-rect").style,{left:r.x*CR.W+"px",top:r.y*CR.H+"px",width:r.w*CR.W+"px",height:r.h*CR.H+"px"})}
@@ -1310,7 +1435,7 @@ function reordenar(path,orden){const lista=get(P,path),rc=P.recortes||{},nuevo={
 let ORD=null;
 function abrirOrden(){ORD=P.ficha.fotos.map((_,i)=>i);$("#orden").classList.add("open");pintarOrden()}
 // arma las diapositivas de fotos con el orden de prueba (sobre una copia de los datos) para verlas antes de aplicar
-function pintarOrden(){const g=$("#or-grid"),real=P;g.style.setProperty("--k",((g.clientWidth-24)/2)/GW);
+function pintarOrden(){const g=$("#or-grid"),real=P;g.style.setProperty("--k",(esMovil()?g.clientWidth-8:(g.clientWidth-24)/2)/GW);
   P=clonar(P);reordenar("ficha.fotos",ORD);
   try{const pages=paginate(galeriaItems());
     g.innerHTML=pages.map((pg,pi)=>{let k=0;
@@ -1319,8 +1444,14 @@ function pintarOrden(){const g=$("#or-grid"),real=P;g.style.setProperty("--k",((
       return `<div class="or-page"><span class="or-lbl">Diapositiva ${pi===0?"Fotos":"Más fotos"}${pages.length>1?" · "+(pi+1)+" de "+pages.length:""}</span><div class="or-box"><div class="or-scale"><div class="gallery">${rows}</div></div></div></div>`}).join("")||'<p>No hay fotos para ordenar.</p>';
     g.querySelectorAll("img[data-img]").forEach(img=>recortarImg(img,recorte(img.dataset.img)));
   }finally{P=real}
-  g.querySelectorAll("figure[data-o]").forEach(fig=>fig.addEventListener("pointerdown",e=>{if(e.button)return;e.preventDefault();const from=+fig.dataset.o,line=$("#or-line");let ghost=null,dest=null;
-    const mv=ev=>{if(!ghost){ghost=document.createElement("img");ghost.className="or-ghost";ghost.src=fig.querySelector("img").src;document.body.appendChild(ghost);fig.classList.add("drag")}
+  g.querySelectorAll("figure[data-o]").forEach(fig=>fig.addEventListener("pointerdown",e=>{if(e.button)return;const from=+fig.dataset.o,line=$("#or-line");let ghost=null,dest=null;
+    // con el dedo: se mantiene apretada la foto un momento y recién ahí se arrastra (si no, la lista se desliza normal)
+    const dedo=e.pointerType==="touch";let listo=!dedo,espera=null;if(!dedo)e.preventDefault();
+    const quieto=ev=>{if(listo)ev.preventDefault()};
+    if(dedo){const x0=e.clientX,y0=e.clientY;espera=setTimeout(()=>{listo=true;fig.classList.add("listo");if(navigator.vibrate)navigator.vibrate(25)},350);
+      fig.dataset.x0=x0;fig.dataset.y0=y0;addEventListener("touchmove",quieto,{passive:false})}
+    const mv=ev=>{if(!listo){if(Math.hypot(ev.clientX-fig.dataset.x0,ev.clientY-fig.dataset.y0)>10){clearTimeout(espera);up()}return}
+      if(!ghost){ghost=document.createElement("img");ghost.className="or-ghost";ghost.src=fig.querySelector("img").src;document.body.appendChild(ghost);fig.classList.add("drag")}
       ghost.style.left=ev.clientX+"px";ghost.style.top=ev.clientY+"px";
       // entre dos fotos (justo sobre la línea) vale la foto más cercana, así se puede soltar ahí mismo
       const x=ev.clientX,y=ev.clientY,box=document.elementFromPoint(x,y)?.closest("#or-grid .or-box");let f2=null,bd=Infinity;
@@ -1328,9 +1459,10 @@ function pintarOrden(){const g=$("#or-grid"),real=P;g.style.setProperty("--k",((
       if(!f2||+f2.dataset.o===from){line.style.display="none";dest=null;return}
       const r=f2.getBoundingClientRect(),despues=ev.clientX>r.left+r.width/2;dest={o:+f2.dataset.o,despues};
       Object.assign(line.style,{display:"block",left:(despues?r.right+1:r.left-5)+"px",top:r.top+"px",height:r.height+"px"})};
-    const up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up);line.style.display="none";if(ghost)ghost.remove();fig.classList.remove("drag");
+    const up=()=>{clearTimeout(espera);removeEventListener("pointermove",mv);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);removeEventListener("touchmove",quieto);
+      line.style.display="none";if(ghost)ghost.remove();fig.classList.remove("drag","listo");
       if(!dest)return;const v=ORD[from],resto=ORD.filter((_,i)=>i!==from);let ti=resto.indexOf(ORD[dest.o])+(dest.despues?1:0);resto.splice(ti,0,v);ORD=resto;pintarOrden()};
-    addEventListener("pointermove",mv);addEventListener("pointerup",up)}));
+    addEventListener("pointermove",mv);addEventListener("pointerup",up);addEventListener("pointercancel",up)}));
 }
 $("#or-ok").addEventListener("click",()=>{guardar();reordenar("ficha.fotos",ORD);$("#orden").classList.remove("open");render()});
 $("#or-cancel").addEventListener("click",()=>$("#orden").classList.remove("open"));
@@ -1339,7 +1471,7 @@ $("#or-cancel").addEventListener("click",()=>$("#orden").classList.remove("open"
    Se guarda una copia de los datos antes de cada cambio. Las fotos no se duplican en memoria: la copia apunta a los mismos textos. */
 const HIST=[],REDO=[];
 const clonar=o=>Array.isArray(o)?o.map(clonar):o&&typeof o==="object"?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,clonar(v)])):o;
-function updUndo(){$("#t-undo").disabled=!HIST.length;$("#t-redo").disabled=!REDO.length}
+function updUndo(){["#t-undo","#m-undo","#ms-undo"].forEach(s=>$(s).disabled=!HIST.length);["#t-redo","#m-redo"].forEach(s=>$(s).disabled=!REDO.length)}
 function guardar(){HIST.push(clonar(P));if(HIST.length>80)HIST.shift();REDO.length=0;updUndo()}
 function deshacer(){if(!HIST.length)return;REDO.push(clonar(P));P=HIST.pop();resetModel();render();updUndo()}
 function rehacer(){if(!REDO.length)return;HIST.push(clonar(P));P=REDO.pop();resetModel();render();updUndo()}
@@ -1359,19 +1491,20 @@ function enableEditing(){
   document.querySelectorAll("#deck img[data-img]").forEach(img=>{const k=img.dataset.img;if(!esFotoK(k)||!img.offsetParent)return;const b=cajaImg(img),btn=document.createElement("button");
     btn.type="button";btn.className="ebtn cropb";btn.title="Recortar foto";btn.setAttribute("aria-label","Recortar foto");btn.textContent="✂";btn.style.left=(b.l+10)+"px";btn.style.top=(b.t+10)+"px";
     btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();abrirRecorte(k)});img.offsetParent.appendChild(btn)});
-  document.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.add,f=P.ficha;if(k==="orden")return abrirOrden();if(k!=="fotos"&&k!=="plano")guardar();
-    if(k==="chip"){f.caracteristicas.push("Nueva característica");render()}
-    if(k==="stat"){f.stats.push({icono:"superficie",valor:"0",unidad:"m²",etiqueta:"Dato"});render()}
-    if(k==="fotos")pickImages(list=>{guardar();f.fotos.push(...list);render()});
-    if(k==="plano")pickImage(src=>{guardar();f.planos.push({nombre:"Plano",m2:"",img:src});render()});
-    if(k==="video"){const v=prompt("Pegá el link del video de Google Drive (compartido como 'Cualquier persona con el enlace'). Dejalo vacío para quitarlo.",f.video||"");if(v!==null){f.video=v.trim();render()}}
-    if(k==="mapa")openMapEditor()}));
+  document.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>agregar(b.dataset.add)));
 }
+function agregar(k){const f=P.ficha;if(k==="orden")return abrirOrden();if(k!=="fotos"&&k!=="plano")guardar();
+  if(k==="chip"){f.caracteristicas.push("Nueva característica");render()}
+  if(k==="stat"){f.stats.push({icono:"superficie",valor:"0",unidad:"m²",etiqueta:"Dato"});render()}
+  if(k==="fotos")pickImages(list=>{guardar();f.fotos.push(...list);render()});
+  if(k==="plano")pickImage(src=>{guardar();f.planos.push({nombre:"Plano",m2:"",img:src});render()});
+  if(k==="video"){const v=prompt("Pegá el link del video de Google Drive (compartido como 'Cualquier persona con el enlace'). Dejalo vacío para quitarlo.",f.video||"");if(v!==null){f.video=v.trim();render()}}
+  if(k==="mapa")openMapEditor()}
 function shrink(file,cb){const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const m=1800,s=Math.min(1,m/Math.max(img.width,img.height));const cv=document.createElement("canvas");cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);
   cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);cb(file.type==="image/png"?cv.toDataURL("image/png"):cv.toDataURL("image/jpeg",.85))};img.src=r.result};r.readAsDataURL(file)}
 function pickImage(cb){const inp=$("#file-in");inp.value="";inp.onchange=()=>{if(inp.files[0])shrink(inp.files[0],cb)};inp.click()}
 function pickImages(cb){const inp=$("#file-multi");inp.value="";inp.onchange=()=>{const fs=[...inp.files],out=[];if(!fs.length)return;fs.forEach((f,i)=>shrink(f,src=>{out[i]=src;if(out.filter(Boolean).length===fs.length)cb(out)}))};inp.click()}
-$("#t-edit").addEventListener("click",()=>{EDIT=!EDIT;document.documentElement.classList.toggle("editing",EDIT);fit();$("#t-edit").textContent=EDIT?"✓ Terminar edición":"✎ Editar";if(EDIT)resetModel();render()});
+$("#t-edit").addEventListener("click",()=>{EDIT=!EDIT;document.documentElement.classList.toggle("editing",EDIT);modoMovil();fit();if(EDIT)resetModel();render()});
 // formato de texto: actúa sobre lo seleccionado sin sacar el foco del texto
 const enTexto=()=>{const s=getSelection();if(!s.rangeCount)return null;const n=s.getRangeAt(0).commonAncestorContainer;return (n.nodeType===1?n:n.parentElement).closest("[data-k]")};
 const fmt=(sel,fn)=>document.querySelectorAll(sel).forEach(b=>b.addEventListener("mousedown",e=>{e.preventDefault();if(enTexto())fn(b)}));
@@ -1382,8 +1515,8 @@ const COLORES={"var(--gold)":"#D29C1E","var(--ink)":"#17181A","#FFFFFF":"#FFFFFF
 fmt(".txtbar .sw",b=>{document.execCommand("styleWithCSS",false,true);document.execCommand("foreColor",false,COLORES[b.dataset.color]||b.dataset.color)});
 fmt("#t-plain",()=>{const root=enTexto(),r=getSelection().getRangeAt(0);document.execCommand("removeFormat");
   root.querySelectorAll("span.gold,span[style],b,strong,i,em,font").forEach(n=>{if(r.intersectsNode(n))n.replaceWith(...n.childNodes)})});
-$("#t-undo").addEventListener("click",()=>{const a=document.activeElement;if(a&&a.isContentEditable)a.blur();deshacer()});
-$("#t-redo").addEventListener("click",()=>{const a=document.activeElement;if(a&&a.isContentEditable)a.blur();rehacer()});
+["#t-undo","#m-undo","#ms-undo"].forEach(s=>$(s).addEventListener("click",()=>{const a=document.activeElement;if(a&&(a.isContentEditable||/INPUT|TEXTAREA/.test(a.tagName)))a.blur();deshacer()}));
+["#t-redo","#m-redo"].forEach(s=>$(s).addEventListener("click",()=>{const a=document.activeElement;if(a&&a.isContentEditable)a.blur();rehacer()}));
 document.addEventListener("keydown",e=>{if(!EDIT||!(e.ctrlKey||e.metaKey))return;const a=document.activeElement;if(a&&(a.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(a.tagName)))return;
   const k=e.key.toLowerCase();if(k==="z"&&!e.shiftKey){e.preventDefault();deshacer()}else if(k==="y"||(k==="z"&&e.shiftKey)){e.preventDefault();rehacer()}});
 $("#t-save").addEventListener("click",()=>{
@@ -1396,7 +1529,132 @@ $("#t-save").addEventListener("click",()=>{
 $("#t-pdf").addEventListener("click",()=>{if(EDIT)$("#t-edit").click();const t=document.title;document.title="Presentacion - "+String(P.meta.tituloPestana||"Metrica").replace(/<[^>]+>/g,"");
   setTimeout(()=>{window.print();document.title=t},400)});
 
-resetModel();fit();render();
+/* ---------- celular ----------
+   Las diapositivas se ven una debajo de la otra. Editando, cada una lleva un botón "Editar" que abre una hoja a pantalla
+   completa: arriba la diapositiva como va quedando y abajo sus textos, fotos y números, con letra y botones grandes.
+   Todo escribe en los mismos datos que la edición de la compu, así que el resultado es el mismo. */
+const MQ=matchMedia("(max-width: 820px), (max-height: 520px) and (pointer: coarse)");
+const esMovil=()=>MQ.matches&&!STATIC;
+function modoMovil(){const m=esMovil();document.documentElement.classList.toggle("movil",m);$("#t-edit").textContent=EDIT?(m?"✓ Listo":"✓ Terminar edición"):"✎ Editar";if(!m&&MS.open)cerrarHoja()}
+MQ.addEventListener("change",()=>{if(esMovil()===document.documentElement.classList.contains("movil"))return;modoMovil();fit();render()});
+document.querySelectorAll(".m-hint button").forEach(b=>b.addEventListener("click",()=>b.parentElement.classList.add("no")));
+const MS={open:false,tipo:"",n:0,sucio:false};
+const NOMBRE={portada:"Portada",ficha:"Ficha",desc:"Descripción y mapa",fotos:"Fotos",planos:"Planos",inv:"La inversión",graf:"Gráficos",res:"Resumen",cierre:"Cierre"};
+function tipoSlide(sec){if(sec.id)return sec.id.replace("sl-","");if(sec.querySelector(".pgrid"))return "planos";return "fotos"}
+function marcarMovil(){document.querySelectorAll("#deck>section.slide").forEach(sec=>{const b=document.createElement("button");b.type="button";b.className="m-edit";b.textContent="✎ Editar";
+  sec.appendChild(b);sec.addEventListener("click",()=>abrirHoja(sec))})}
+function seccionHoja(){return [...document.querySelectorAll("#deck>section.slide")].filter(s=>tipoSlide(s)===MS.tipo)[MS.n]||null}
+function abrirHoja(sec){const t=tipoSlide(sec);MS.n=[...document.querySelectorAll("#deck>section.slide")].filter(s=>tipoSlide(s)===t).indexOf(sec);MS.tipo=t;MS.open=true;
+  $("#msheet").classList.add("open");document.documentElement.classList.add("hoja");$("#ms-body").scrollTop=0;pintarHoja()}
+function cerrarHoja(){const a=document.activeElement;if(a&&a.closest&&a.closest("#msheet"))a.blur();
+  MS.open=false;$("#msheet").classList.remove("open","txt");document.documentElement.classList.remove("hoja");
+  if(MS.sucio){MS.sucio=false;render()}const s=seccionHoja();if(s)s.scrollIntoView({block:"center"})}
+$("#ms-ok").addEventListener("click",cerrarHoja);
+
+// piezas de la hoja
+const mSec=t=>`<h4 class="ms-sec">${t}</h4>`;
+const mT=(k,label,osc)=>`<div class="ms-f"><span>${label}</span><div class="ms-txt${osc?" osc":""}" contenteditable="true" data-fk="${k}">${get(P,k)??""}</div></div>`;
+const mB=(act,d,txt,cls="")=>`<button type="button" class="ms-btn ${cls}" data-act="${act}" data-d="${d}">${txt}</button>`;
+const mRow=h=>`<div class="ms-row">${h}</div>`;
+const mFoto=(k,titulo,o={})=>`<div class="ms-card"><h5>${titulo}</h5><img src="${get(P,k)||""}" alt="">
+  ${mRow(`<button type="button" class="ms-btn" data-act="cambiar" data-ik="${k}">Cambiar foto</button>${o.elegir?mB("elegir",o.elegir,"Elegir de las fotos","lin"):""}<button type="button" class="ms-btn lin" data-act="recortar" data-ik="${k}">✂ Recortar</button>${o.quitar?`<button type="button" class="ms-btn rojo" data-act="quitar" data-p="${o.quitar[0]}" data-i="${o.quitar[1]}">Quitar</button>`:""}`)}
+  ${o.forma?`<div class="ms-f"><span>Forma del recuadro</span>${selForma(o.forma,P[o.forma].fotoForma).replace("<select",'<select class="ms-sel"')}</div>`:""}</div>`;
+const mPlano=(i,osc)=>`<div class="ms-card"><h5>Plano</h5><img src="${P.ficha.planos[i].img}" alt="">${mT(`ficha.planos.${i}.nombre`,"Nombre",osc)}${mT(`ficha.planos.${i}.m2`,"Superficie",osc)}
+  ${mRow(`<button type="button" class="ms-btn" data-act="cambiar" data-ik="ficha.planos.${i}.img">Cambiar plano</button><button type="button" class="ms-btn lin" data-act="recortar" data-ik="ficha.planos.${i}.img">✂ Recortar</button><button type="button" class="ms-btn rojo" data-act="quitar" data-p="ficha.planos" data-i="${i}">Quitar</button>`)}</div>`;
+const mPago=()=>`<div class="ms-seg"><button type="button" data-act="modo" data-d="cuotas" class="${st.contado?"":"on"}">En cuotas</button><button type="button" data-act="modo" data-d="contado" class="${st.contado?"on":""}">Pago de contado</button></div>`;
+const mUsd=(k,label,v)=>`<div class="ms-f"><span>${label}</span><div class="ms-usd"><b>USD</b><input class="ms-num" data-num="${k}" inputmode="numeric" value="${nf(v)}"></div></div>`;
+const mPaso=(k,label,v,paso)=>`<div class="ms-f"><span>${label}</span><div class="ms-step"><button type="button" data-act="paso" data-d="${k}" data-v="-${paso}" aria-label="Menos">−</button><input class="ms-num" data-num="${k}" inputmode="decimal" value="${v}"><button type="button" data-act="paso" data-d="${k}" data-v="${paso}" aria-label="Más">+</button></div></div>`;
+const sinTags=h=>String(h??"").replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ");
+function aTexto(h){const d=document.createElement("div");d.innerHTML=String(h??"").replace(/<br\s*\/?>/gi,"\n").replace(/<\/(div|p)>/gi,"\n");return d.textContent.replace(/\n{3,}/g,"\n\n").replace(/\n+$/,"")}
+
+// el formulario de cada diapositiva
+const HOJA={
+  portada:o=>mFoto("portada.foto","Foto de portada",{elegir:P.ficha.fotos.length?"portada":"",forma:"portada"})+mSec("Textos")+mT("meta.kicker","Texto chico de arriba",o)+
+    mT("portada.direccion","Dirección",o)+mT("portada.localidad","Localidad",o)+mT("portada.titulo","Título grande",o)+mT("portada.subtitulo","Bajada",o),
+  ficha:o=>{const f=P.ficha,fm=fichaMapa();let h=mSec("Textos")+mT("ficha.kicker","Texto chico de arriba",o)+mT("ficha.codigo","Código",o)+mT("ficha.titulo","Título",o)+
+      mT("ficha.ubicacion","Ubicación",o)+mT("ficha.operacion","Operación (Alquiler, Venta…)",o)+mT("ficha.precio","Precio",o)+mSec("Datos");
+    f.stats.forEach((s,i)=>{h+=`<div class="ms-card"><div class="ms-ico"><button type="button" class="ms-icob" data-act="icono" data-i="${i}" aria-label="Cambiar ícono">${icon(s.icono)}</button><h5>Dato ${i+1}</h5></div>
+      ${mT(`ficha.stats.${i}.valor`,"Valor",o)}${mT(`ficha.stats.${i}.unidad`,"Unidad (m², etc.)",o)}${mT(`ficha.stats.${i}.etiqueta`,"Qué es",o)}
+      ${mRow(`<button type="button" class="ms-btn lin" data-act="icono" data-i="${i}">Cambiar ícono</button><button type="button" class="ms-btn rojo" data-act="quitar" data-p="ficha.stats" data-i="${i}">Quitar dato</button>`)}</div>`});
+    h+=mRow(mB("add","stat","+ Agregar dato","gold"))+mSec("Características");
+    f.caracteristicas.forEach((c,i)=>{h+=`<div class="ms-card">${mT(`ficha.caracteristicas.${i}`,"Característica "+(i+1),o)}${mRow(`<button type="button" class="ms-btn rojo" data-act="quitar" data-p="ficha.caracteristicas" data-i="${i}">Quitar</button>`)}</div>`});
+    h+=mRow(mB("add","chip","+ Agregar característica","gold"))+mSec(fm?"Mapa":"Foto de la ficha");
+    if(fm)h+=`<p class="ms-note">Al lado de los datos va el mapa.</p>`+mT("ficha.mapaLeyenda","Texto debajo del mapa",o)+mRow((f.fotos.length?mB("elegir","ficha","Poner una foto","lin"):"")+mB("add","mapa","Ubicación y puntos del mapa","lin"));
+    else if(f.fotos.length)h+=mFoto("ficha.fotos."+fichaIdx(),"Foto de la propiedad",{elegir:f.fotos.length>1||f.mapa.lat?"ficha":"",forma:"ficha"});
+    else h+=mRow(mB("add","fotos","+ Agregar fotos","gold"));
+    return h},
+  desc:o=>mT("ficha.descTitulo","Título chico",o)+`<div class="ms-f"><span>Descripción</span><textarea class="ms-area" data-fa="ficha.descripcion">${esc(aTexto(P.ficha.descripcion))}</textarea></div>`+
+    (fichaMapa()?"":mT("ficha.mapaLeyenda","Texto debajo del mapa",o)+mRow(mB("add","mapa","Ubicación y puntos del mapa","lin"))),
+  fotos:(o,n)=>{const f=P.ficha,items=galeriaItems(),pg=items.length?paginate(items)[n]:null;let h="";
+    if(n===0)h+=mT("ficha.fotosTexto","Texto al costado de las fotos",o)+mRow((f.fotos.length>1?mB("add","orden","Ordenar fotos","gold"):"")+mB("add","fotos","+ Agregar fotos","lin")+
+      mB("add","plano","+ Agregar plano","lin")+mB("add","video",f.video?"Cambiar video":"+ Video","lin"));
+    if(pg){h+=mSec("Fotos de esta diapositiva");pg.items.forEach(it=>{h+=it.t==="plano"?mPlano(it.i,o):mFoto(it.k,"Foto",{quitar:["ficha.fotos",it.i]})})}
+    else h+=`<p class="ms-note">Todavía no hay fotos para esta diapositiva.</p>`;
+    return h},
+  planos:(o,n)=>(n===0?mT("ficha.planosTitulo","Título",o):"")+P.ficha.planos.slice(n*6,n*6+6).map((p,j)=>mPlano(n*6+j,o)).join("")+mRow(mB("add","plano","+ Agregar plano","gold")),
+  inv:o=>{const c=calc();return mSec("Forma de pago")+mPago()+mSec("Números")+
+    mUsd("esc",st.contado?"Pago de contado al escriturar":"Pago al escriturar",st.contado?c.compra:st.esc)+
+    (st.contado?"":mUsd("saldo","Saldo",st.saldo)+mPaso("cuotas","Cantidad de cuotas anuales",st.cuotas,1))+
+    mUsd("obra",sinTags(P.inversion.obraEtiqueta)||"Obra",st.obra)+mPaso("ret","Retorno bruto anual (%)",nf(st.ret,1),.1)+mPaso("inicio","Inicio del alquiler (mes)",st.inicio,1)+
+    `<p class="ms-note">La compra, la inversión total, el alquiler mensual, los gráficos y el resumen se calculan solos.</p>`+mRow(mB("reset","","Restablecer valores","lin"))+
+    mSec("Textos")+mT("inversion.kicker","Texto chico de arriba",o)+mT("inversion.titulo","Título",o)+mT("inversion.subtitulo","Bajada",o)+mT("inversion.obraEtiqueta","Nombre del monto de obra",o)},
+  graf:()=>`<p class="ms-note">Los gráficos se arman solos con los números de «La inversión».</p>`+mSec("Forma de pago")+mPago()+mRow(mB("ir","inv","Cambiar los números","gold")),
+  res:o=>mT("resumen.titulo","Título",o)+mT("resumen.subtitulo","Bajada",o)+mSec("Forma de pago")+mPago()+
+    `<p class="ms-note">Las fechas y los montos salen de «La inversión».</p>`+mRow(mB("ir","inv","Cambiar los números","gold")),
+  cierre:o=>mFoto("cierre.foto","Foto del cierre",{elegir:P.ficha.fotos.length?"cierre":""})+mT("cierre.titulo","Título",o)+
+    `<p class="ms-note">La dirección de arriba sale de la portada. Los datos de contacto de abajo son fijos.</p>`
+};
+function pintarHoja(){const sec=seccionHoja();if(!sec)return cerrarHoja();const body=$("#ms-body"),y=body.scrollTop;
+  $("#ms-h").textContent=(NOMBRE[MS.tipo]||"Diapositiva")+(MS.n?" · "+(MS.n+1):"");
+  body.innerHTML=`<div class="ms-prev" id="ms-prev"></div><p class="ms-note">Tocá un texto para cambiarlo. Arriba ves cómo va quedando.</p>`+(HOJA[MS.tipo]||(()=>""))(!sec.classList.contains("s-paper"),MS.n);
+  pintarPrev();body.scrollTop=y}
+// la diapositiva en chico, copiada de la presentación tal como está
+function pintarPrev(){const box=$("#ms-prev"),sec=seccionHoja();if(!box||!sec)return;const k=box.clientWidth/1440;box.style.height=Math.round(810*k)+"px";
+  const cl=sec.querySelector(".stage").cloneNode(true);cl.querySelectorAll(".ebtn,.pick,select,.m-edit").forEach(n=>n.remove());
+  cl.querySelectorAll("*").forEach(n=>{n.removeAttribute("id");n.removeAttribute("contenteditable");["k","img","b","zoom","video","step","mode","forma","add","del","choose","icon","pick"].forEach(a=>delete n.dataset[a])});
+  Object.assign(cl.style,{left:"0",top:"0",transform:`scale(${k})`,transformOrigin:"0 0"});
+  const w=document.createElement("div");w.className=sec.className;w.appendChild(cl);box.replaceChildren(w)}
+let prevT=null;const prevLuego=()=>{clearTimeout(prevT);prevT=setTimeout(pintarPrev,250)};
+// lo que se escribe se ve enseguida en la diapositiva; queda guardado al salir del campo
+function verEnDiapo(k,html,texto){document.querySelectorAll(`#deck [data-k="${k}"]`).forEach(n=>{if(texto)n.textContent=html;else n.innerHTML=html});
+  if(k.startsWith("portada")||k==="meta.kicker")fitPortada();if(k==="ficha.descripcion")fitDescription();prevLuego()}
+const limpiarHtml=h=>h.replace(/&nbsp;/g," ").replace(/(<br\s*\/?>\s*)+$/i,"").trim();
+function guardarCampo(el){const k=el.dataset.fk,v=limpiarHtml(el.innerHTML);if(v===String(get(P,k)??""))return;guardar();set(P,k,v);MS.sucio=true}
+const MB=$("#ms-body");
+const esTxt=n=>!!n&&n.nodeType===1&&n.matches(".ms-txt");
+MB.addEventListener("input",e=>{const t=e.target;if(esTxt(t))verEnDiapo(t.dataset.fk,limpiarHtml(t.innerHTML));else if(t.dataset.fa)verEnDiapo(t.dataset.fa,t.value,true)});
+MB.addEventListener("focusin",e=>{if(esTxt(e.target))$("#msheet").classList.add("txt")});
+MB.addEventListener("focusout",e=>{const t=e.target;if(esTxt(t))guardarCampo(t);
+  setTimeout(()=>{if(!esTxt(document.activeElement))$("#msheet").classList.remove("txt")},0)});
+MB.addEventListener("keydown",e=>{if(e.key==="Enter"&&esTxt(e.target)){e.preventDefault();document.execCommand("insertLineBreak")}else if(e.key==="Enter"&&e.target.dataset.num)e.target.blur()});
+MB.addEventListener("change",e=>{const t=e.target;
+  if(t.dataset.fa){const k=t.dataset.fa;if(t.value===aTexto(get(P,k)))return;guardar();set(P,k,t.value.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"));MS.sucio=true}
+  else if(t.dataset.num){const k=t.dataset.num,v=k==="ret"?parseFloat(t.value.replace(",",".")):parseNum(t.value);
+    if(k==="esc"&&st.contado&&v!=null){if(v>=st.saldo)setVal("esc",v-st.saldo);else{guardar();st.saldo=0;setVal("esc",v)}}else setVal(k,v);pintarHoja()}
+  else if(t.dataset.forma){guardar();P[t.dataset.forma].fotoForma=t.value;render()}});
+MB.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;e.preventDefault();const a=b.dataset.act,k=b.dataset.ik,d=b.dataset.d,i=+b.dataset.i;
+  if(a==="cambiar")pickImage(src=>{guardar();set(P,k,src);if(P.recortes)delete P.recortes[k];render()});
+  else if(a==="elegir")openChooser(d);
+  else if(a==="recortar")abrirRecorte(k);
+  else if(a==="quitar"){if(!confirm("¿Quitar esto de la presentación?"))return;guardar();const p=b.dataset.p,l=get(P,p);
+    if(p==="ficha.fotos"||p==="ficha.planos")reordenar(p,l.map((_,j)=>j).filter(j=>j!==i));else l.splice(i,1);render()}
+  else if(a==="add")agregar(d);
+  else if(a==="icono"){guardar();const s=P.ficha.stats[i];s.icono=ICON_KEYS[(ICON_KEYS.indexOf(s.icono)+1)%ICON_KEYS.length];render()}
+  else if(a==="modo"){const m=d==="contado";if(m!==st.contado){guardar();st.contado=m;renderModel()}pintarHoja()}
+  else if(a==="paso"){setVal(d,st[d]+parseFloat(b.dataset.v));pintarHoja()}
+  else if(a==="reset"){guardar();const m=st.contado;resetModel();st.contado=m;renderModel();pintarHoja()}
+  else if(a==="ir"){MS.tipo=d;MS.n=0;MB.scrollTop=0;pintarHoja()}});
+// formato: sobre lo seleccionado, o sobre todo el campo si no hay nada seleccionado
+document.querySelectorAll("#ms-fmt button").forEach(b=>{["pointerdown","mousedown"].forEach(ev=>b.addEventListener(ev,e=>e.preventDefault()));
+  b.addEventListener("click",()=>{const f=document.activeElement;if(!esTxt(f))return;const s=getSelection(),todo=s.isCollapsed||!f.contains(s.anchorNode);if(todo)s.selectAllChildren(f);
+    const c=b.dataset.f;
+    if(c==="bold")document.execCommand("bold");else if(c==="italic")document.execCommand("italic");
+    else if(c==="light"){const r=s.getRangeAt(0),sp=document.createElement("span");sp.style.fontWeight="300";sp.appendChild(r.extractContents());r.insertNode(sp);s.selectAllChildren(sp)}
+    else if(c==="plain"){const r=s.getRangeAt(0);document.execCommand("removeFormat");f.querySelectorAll("span.gold,span[style],b,strong,i,em,font").forEach(n=>{if(r.intersectsNode(n))n.replaceWith(...n.childNodes)})}
+    else{document.execCommand("styleWithCSS",false,true);document.execCommand("foreColor",false,c)}
+    if(todo)s.collapseToEnd();verEnDiapo(f.dataset.fk,limpiarHtml(f.innerHTML))})});
+
+modoMovil();resetModel();fit();render();
 </script>
 </body>
 </html>
