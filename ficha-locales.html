@@ -1194,7 +1194,7 @@ function normCalle(s){
 }
 async function buscarEsquina(address){
   const partes=String(address||'').split(',');
-  const m=(partes[0]||'').trim().match(/^(.+?)\s+(?:y|e|esq\.?|esquina)\s+(.+)$/i);
+  const m=(partes[0]||'').trim().match(/^(.+?)\s+(?:y|e|&|esq\.?|esquina)\s+(.+)$/i);
   if(!m||/\d{3,}/.test(partes[0]))return null;   /* "Cabildo 2302" es altura, no esquina */
   const loc=normLocalidad(partes.slice(1).join(',')||'Buenos Aires');
   const forma=async calle=>{
@@ -1265,7 +1265,7 @@ async function photon(q,limite){
 async function sugerenciasDir(texto){
   const q=normDir(texto);if(q.length<3)return[];
   const out=[];
-  if(/^\s*[^,]+?\s+(?:y|e|esq\.?|esquina)\s+[^,]+/i.test(texto)&&!/\d{3,}/.test(texto.split(',')[0]))
+  if(/^\s*[^,]+?\s+(?:y|e|&|esq\.?|esquina)\s+[^,]+/i.test(texto)&&!/\d{3,}/.test(texto.split(',')[0]))
     out.push({principal:'Esquina '+texto.split(',')[0].trim(),sub:normLocalidad(texto.split(',').slice(1).join(','))||'buscar el cruce de las dos calles',texto:texto.trim(),esquina:true});
   for(const f of await photonPreferCaba(q,6)){
     const e=etiquetaPhoton(f.properties||{});
@@ -1776,14 +1776,14 @@ async function _exportPDF(){
 const GUARDADAS_URL='https://script.google.com/a/macros/metricapropiedades.com/s/AKfycby4ha7YHxkRJ63WcXEfn2P_yW4dCmkUQdHIOkppPcUW4xWJUtF1w_3IDnBNYAUQ8Cbg/exec';
 const GUARDADAS_CLAVE='metrica-fichas-2026';
 let _guardadas=[],_gdFiltro='';
-function normDir(s){
+function claveDir(s){
   return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
     .replace(/\bavenida\b/g,'av').replace(/\bav\./g,'av').replace(/\bcalle\b/g,'')
     .replace(/[^a-z0-9]+/g,' ').trim();
 }
 /* misma ficha = mismo tipo, misma operación y mismas direcciones (en deptos, también piso/unidad) */
 function claveFicha(){
-  const dirs=locals.map(l=>normDir(l.address)+(tipoInmueble==='depto'&&l.piso?' '+normDir(l.piso):'')).filter(Boolean).sort();
+  const dirs=locals.map(l=>claveDir(l.address)+(tipoInmueble==='depto'&&l.piso?' '+claveDir(l.piso):'')).filter(Boolean).sort();
   return [tipoInmueble,tipoOperacion.toLowerCase(),...dirs].join('|').slice(0,400);
 }
 async function llamarGuardadas(q){
@@ -1820,8 +1820,8 @@ document.getElementById('gd-filtros').addEventListener('click',ev=>{
   _gdFiltro=b.dataset.t;document.querySelectorAll('#gd-filtros button').forEach(x=>x.classList.toggle('on',x===b));pintarGuardadas();
 });
 function pintarGuardadas(){
-  const q=normDir(document.getElementById('gd-busca').value);
-  const fs=_guardadas.filter(f=>(!_gdFiltro||f.tipo===_gdFiltro)&&(!q||normDir(f.titulo).includes(q)));
+  const q=claveDir(document.getElementById('gd-busca').value);
+  const fs=_guardadas.filter(f=>(!_gdFiltro||f.tipo===_gdFiltro)&&(!q||claveDir(f.titulo).includes(q)));
   const lista=document.getElementById('gd-lista');
   if(!fs.length){lista.innerHTML='<div class="gd-vacio">'+(_guardadas.length?'No hay fichas con esa búsqueda.':'Todavía no hay fichas guardadas.<br>Se guardan solas cada vez que alguien descarga un PDF.')+'</div>';return;}
   const tipos={local:'Local',depto:'Depto',deposito:'Depósito',fondo:'Fondo',tasacion:'Tasación'};
