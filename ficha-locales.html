@@ -57,8 +57,9 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
 .field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
 /* superficies personalizadas */
-.sup-x{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;}
-.sup-x .btn-danger{align-self:stretch;}
+.sup-x-lab{display:flex;align-items:center;justify-content:space-between;gap:4px;}
+.sup-x-del{background:none;border:none;color:rgba(255,255,255,.35);font-size:10px;cursor:pointer;padding:0 2px;line-height:1;}
+.sup-x-del:hover{color:#e07070;}
 .sup-nueva{display:flex;gap:6px;margin-bottom:8px;}
 .sup-nueva input{flex:1;min-width:0;background:transparent;border:1px dashed rgba(200,148,26,.45);border-radius:3px;color:rgba(255,255,255,.85);font-size:11px;padding:5px 7px;font-family:'Inter',sans-serif;}
 .sup-nueva input::placeholder{color:rgba(200,148,26,.75);}
@@ -103,7 +104,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .prop-table td{padding:2mm 1mm;}
 .prop-table td:first-child{font-weight:700;color:var(--dark);width:45%;}
 .prop-table td:last-child{color:#444;text-align:right;}
-.prop-table .precio-row td{font-weight:800;font-size:14.5pt;border-top:2px solid #ddd;}
+.prop-table .precio-row td{font-weight:800;font-size:inherit;border-top:2px solid #ddd;}
 .prop-table .precio-row td:last-child{color:var(--gold);}
 .prop-comments{font-size:8pt;color:#555;line-height:1.65;margin-bottom:4mm;padding:2.5mm 4mm;background:#fafafa;border-left:3px solid var(--gold);border-radius:2px;white-space:pre-wrap;}
 /* palabras o links larguísimos (sin espacios) se cortan para no salirse de la hoja; html2canvas entiende break-word */
@@ -159,7 +160,6 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .local-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6mm;align-items:start;margin-bottom:4mm;}
 .local-top .prop-table{margin-bottom:0;font-size:9.5pt;}
 .local-top .prop-table td{padding:1.3mm 1mm;}
-.local-top .prop-table .precio-row td{font-size:12.5pt;}
 .foto-principal .ph-cover{aspect-ratio:1/1;}
 .foto-principal .placeholder-slot{aspect-ratio:1/1;padding:0;margin:0;display:flex;align-items:center;justify-content:center;}
 /* el resto de las fotos: horizontales de a 2 por fila (4:3), verticales de a 3 (3:4) */
@@ -241,7 +241,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
   .field input,.field textarea,.field select{font-size:16px;padding:12px;border-radius:6px;min-height:48px;}
   .field textarea{min-height:220px;line-height:1.5;}
   .field-row,.field-row3{grid-template-columns:1fr 1fr;gap:10px;}
-  .sup-x{gap:10px;margin-bottom:10px;}
+  .sup-x-del{font-size:14px;padding:0 4px;}
   .sup-nueva{gap:10px;margin-bottom:14px;}
   .sup-nueva input{font-size:16px;padding:12px;border-radius:6px;min-height:48px;}
   .section-label{font-size:12px;margin:16px 0 8px;}
@@ -359,7 +359,7 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',luminosidad:'',aptoCredito:'',aptoProfesional:'',mascotas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supEP:'',supSS:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',luminosidad:'',aptoCredito:'',aptoProfesional:'',mascotas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
@@ -423,7 +423,7 @@ async function importarAviso(){
         'disponibilidad','banos','toilettes','cocheras','antiguedad','expensas','servicios','condicion','plantas'];
     claves.forEach(function(k){ if(d[k]!==undefined&&d[k]!=='') l[k]=d[k]; });
     /* la app manda las medidas con coma decimal ("62,3"); los campos numéricos necesitan punto */
-    ['supCubierta','supPB','supPA','supSS','supTerreno','supSemi','supDescubierta','supTotal','frente','fondo']
+    ['supCubierta','supPB','supEP','supPA','supSS','supTerreno','supSemi','supDescubierta','supTotal','frente','fondo']
       .forEach(k=>{if(l[k])l[k]=String(l[k]).replace(/\./g,'').replace(',','.');});
     if(tipoInmueble==='depto'){
       const am=amenitiesDe([(d.caracteristicas||[]).join(' '),d.comentarios].join(' '));if(am)l.amenities=am;
@@ -483,6 +483,7 @@ function movePhoto(id,idx,dir){
   const l=locals.find(l=>l.id===id);if(!l)return;
   const to=idx+dir;if(to<0||to>=l.photos.length)return;
   [l.photos[idx],l.photos[to]]=[l.photos[to],l.photos[idx]];
+  l.ordenManual=true;
   renderPhotosSb(id);renderPreview();autoSave();
 }
 function setPrincipal(id,idx){
@@ -641,73 +642,8 @@ function renderSidebar(){
           '<div class="field"><label>Mapa</label><button class="btn-sec" onclick="triggerMapGen()">🗺 '+(showMap?'Actualizar mapa':'Agregar mapa')+'</button></div>'+
         '</div>'+
         (tipoInmueble==='depto'?camposDepto(l):(
-        '<div class="field-row">'+
-          '<div class="field"><label>Disponibilidad</label>'+
-            '<input type="text" value="'+esc(l.disponibilidad)+'" placeholder="Ej: Inmediata" data-id="'+l.id+'" data-f="disponibilidad" oninput="sLev(this)">'+
-          '</div>'+
-          '<div class="field"><label>Frente (m)</label>'+
-            '<input type="number" value="'+esc(l.frente)+'" step="0.5" data-id="'+l.id+'" data-f="frente" oninput="sLev(this)">'+
-          '</div>'+
-          '<div class="field"><label>Fondo (m)</label>'+
-            '<input type="number" value="'+esc(l.fondo)+'" step="0.5" data-id="'+l.id+'" data-f="fondo" oninput="sLev(this)">'+
-          '</div>'+
-        '</div>'+
-        '<div class="field-row3">'+
-          '<div class="field"><label>Sup. Total m²</label>'+
-            '<input type="number" value="'+esc(l.supCubierta)+'" step="0.01" data-id="'+l.id+'" data-f="supCubierta" oninput="sLev(this)">'+
-          '</div>'+
-          '<div class="field"><label>Sup. PB m²</label>'+
-            '<input type="number" value="'+esc(l.supPB)+'" step="0.01" data-id="'+l.id+'" data-f="supPB" oninput="sLev(this)">'+
-          '</div>'+
-          '<div class="field"><label>Sup. PA m²</label>'+
-            '<input type="number" value="'+esc(l.supPA)+'" step="0.01" data-id="'+l.id+'" data-f="supPA" oninput="sLev(this)">'+
-          '</div>'+
-        '</div>'+
-        '<div class="field-row">'+
-          '<div class="field"><label>Sup. Subsuelo m²</label>'+
-            '<input type="number" value="'+esc(l.supSS)+'" step="0.01" data-id="'+l.id+'" data-f="supSS" oninput="sLev(this)">'+
-          '</div>'+
-          '<div class="field"><label>Terreno m²</label>'+
-            '<input type="number" value="'+esc(l.supTerreno)+'" step="0.01" data-id="'+l.id+'" data-f="supTerreno" oninput="sLev(this)">'+
-          '</div>'+
-        '</div>'+
-        '<div class="field-row">'+
-          '<div class="field"><label>Sup. descubierta m²</label>'+
-            '<input type="number" value="'+esc(l.supDescubierta)+'" step="0.01" data-id="'+l.id+'" data-f="supDescubierta" oninput="sLev(this)">'+
-          '</div>'+
-        '</div>'+
-        camposSupExtra(l)+
-        '<div class="field-row">'+
-          '<div class="field"><label>Baños</label>'+
-            '<input type="text" value="'+esc(l.banos)+'" data-id="'+l.id+'" data-f="banos" oninput="sLev(this)">'+
-          '</div>'+
-          '<div class="field"><label>Toilettes</label>'+
-            '<input type="text" value="'+esc(l.toilettes)+'" data-id="'+l.id+'" data-f="toilettes" oninput="sLev(this)">'+
-          '</div>'+
-        '</div>'+
-        '<div class="field-row">'+
-          '<div class="field"><label>Cocheras</label>'+
-            '<input type="text" value="'+esc(l.cocheras)+'" data-id="'+l.id+'" data-f="cocheras" oninput="sLev(this)">'+
-          '</div>'+
-          '<div class="field"><label>Antigüedad</label>'+
-            '<input type="text" value="'+esc(l.antiguedad)+'" placeholder="A estrenar / 10 años" data-id="'+l.id+'" data-f="antiguedad" oninput="sLev(this)">'+
-          '</div>'+
-        '</div>'+
-        '<div class="field-row">'+
-          '<div class="field"><label>Expensas</label>'+
-            '<input type="text" value="'+esc(l.expensas)+'" data-id="'+l.id+'" data-f="expensas" oninput="sLev(this)">'+
-          '</div>'+
-          '<div class="field"><label>Condición</label>'+
-            '<input type="text" value="'+esc(l.condicion)+'" placeholder="Excelente / Muy bueno" data-id="'+l.id+'" data-f="condicion" oninput="sLev(this)">'+
-          '</div>'+
-        '</div>'+
-        '<div class="field-row">'+
-          '<div class="field"><label>Plantas</label>'+
-            '<input type="text" value="'+esc(l.plantas)+'" data-id="'+l.id+'" data-f="plantas" oninput="sLev(this)">'+
-          '</div>'+
-        '</div>'+
-        '<div class="field"><label>Servicios</label>'+
-          '<input type="text" value="'+esc(l.servicios)+'" placeholder="Agua corriente · Gas natural · Cloaca" data-id="'+l.id+'" data-f="servicios" oninput="sLev(this)">'+
+        '<div class="field"><label>Disponibilidad</label>'+
+          '<input type="text" value="'+esc(l.disponibilidad)+'" placeholder="Ej: Inmediata" data-id="'+l.id+'" data-f="disponibilidad" oninput="sLev(this)">'+
         '</div>'+
         '<div class="field-row">'+
           '<div class="field"><label>Posición relativa</label>'+
@@ -719,6 +655,37 @@ function renderSidebar(){
               '<button class="'+(l.espAereo==='Sí'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="Sí" onclick="sLbt(this)">Sí</button>'+
             '</div>'+
           '</div>'+
+        '</div>'+
+        '<div class="field-row3">'+
+          '<div class="field"><label>Sup. Total m²</label>'+
+            '<input type="number" value="'+esc(l.supCubierta)+'" step="0.01" data-id="'+l.id+'" data-f="supCubierta" oninput="sLev(this)">'+
+          '</div>'+
+          '<div class="field"><label>Sup. PB m²</label>'+
+            '<input type="number" value="'+esc(l.supPB)+'" step="0.01" data-id="'+l.id+'" data-f="supPB" oninput="sLev(this)">'+
+          '</div>'+
+          '<div class="field"><label>Sup. Entrepiso m²</label>'+
+            '<input type="number" value="'+esc(l.supEP)+'" step="0.01" data-id="'+l.id+'" data-f="supEP" oninput="sLev(this)">'+
+          '</div>'+
+        '</div>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Sup. 1er piso m²</label>'+
+            '<input type="number" value="'+esc(l.supPA)+'" step="0.01" data-id="'+l.id+'" data-f="supPA" oninput="sLev(this)">'+
+          '</div>'+
+          '<div class="field"><label>Sup. Subsuelo m²</label>'+
+            '<input type="number" value="'+esc(l.supSS)+'" step="0.01" data-id="'+l.id+'" data-f="supSS" oninput="sLev(this)">'+
+          '</div>'+
+        '</div>'+
+        camposSupExtra(l)+
+        '<div class="field-row">'+
+          '<div class="field"><label>Frente (m)</label>'+
+            '<input type="number" value="'+esc(l.frente)+'" step="0.5" data-id="'+l.id+'" data-f="frente" oninput="sLev(this)">'+
+          '</div>'+
+          '<div class="field"><label>Terreno m²</label>'+
+            '<input type="number" value="'+esc(l.supTerreno)+'" step="0.01" data-id="'+l.id+'" data-f="supTerreno" oninput="sLev(this)">'+
+          '</div>'+
+        '</div>'+
+        '<div class="field"><label>Expensas</label>'+
+          '<input type="text" value="'+esc(l.expensas)+'" data-id="'+l.id+'" data-f="expensas" oninput="sLev(this)">'+
         '</div>'
         ))+
         '<div class="field-row">'+
@@ -753,7 +720,7 @@ function renderSidebar(){
 
 /* superficies personalizadas (entrepiso, balcón, patio…): l.supExtra=[{nombre,m2}]; en la ficha salen solo las que tienen m² */
 function camposSupExtra(l){
-  return '<div id="supx-'+l.id+'">'+filasSupExtraSb(l)+'</div>'+
+  return '<div class="field-row" id="supx-'+l.id+'">'+filasSupExtraSb(l)+'</div>'+
     '<div class="sup-nueva">'+
       '<input type="text" placeholder="+ Personalizado (ej: Entrepiso)" title="Escribí el tipo de superficie y apretá Enter" onkeydown="if(event.key===\'Enter\'){event.preventDefault();agregarSupExtra('+l.id+',this);}">'+
       '<button class="btn-add" onclick="agregarSupExtra('+l.id+',this.previousElementSibling)">Agregar</button>'+
@@ -761,19 +728,17 @@ function camposSupExtra(l){
 }
 function filasSupExtraSb(l){
   return (l.supExtra||[]).map((s,i)=>
-    '<div class="sup-x">'+
-      '<div class="field" style="margin:0"><input type="text" value="'+esc(s.nombre)+'" title="Tipo de superficie" oninput="setSupExtra('+l.id+','+i+',\'nombre\',this.value)"></div>'+
-      '<div class="field" style="margin:0"><input type="number" value="'+esc(s.m2)+'" step="0.01" placeholder="m²" oninput="setSupExtra('+l.id+','+i+',\'m2\',this.value)"></div>'+
-      '<button class="btn-danger" title="Quitar" onclick="quitarSupExtra('+l.id+','+i+')">✕</button>'+
-    '</div>').join('');
+    '<div class="field"><label class="sup-x-lab"><span>'+esc(s.nombre)+' m²</span>'+
+      '<button class="sup-x-del" title="Quitar" onclick="quitarSupExtra('+l.id+','+i+')">✕</button></label>'+
+      '<input type="number" value="'+esc(s.m2)+'" step="0.01" oninput="setSupExtra('+l.id+','+i+',\'m2\',this.value)"></div>').join('');
 }
 function refrescarSupExtra(l){const w=document.getElementById('supx-'+l.id);if(w)w.innerHTML=filasSupExtraSb(l);renderPreview();autoSave();}
 function agregarSupExtra(id,input){
   const l=locals.find(l=>l.id===id),nombre=input.value.trim();if(!l||!nombre)return;
   (l.supExtra=l.supExtra||[]).push({nombre,m2:''});
   input.value='';refrescarSupExtra(l);
-  const filas=document.querySelectorAll('#supx-'+id+' .sup-x');
-  filas[filas.length-1]?.querySelector('input[type=number]').focus();
+  const ins=document.querySelectorAll('#supx-'+id+' input[type=number]');
+  ins[ins.length-1]?.focus();
 }
 function setSupExtra(id,i,k,v){const l=locals.find(l=>l.id===id);if(!l||!l.supExtra?.[i])return;l.supExtra[i][k]=v;renderPreview();autoSave();}
 function quitarSupExtra(id,i){const l=locals.find(l=>l.id===id);if(!l||!l.supExtra)return;l.supExtra.splice(i,1);refrescarSupExtra(l);}
@@ -870,25 +835,17 @@ function rLocal(l,idx){
   const rows=[];
   if(tipoInmueble==='depto'){filasDepto(l).forEach(r=>rows.push(r));}else{
   if(l.disponibilidad)rows.push(['Disponibilidad',esc(l.disponibilidad)]);
+  if(l.posicion)rows.push(['Posici\u00f3n Relativa',esc(l.posicion)]);
+  if(l.espAereo)rows.push(['Espacio A\u00e9reo Propio',esc(l.espAereo)]);
   if(l.supCubierta)rows.push(['Superficie Cubierta',fN(l.supCubierta)+' m\u00b2']);
   if(l.supPB)rows.push(['Superficie PB',fN(l.supPB)+' m\u00b2']);
-  if(l.supPA)rows.push(['Superficie PA',fN(l.supPA)+' m\u00b2']);
+  if(l.supEP)rows.push(['Superficie Entrepiso',fN(l.supEP)+' m\u00b2']);
+  if(l.supPA)rows.push(['Superficie 1er Piso',fN(l.supPA)+' m\u00b2']);
   if(l.supSS)rows.push(['Superficie Subsuelo',fN(l.supSS)+' m\u00b2']);
-  if(l.supDescubierta)rows.push(['Superficie Descubierta',fN(l.supDescubierta)+' m\u00b2']);
-  if(l.supTerreno)rows.push(['Terreno',fN(l.supTerreno)+' m\u00b2']);
   filasSupExtra(l).forEach(x=>rows.push(x));
   if(l.frente)rows.push(['Frente',fN(l.frente)+' m']);
-  if(l.fondo)rows.push(['Fondo',fN(l.fondo)+' m']);
-  if(l.espAereo)rows.push(['Espacio A\u00e9reo Propio',esc(l.espAereo)]);
-  if(l.posicion)rows.push(['Posici\u00f3n Relativa',esc(l.posicion)]);
-  if(l.banos)rows.push(['Ba\u00f1os',esc(l.banos)]);
-  if(l.toilettes)rows.push(['Toilettes',esc(l.toilettes)]);
-  if(l.cocheras)rows.push(['Cocheras',esc(l.cocheras)]);
-  if(l.antiguedad)rows.push(['Antig\u00fcedad',esc(l.antiguedad)]);
+  if(l.supTerreno)rows.push(['Terreno',fN(l.supTerreno)+' m\u00b2']);
   if(l.expensas)rows.push(['Expensas',esc(l.expensas)]);
-  if(l.plantas)rows.push(['Plantas',esc(l.plantas)]);
-  if(l.condicion)rows.push(['Condici\u00f3n',esc(l.condicion)]);
-  if(l.servicios)rows.push(['Servicios',esc(l.servicios)]);
   }
   const tableRows=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
   const precioRow='<tr class="precio-row"><td>Precio de '+tipoOperacion.toLowerCase()+'</td><td>'+(l.precio?(/\d/.test(l.precio)?esc(l.currency)+' ':'')+esc(l.precio):dash)+'</td></tr>';
@@ -898,16 +855,18 @@ function rLocal(l,idx){
   const cuadro=p=>'<div class="ph-cover" style="background-image:url(\''+p.photo+'\')"></div>';
   const fotoPrincipal='<div class="foto-principal">'+(l.photos.length?cuadro(l.photos[0])
     :'<div class="placeholder-slot">📷 Imagen del '+NOMBRES[tipoInmueble].uno.toLowerCase()+'</div>')+'</div>';
-  /* las demás, a lo ancho debajo: horizontales de a 2 y verticales de a 3 (la fila incompleta, alineada a la izquierda), cada grupo en el orden elegido;
-     va primero el grupo de la foto que esté primera */
+  /* las demás, a lo ancho debajo, en el orden del panel: horizontales de a 2 por fila y verticales de a 3;
+     cuando cambia la orientación empieza otra fila (la incompleta queda a la izquierda) */
   let photosHtml='';
   const resto=l.photos.slice(1);
   if(resto.length){
-    const esV=p=>{const r=ratioOf(p);return r>0&&r<0.95;};
-    const hor=resto.filter(p=>!esV(p)), ver=resto.filter(esV);
-    const filas=(arr,n,cl)=>{let h='';for(let i=0;i<arr.length;i+=n)h+='<div class="fotos-fila'+cl+'">'+arr.slice(i,i+n).map(cuadro).join('')+'</div>';return h;};
-    const fh=filas(hor,2,''), fv=filas(ver,3,' v');
-    photosHtml='<div class="fotos-resto">'+(esV(resto[0])?fv+fh:fh+fv)+'</div>';
+    let h='',i=0;
+    while(i<resto.length){
+      const v=esVertical(resto[i]),fila=[];
+      while(i<resto.length&&fila.length<(v?3:2)&&esVertical(resto[i])===v)fila.push(resto[i++]);
+      h+='<div class="fotos-fila'+(v?' v':'')+'">'+fila.map(cuadro).join('')+'</div>';
+    }
+    photosHtml='<div class="fotos-resto">'+h+'</div>';
   }
 
   let planosHtml='';
@@ -944,6 +903,17 @@ function rFooter(){
 }
 
 function ratioOf(p){return p&&p.w&&p.h?p.w/p.h:0;}
+function esVertical(p){const r=ratioOf(p);return r>0&&r<0.95;}
+/* Orden automático (más prolijo): después de la principal, las horizontales juntas y las verticales juntas,
+   primero el grupo de la que esté primera. Se hace mientras nadie haya movido fotos a mano (l.ordenManual). */
+function acomodarFotos(l){
+  if(l.ordenManual||l.photos.length<3||l.photos.some(p=>!p.w))return false;
+  const resto=l.photos.slice(1),v0=esVertical(resto[0]);
+  const orden=[...resto.filter(p=>esVertical(p)===v0),...resto.filter(p=>esVertical(p)!==v0)];
+  if(orden.every((p,i)=>p===resto[i]))return false;
+  l.photos=[l.photos[0],...orden];
+  return true;
+}
 /* mide ancho/alto de las fotos que todavía no lo tienen (cargadas antes o recién subidas) y re-renderiza */
 const _midiendo=new WeakSet();
 function medirFotos(){
@@ -955,13 +925,14 @@ function medirFotos(){
     _midiendo.add(p);
     const im=new Image();
     im.onload=()=>{p.w=im.naturalWidth;p.h=im.naturalHeight;if(--faltan===0)renderPreview();};
-    im.onerror=()=>{if(--faltan===0)renderPreview();};
+    im.onerror=()=>{p.w=-1;if(--faltan===0)renderPreview();};
     im.src=p.photo;
   });
 }
 
 function renderPreview(){
   medirFotos();
+  locals.forEach(l=>{if(acomodarFotos(l))renderPhotosSb(l.id);});
   const localsHtml=locals.length?locals.map((l,i)=>rLocal(l,i)).join(''):'<div style="padding:20mm 13mm;text-align:center;color:#ccc;font-size:9pt">Agregá '+NOMBRES[tipoInmueble].art+' desde el panel izquierdo.</div>';
   const mapHtml=(showMap||capturedMapImg)?rMap():'';
   document.getElementById('doc').innerHTML=rHeader()+localsHtml+mapHtml+rFooter();
@@ -1670,11 +1641,12 @@ function dragDrop(ev,localId,toIdx,type){
   var l=locals.find(function(x){return x.id===localId;});if(!l)return;
   var arr=type==="photo"?l.photos:l.planos;
   var item=arr.splice(d.idx,1)[0];arr.splice(toIdx,0,item);
+  if(type==="photo")l.ordenManual=true;   /* el broker eligió el orden: no se vuelve a acomodar solo */
   if(type==="photo")renderPhotosSb(localId);else renderPlanosSb(localId);
   renderPreview();autoSave();
 }
 function sLev(el){setL(+el.dataset.id,el.dataset.f,el.value);}
-function sLbt(el){setL(+el.dataset.id,el.dataset.f,el.dataset.v);}
+function sLbt(el){el.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el));setL(+el.dataset.id,el.dataset.f,el.dataset.v);}
 async function init(){
   /* ?tipo=depto o ?tipo=local (desde la app de herramientas) elige la pestaña; si no, la última usada */
   const tq=new URLSearchParams(location.search).get('tipo');
