@@ -9,7 +9,7 @@
 <meta property="og:url" content="https://metricapropiedades.github.io/generador-fichas/ficha-locales.html">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -76,6 +76,14 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .ph-star:hover{background:var(--gold);}
 .ph-main{position:absolute;left:2px;bottom:2px;background:var(--gold);color:#1a1a1a;font-size:7px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:1px 4px;border-radius:2px;}
 .photo-thumb-wrap:first-child{outline:2px solid var(--gold);outline-offset:-2px;}
+/* fotos y planos del panel: de a 2 por fila, grandes, para ver bien qué se mueve */
+.photo-grid-sb{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.photo-grid-sb .photo-thumb-wrap{width:auto;height:auto;aspect-ratio:4/3;}
+.photo-grid-sb .photo-thumb-wrap img{width:100%;height:100%;border-radius:4px;}
+.photo-grid-sb .ph-del,.photo-grid-sb .ph-star,.photo-grid-sb .ph-crop{width:24px;height:24px;font-size:12px;top:4px;}
+.photo-grid-sb .ph-del{right:4px;}.photo-grid-sb .ph-star{left:4px;}
+.photo-grid-sb .ph-crop{top:auto;bottom:4px;right:4px;}
+.photo-grid-sb .ph-main{font-size:9px;padding:2px 6px;left:4px;bottom:4px;}
 .ph-crop{position:absolute;bottom:2px;right:2px;background:rgba(200,148,26,.8);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
 .ph-order{display:flex;flex-direction:column;gap:2px;position:absolute;top:2px;left:2px;}
 .ph-order button{background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:2px;width:14px;height:12px;font-size:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
@@ -245,7 +253,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
   .sup-nueva{gap:10px;margin-bottom:14px;}
   .sup-nueva input{font-size:16px;padding:12px;border-radius:6px;min-height:48px;}
   .section-label{font-size:12px;margin:16px 0 8px;}
-  .photo-grid-sb{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .photo-grid-sb{gap:8px;}
   .photo-thumb-wrap{width:auto;height:auto;aspect-ratio:4/3;}
   .photo-thumb-wrap img{width:100%;height:100%;}
   .ph-del,.ph-star,.ph-crop{width:30px;height:30px;font-size:15px;}
@@ -708,7 +716,7 @@ function renderSidebar(){
         '<label class="file-label">📷 Agregar foto(s)<input type="file" accept="image/*" multiple onchange="addPhotos('+l.id+',this)"></label>'+
 
         '<div class="section-label">Planos</div>'+
-        '<div id="planos-sb-'+l.id+'"></div>'+
+        '<div class="photo-grid-sb" id="planos-sb-'+l.id+'"></div>'+
         '<label class="file-label">📐 Agregar plano (imagen o PDF)<input type="file" accept="image/*,application/pdf,.pdf" multiple onchange="addPlano('+l.id+',this)"></label>'+
       '</div>'+
     '</div>';
@@ -840,7 +848,7 @@ function rLocal(l,idx){
   if(l.supCubierta)rows.push(['Superficie Cubierta',fN(l.supCubierta)+' m\u00b2']);
   if(l.supPB)rows.push(['Superficie PB',fN(l.supPB)+' m\u00b2']);
   if(l.supEP)rows.push(['Superficie Entrepiso',fN(l.supEP)+' m\u00b2']);
-  if(l.supPA)rows.push(['Superficie 1er Piso',fN(l.supPA)+' m\u00b2']);
+  if(l.supPA)rows.push(['1er Piso',fN(l.supPA)+' m\u00b2']);
   if(l.supSS)rows.push(['Superficie Subsuelo',fN(l.supSS)+' m\u00b2']);
   filasSupExtra(l).forEach(x=>rows.push(x));
   if(l.frente)rows.push(['Frente',fN(l.frente)+' m']);
