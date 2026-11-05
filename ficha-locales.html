@@ -389,7 +389,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 </div>
 <div id="cropper-modal" style="display:none">
   <div class="modal-box">
-    <div id="crop-ayuda">Mové el recuadro para elegir qué parte de la foto se ve en la ficha. Achicalo desde las esquinas para acercar.</div>
+    <div id="crop-ayuda">Mové el recuadro para elegir qué parte de la foto se ve en la ficha. Agrandalo o achicalo desde las esquinas.</div>
     <img id="cropper-img" src="" alt="">
     <div class="modal-btns">
       <button class="btn-sec" onclick="rotateCropper(-90)">↺ Rotar</button>
@@ -701,7 +701,9 @@ function opcionesRecorte(img){
     const el=document.querySelector('#doc .ph-cover[data-l="'+_cropTarget.localId+'"][data-i="'+idx+'"]'),b=el&&el.getBoundingClientRect();
     if(b&&b.width>20&&b.height>20&&(tipoInmueble==='depto'||idx===0))r=b.width/b.height;
   }
-  return Object.assign({},_cropOpts,{aspectRatio:r});
+  /* si el recuadro taparía casi toda la foto no se puede mover: arranca más chico, centrado, para poder correrlo */
+  const f=img.naturalWidth/img.naturalHeight,llena=type==='photo'&&r>0&&Math.min(f,r)/Math.max(f,r)>0.9;
+  return Object.assign({},_cropOpts,{aspectRatio:r,autoCropArea:llena?0.8:1});
 }
 /* clic en una foto de la hoja: abre el encuadre de esa foto */
 document.addEventListener('click',e=>{
@@ -1315,6 +1317,41 @@ async function photonPreferCaba(q,limite){
   const vistos=new Set();
   return[...enCaba.filter(f=>esCaba(f.properties)),...resto].filter(f=>{const k=(f.properties&&f.properties.osm_id)||f.geometry.coordinates.join(',');if(vistos.has(k))return false;vistos.add(k);return true;});
 }
+/* ── Georef (apis.datos.gob.ar, el buscador oficial de direcciones de Argentina, gratis) ──
+   Ubica la altura dentro de la cuadra aunque OpenStreetMap no tenga el número cargado (pasa mucho en el conurbano:
+   "Tuyú 1449, Piñeyro" solo aparecía como la calle "Tuyú" y se perdía el 1449). Se usa cuando hay calle y número. */
+function partesGeoref(texto){
+  const partes=String(texto||'').split(','),pri=normDir(partes[0]||'').replace(/,/g,'').trim();
+  const m=pri.match(/^(.*?\D)\s*(\d{1,5})\s*[a-z]?$/i);
+  if(!m||m[1].trim().length<2)return null;
+  return{calle:m[1].trim(),altura:m[2],primera:String(partes[0]).trim(),resto:partes.slice(1).map(s=>s.trim()).filter(Boolean)};
+}
+const sinTildes=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+async function georefDirecciones(texto){
+  const p=partesGeoref(texto);if(!p)return[];
+  const r=await fetch('https://apis.datos.gob.ar/georef/api/direcciones?'+new URLSearchParams({direccion:p.calle+' '+p.altura,max:'10'}));
+  if(!r.ok)return[];
+  const d=await r.json(),pistas=sinTildes(p.resto.join(' ')).split(/[\s,]+/).filter(w=>w.length>2&&!/^(buenos|aires|provincia|argentina|caba)$/.test(w));
+  const quiereCaba=/\bcaba\b|capital federal|ciudad aut/i.test(texto);
+  return(d.direcciones||[]).filter(x=>x.ubicacion&&x.ubicacion.lat!=null).map(x=>{
+    const nombres=sinTildes([x.departamento&&x.departamento.nombre,x.localidad_censal&&x.localidad_censal.nombre,x.provincia&&x.provincia.nombre].join(' '));
+    const caba=x.provincia&&x.provincia.id==='02';
+    let puntos=pistas.filter(w=>nombres.includes(w)).length*10;
+    if(quiereCaba&&caba)puntos+=10;
+    if(!p.resto.length&&caba)puntos+=5;                              /* sin localidad escrita, lo más común es CABA */
+    puntos-=Math.hypot(x.ubicacion.lat+34.6,x.ubicacion.lon+58.45)*2;    /* y después, lo más cerca del AMBA */
+    const zona=caba?'CABA':[x.localidad_censal&&x.localidad_censal.nombre,x.provincia&&x.provincia.nombre].filter(Boolean).join(', ');
+    return{puntos,lat:x.ubicacion.lat,lon:x.ubicacion.lon,principal:p.primera,
+      sub:zona+' · altura exacta',texto:p.resto.length?String(texto).trim():p.primera+', '+zona};
+  }).sort((a,b)=>b.puntos-a.puntos).slice(0,3);
+}
+/* resultado de OpenStreetMap que ya es esa calle con esa altura exacta: si existe, va antes que Georef */
+function esPhotonExacto(f,texto){
+  const p=partesGeoref(texto),pr=(f&&f.properties)||{};if(!p||!pr.housenumber)return false;
+  const limpia=s=>sinTildes(s).replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim().replace(/^(avenida|calle|pasaje)\s+/,'');
+  const a=limpia(pr.street||''),c=limpia(p.calle);   /* calle completa: "Cabildo" = "Avenida Cabildo", pero "Tuyú" no es "Tuyutí" */
+  return String(pr.housenumber).replace(/\D/g,'')===p.altura&&!!a&&!!c&&(a===c||a.endsWith(' '+c)||c.endsWith(' '+a));
+}
 async function photon(q,limite){
   const r=await fetch('https://photon.komoot.io/api/?'+new URLSearchParams({q,limit:String(limite||6),bbox:BBOX_AR,lat:'-34.6',lon:'-58.45'}));
   if(!r.ok)return[];
@@ -1326,8 +1363,14 @@ async function sugerenciasDir(texto){
   const out=[];
   if(/^\s*[^,]+?\s+(?:y|e|&|esq\.?|esquina)\s+[^,]+/i.test(texto)&&!/\d{3,}/.test(texto.split(',')[0]))
     out.push({principal:'Esquina '+texto.split(',')[0].trim(),sub:normLocalidad(texto.split(',').slice(1).join(','))||'buscar el cruce de las dos calles',texto:texto.trim(),esquina:true});
-  for(const f of await photonPreferCaba(q,6)){
-    const e=etiquetaPhoton(f.properties||{});
+  const [g,ph]=await Promise.all([georefDirecciones(texto).catch(()=>[]),photonPreferCaba(q,6)]);
+  const conNum=!!partesGeoref(texto);
+  const exactos=ph.filter(f=>esPhotonExacto(f,texto));
+  if(!exactos.length)g.forEach(x=>out.push(x));                     /* si OpenStreetMap no tiene esa altura, primero Georef (altura exacta) */
+  for(const f of [...exactos,...ph.filter(f=>!exactos.includes(f))]){
+    const pr=f.properties||{};
+    if(conNum&&g.length&&!pr.housenumber&&(pr.osm_key==='highway'||pr.street))continue;   /* la calle sola, sin el número que escribió */
+    const e=etiquetaPhoton(pr);
     if(out.some(o=>o.texto===e.texto))continue;
     out.push({...e,lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]});
   }
@@ -1375,6 +1418,10 @@ async function nominatim(address){
   if(geoElegidos[key])return geoElegidos[key];
   if(key in geoCache)return geoCache[key];
   const esq=await buscarEsquina(address);if(esq){geoCache[key]=esq;return esq;}
+  if(partesGeoref(address)){
+    try{const f=(await photonPreferCaba(normDir(address),5)).find(x=>esPhotonExacto(x,address));if(f){const r={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]};geoCache[key]=r;return r;}}catch(e){}
+    try{const g=(await georefDirecciones(address))[0];if(g){const r={lat:g.lat,lon:g.lon};geoCache[key]=r;return r;}}catch(e){}
+  }
   const q=normDir(address);
   /* si no aparece con la altura exacta, se prueba la calle sola (queda en la cuadra aproximada) */
   const sinAltura=q.replace(/^([^,\d]+?)\s+\d+\s*[a-z]?\b/i,'$1');
