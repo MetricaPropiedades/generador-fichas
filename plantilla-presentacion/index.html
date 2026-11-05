@@ -547,7 +547,7 @@ html.hoja{overflow:hidden}
   <div class="card crop-card">
     <h3>Recortar foto</h3>
     <p>Mové el recuadro o estiralo desde las esquinas y los bordes. La foto original no se pierde: podés volver a abrir el recorte y agrandarlo, o volver a la foto completa.</p>
-    <div class="crop-tools"><label>Proporción <select id="cr-ratio"><option value="">Libre</option><option value="1:1">1:1 Cuadrada</option><option value="4:3">4:3 Horizontal</option><option value="3:2">3:2 Horizontal</option><option value="16:9">16:9 Panorámica</option><option value="3:4">3:4 Vertical</option><option value="2:3">2:3 Vertical</option></select></label>
+    <div class="crop-tools"><label>Proporción <select id="cr-ratio"><option value="marco" id="cr-op-marco">Como se ve en la diapositiva</option><option value="">Libre</option><option value="1:1">1:1 Cuadrada</option><option value="4:3">4:3 Horizontal</option><option value="3:2">3:2 Horizontal</option><option value="16:9">16:9 Panorámica</option><option value="3:4">3:4 Vertical</option><option value="2:3">2:3 Vertical</option></select></label>
       <button type="button" id="cr-full">Foto completa</button></div>
     <div class="crop-stage" id="cr-stage"><img id="cr-img" alt=""><div class="crop-rect" id="cr-rect"><i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i></div></div>
     <div class="row"><button type="button" id="cr-cancel">Cancelar</button><button type="button" class="gold" id="cr-ok">Aplicar</button></div>
@@ -1429,14 +1429,19 @@ let CR=null;
 function abrirRecorte(key){const src=get(P,key);if(!src)return;const a=ASPECT.get(src)||1.5;
   const maxW=esMovil()?innerWidth-32:Math.min(innerWidth*.94-56,1044),maxH=innerHeight*.58;let w=maxW,h=w/a;if(h>maxH){h=maxH;w=h*a}
   const stg=$("#cr-stage");stg.style.width=w+"px";stg.style.height=h+"px";$("#cr-img").src=src;
-  CR={key,a,W:w,H:h,r:Object.assign({x:0,y:0,w:1,h:1},recorte(key))};$("#cr-ratio").value="";dibujarRect();$("#crop").classList.add("open")}
+  CR={key,a,W:w,H:h,r:Object.assign({x:0,y:0,w:1,h:1},recorte(key)),marco:null};
+  const im=/\.planos\./.test(key)?null:[...document.querySelectorAll("#deck img[data-img]")].find(n=>n.dataset.img===key&&n.offsetParent),b=im&&cajaImg(im);
+  if(b&&b.w>10&&b.h>10){CR.marco=b.w/b.h;const r=CR.r,k=CR.marco/a;   // parte visible: el recorte (o la foto) llevado a la forma del marco, centrado
+    if(r.w/r.h>k){const w2=r.h*k;CR.r={x:r.x+(r.w-w2)/2,y:r.y,w:w2,h:r.h}}else{const h2=r.w/k;CR.r={x:r.x,y:r.y+(r.h-h2)/2,w:r.w,h:h2}}}
+  $("#cr-op-marco").hidden=!CR.marco;$("#cr-ratio").value=CR.marco?"marco":"";dibujarRect();$("#crop").classList.add("open")}
+const ratioElegido=()=>{const v=$("#cr-ratio").value;return v==="marco"?CR.marco:ratioForma(v)};
 function dibujarRect(){const r=CR.r;Object.assign($("#cr-rect").style,{left:r.x*CR.W+"px",top:r.y*CR.H+"px",width:r.w*CR.W+"px",height:r.h*CR.H+"px"})}
 const MINC=.05;
 function moverRecorte(mode,r0,dx,dy){let x1=r0.x,y1=r0.y,x2=r0.x+r0.w,y2=r0.y+r0.h;
   if(mode==="move")return{x:clamp(r0.x+dx,0,1-r0.w),y:clamp(r0.y+dy,0,1-r0.h),w:r0.w,h:r0.h};
   if(mode.includes("w"))x1=clamp(x1+dx,0,x2-MINC);if(mode.includes("e"))x2=clamp(x2+dx,x1+MINC,1);
   if(mode.includes("n"))y1=clamp(y1+dy,0,y2-MINC);if(mode.includes("s"))y2=clamp(y2+dy,y1+MINC,1);
-  const Rt=ratioForma($("#cr-ratio").value);if(!Rt)return{x:x1,y:y1,w:x2-x1,h:y2-y1};
+  const Rt=ratioElegido();if(!Rt)return{x:x1,y:y1,w:x2-x1,h:y2-y1};
   // con proporción fija: se ancla en el lado o la esquina opuesta y no se sale de la foto
   const k=Rt/CR.a;let w=x2-x1,h=y2-y1;if(mode==="n"||mode==="s")w=h*k;else h=w/k;
   const ax=mode.includes("w")?x2:mode.includes("e")?x1:(x1+x2)/2,ay=mode.includes("n")?y2:mode.includes("s")?y1:(y1+y2)/2;
@@ -1446,7 +1451,7 @@ function moverRecorte(mode,r0,dx,dy){let x1=r0.x,y1=r0.y,x2=r0.x+r0.w,y2=r0.y+r0
 $("#cr-rect").addEventListener("pointerdown",e=>{e.preventDefault();const mode=e.target.dataset.h||"move",x0=e.clientX,y0=e.clientY,r0={...CR.r};
   const mv=ev=>{CR.r=moverRecorte(mode,r0,(ev.clientX-x0)/CR.W,(ev.clientY-y0)/CR.H);dibujarRect()};
   const up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up)};addEventListener("pointermove",mv);addEventListener("pointerup",up)});
-$("#cr-ratio").addEventListener("change",()=>{const Rt=ratioForma($("#cr-ratio").value);if(!Rt)return;const k=Rt/CR.a,r=CR.r;let w=1,h=1/k;if(h>1){h=1;w=k}
+$("#cr-ratio").addEventListener("change",()=>{const Rt=ratioElegido();if(!Rt)return;const k=Rt/CR.a,r=CR.r;let w=1,h=1/k;if(h>1){h=1;w=k}
   const cx=r.x+r.w/2,cy=r.y+r.h/2;CR.r={x:clamp(cx-w/2,0,1-w),y:clamp(cy-h/2,0,1-h),w,h};dibujarRect()});
 $("#cr-full").addEventListener("click",()=>{$("#cr-ratio").value="";CR.r={x:0,y:0,w:1,h:1};dibujarRect()});
 $("#cr-cancel").addEventListener("click",()=>$("#crop").classList.remove("open"));

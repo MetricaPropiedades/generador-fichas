@@ -123,6 +123,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .photos-grid-2 img{width:100%;height:auto;border-radius:3px;display:block;}
 .photos-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm;margin-bottom:4mm;}
 .photos-grid-3 img{width:100%;height:auto;border-radius:3px;display:block;}
+#doc .ph-cover[data-l]{cursor:pointer;}
 .ph-cover{width:100%;aspect-ratio:4/3;background-size:cover;background-position:center;background-repeat:no-repeat;border-radius:3px;}
 .photos-grid-1 .ph-cover{aspect-ratio:16/9;}
 .planos-section{margin-bottom:4mm;}
@@ -151,6 +152,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 #cropper-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;}
 .modal-box{background:#1e1e1e;border-radius:8px;padding:20px;max-width:92vw;max-height:92vh;display:flex;flex-direction:column;gap:12px;}
 .modal-box img{max-height:68vh;max-width:78vw;}
+#crop-ayuda{color:#eee;font-size:13px;line-height:1.4;}
 .modal-btns{display:flex;gap:8px;justify-content:flex-end;}
 @media print{
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}
@@ -315,6 +317,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
   .modal-box{max-width:100vw;padding:12px;}
   .modal-box img{max-width:94vw;max-height:60vh;}
   .modal-btns{flex-wrap:wrap;}
+  #crop-ayuda{font-size:15px;}
   .modal-btns button{flex:1;min-height:46px;font-size:14px;}
 }
 .dir-sug{position:fixed;z-index:100000;background:#262626;border:1px solid rgba(255,255,255,.14);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.55);max-height:300px;overflow-y:auto;font-family:'Inter','Barlow',sans-serif;}
@@ -386,6 +389,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 </div>
 <div id="cropper-modal" style="display:none">
   <div class="modal-box">
+    <div id="crop-ayuda">Mové el recuadro para elegir qué parte de la foto se ve en la ficha. Achicalo desde las esquinas para acercar.</div>
     <img id="cropper-img" src="" alt="">
     <div class="modal-btns">
       <button class="btn-sec" onclick="rotateCropper(-90)">↺ Rotar</button>
@@ -662,12 +666,14 @@ function openCropper(typeCode,localId,idx){const types=["photo","plano"];const t
   
   if(!src)return;
   _cropTarget={type,localId,idx};
-  /* el recuadro arranca abarcando toda la imagen (también después de rotar); la principal sale cuadrada en la ficha: se recorta cuadrada */
-  _cropOpts={viewMode:1,autoCropArea:1,movable:true,zoomable:true,aspectRatio:type!=='photo'?NaN:(tipoInmueble==='depto'?(idx===0?718/380:353/240):(idx===0?1:NaN))};
+  /* el recuadro tiene la forma exacta del lugar donde va la foto en la ficha (cuadrada la principal, 4:3 las
+     horizontales, 3:4 las verticales…) y arranca lo más grande posible: se mueve para elegir qué parte se ve */
+  _cropOpts={viewMode:1,autoCropArea:1,movable:true,zoomable:true,aspectRatio:NaN};
   const cimg=document.getElementById('cropper-img');cimg.src=src;
   document.getElementById('cropper-modal').style.display='flex';
+  document.getElementById('crop-ayuda').hidden=type!=='photo';
   if(_cropper){_cropper.destroy();_cropper=null;}
-  cimg.onload=()=>{_cropper=new Cropper(cimg,_cropOpts);};
+  cimg.onload=()=>{_cropper=new Cropper(cimg,opcionesRecorte(cimg));};
 }
 function rotateCropper(deg){
   if(!_cropper)return;
@@ -683,8 +689,25 @@ function rotateCropper(deg){
   const rotated=cvs.toDataURL('image/jpeg',0.92);
   _cropper.destroy();_cropper=null;
   img.src=rotated;
-  img.onload=()=>{_cropper=new Cropper(img,_cropOpts);};
+  img.onload=()=>{_cropper=new Cropper(img,opcionesRecorte(img));};
 }
+/* forma del recuadro: la del marco de esa foto en la hoja */
+function opcionesRecorte(img){
+  const {type,idx}=_cropTarget;let r=NaN;
+  if(type==='photo'){
+    if(tipoInmueble==='depto')r=idx===0?718/380:353/240;
+    else if(idx===0)r=1;
+    else r=(img.naturalWidth/img.naturalHeight)<0.95?3/4:4/3;   /* después de rotar puede pasar de horizontal a vertical */
+    const el=document.querySelector('#doc .ph-cover[data-l="'+_cropTarget.localId+'"][data-i="'+idx+'"]'),b=el&&el.getBoundingClientRect();
+    if(b&&b.width>20&&b.height>20&&(tipoInmueble==='depto'||idx===0))r=b.width/b.height;
+  }
+  return Object.assign({},_cropOpts,{aspectRatio:r});
+}
+/* clic en una foto de la hoja: abre el encuadre de esa foto */
+document.addEventListener('click',e=>{
+  const el=e.target.closest&&e.target.closest('#doc .ph-cover[data-l]');if(!el)return;
+  openCropper(0,+el.dataset.l,+el.dataset.i);
+});
 function closeCropper(){
   document.getElementById('cropper-modal').style.display='none';
   if(_cropper){_cropper.destroy();_cropper=null;}
@@ -979,7 +1002,7 @@ function rLocal(l,idx){
   const tableHtml='<table class="prop-table"><tbody>'+tableRows+precioRow+'</tbody></table>';
 
   /* la primera foto es la principal: cuadrada, al lado de los datos (se recorta con ✂ en el panel) */
-  const cuadro=p=>'<div class="ph-cover" style="background-image:url(\''+p.photo+'\')"></div>';
+  const cuadro=p=>'<div class="ph-cover" data-l="'+l.id+'" data-i="'+l.photos.indexOf(p)+'" title="Clic para elegir qué parte de la foto se ve" style="background-image:url(\''+p.photo+'\')"></div>';
   const fotoPrincipal='<div class="foto-principal">'+(l.photos.length?cuadro(l.photos[0])
     :'<div class="placeholder-slot">📷 Imagen del '+NOMBRES[tipoInmueble].uno.toLowerCase()+'</div>')+'</div>';
   /* las demás, a lo ancho debajo, en el orden del panel: horizontales de a 2 por fila y verticales de a 3;
@@ -1113,7 +1136,7 @@ function rDeptoApp(l){
   const precio=l.precio?((/\d/.test(l.precio)?esc(l.currency)+' ':'')+esc(l.precio)):'Consultar';
   const ag=agente.nombre?'<aside class="agente"><div class="etiqueta">Agente a cargo</div><div class="nombre">'+esc(agente.nombre)+'</div>'+
     (agente.email?'<div class="contacto">'+esc(agente.email)+'</div>':'')+(agente.tel?'<div class="contacto">'+esc(agente.tel)+'</div>':'')+'</aside>':'';
-  const cuadro=(p,cl)=>'<div class="ph-cover '+(cl||'')+'" style="background-image:url(\''+p.photo+'\')"></div>';
+  const cuadro=(p,cl)=>'<div class="ph-cover '+(cl||'')+'" data-l="'+l.id+'" data-i="'+l.photos.indexOf(p)+'" title="Clic para elegir qué parte de la foto se ve" style="background-image:url(\''+p.photo+'\')"></div>';
   const datos=datosIconoDepto(l),adic=adicionalesDepto(l);
   let h='<section class="cuerpo">'+
     '<div class="cabecera-prop"><div class="identidad"><h2>'+(esc(calle)||'Dirección no especificada')+'</h2>'+

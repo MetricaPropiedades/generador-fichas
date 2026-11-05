@@ -116,6 +116,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 
 .icard{display:flex;gap:5mm;padding:5mm;border:1px solid var(--border);border-radius:4px;margin-bottom:3.5mm;background:#fff;}
 .icard:last-child{margin-bottom:0;}
+.icard-photo[data-cid]{cursor:pointer;}
 .icard-photo{background-size:cover;background-position:center;width:52mm;flex-shrink:0;border-radius:3px;overflow:hidden;background:#f5f5f5;align-self:stretch;}
 .icard-photo img{width:100%;height:100%;object-fit:cover;display:block;}
 .icard-no-photo{width:52mm;flex-shrink:0;border-radius:3px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:35mm;font-size:7pt;color:#ccc;}
@@ -193,6 +194,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 #crop-header{display:flex;justify-content:space-between;align-items:center;color:#fff;font-family:'Barlow',sans-serif;font-size:11pt;font-weight:600;}
 #crop-area{max-height:68vh;overflow:hidden;}
 #crop-img{display:block;max-width:80vw;max-height:68vh;}
+#crop-ayuda{color:#ddd;font-family:'Barlow',sans-serif;font-size:10.5pt;line-height:1.4;}
 #crop-actions{display:flex;gap:8px;justify-content:flex-end;}
 .btn-crop-cancel{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 18px;border-radius:4px;cursor:pointer;font-family:'Barlow',sans-serif;font-size:10pt;}
 .btn-crop-cancel:hover{background:rgba(255,255,255,.18);}
@@ -237,6 +239,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   #crop-container{max-width:100vw;width:100vw;padding:12px;border-radius:0;}
   #crop-header{flex-direction:column;align-items:stretch;gap:10px;font-size:16px;}
   #crop-actions{gap:10px;}
+  #crop-ayuda{font-size:15px;}
   #crop-actions button{flex:1;min-height:48px;font-size:16px;}
   #crop-area,#crop-img{max-height:60vh;}
   #crop-img{max-width:94vw;}
@@ -287,6 +290,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
         <button class="btn-crop-confirm" onclick="confirmCrop()">Confirmar</button>
       </div>
     </div>
+    <div id="crop-ayuda" hidden>Mové el recuadro para elegir qué parte de la foto se ve en la tasación. Achicalo desde las esquinas para acercar.</div>
     <div id="crop-area"><img id="crop-img" src=""></div>
   </div>
 </div>
@@ -503,14 +507,32 @@ function compressImage(file){
 // ══════════════════════════════════════
 let _cropper=null, _cropCb=null;
 
-function openCrop(src,callback){
+/* forma del recuadro donde sale la foto de un comparable en la hoja (alto = el de la tarjeta).
+   Si la hoja está oculta (celular, pantalla Editar) se muestra un instante para medirla. */
+function formaFotoComparable(id){
+  const medir=()=>{const el=document.querySelector('.icard-photo[data-cid="'+id+'"]'),b=el&&el.getBoundingClientRect();return b&&b.width>10&&b.height>10?b.width/b.height:0;};
+  let r=medir();
+  if(!r&&!document.body.classList.contains('ver-doc')){document.body.classList.add('ver-doc');r=medir();document.body.classList.remove('ver-doc');}
+  return r||4/3;
+}
+function encuadrarComparable(c){
+  if(!c||!(c.photoOrig||c.photo))return;
+  openCrop(c.photoOrig||c.photo,r=>{c.photo=r;renderCompPhotoSb(c);renderPreview();},formaFotoComparable(c.id));
+}
+/* clic en la foto de un comparable en la hoja: abre el encuadre */
+document.addEventListener('click',e=>{
+  const el=e.target.closest&&e.target.closest('.icard-photo[data-cid]');if(!el)return;
+  encuadrarComparable(comparables.find(x=>String(x.id)===el.dataset.cid));
+});
+function openCrop(src,callback,forma){
   _cropCb=callback;
+  const ay=document.getElementById('crop-ayuda');if(ay)ay.hidden=!forma;
   if(_cropper){_cropper.destroy();_cropper=null;}
   document.getElementById('crop-modal').style.display='flex';
   const area=document.getElementById('crop-area');
   area.innerHTML='<img id="crop-img">';
   const img=document.getElementById('crop-img');
-  img.onload=()=>{_cropper=new Cropper(img,{viewMode:1,autoCropArea:1,rotatable:false,scalable:false});};
+  img.onload=()=>{_cropper=new Cropper(img,{viewMode:1,autoCropArea:1,rotatable:false,scalable:false,aspectRatio:forma||NaN});};
   img.src=src;
 }
 function closeCrop(){
@@ -605,7 +627,7 @@ function renderCompPhotoSb(c){
   const del=document.createElement('button');del.className='sp-del';del.textContent='×';
   del.onclick=()=>{c.photo=null;c.photoOrig=null;renderCompPhotoSb(c);renderPreview();};
   const crop=document.createElement('button');crop.className='sp-crop';crop.textContent='✂';crop.title='Recortar';
-  crop.onclick=()=>openCrop(c.photoOrig||c.photo,r=>{c.photo=r;renderCompPhotoSb(c);renderPreview();});
+  crop.onclick=()=>encuadrarComparable(c);
   wrap.appendChild(img);wrap.appendChild(del);wrap.appendChild(crop);
   sb.innerHTML='';sb.appendChild(wrap);
 }
@@ -1209,7 +1231,7 @@ function rSection(comps,tipo,ss){
       c.fecha?['Fecha',esc(c.fecha)]:null,
     ].filter(Boolean).map(([l,v2])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${v2}</span></div>`).join('');
     return`<div class="icard">
-      ${c.photo?`<div class="icard-photo" style="background-image:url('${c.photo}')"></div>`:`<div class="icard-no-photo">Sin foto</div>`}
+      ${c.photo?`<div class="icard-photo" data-cid="${c.id}" title="Clic para elegir qué parte de la foto se ve" style="background-image:url('${c.photo}')"></div>`:`<div class="icard-no-photo">Sin foto</div>`}
       <div class="icard-body">
         <div class="icard-top">
           <div class="icard-num-badge">Comp. ${i+1}</div>
