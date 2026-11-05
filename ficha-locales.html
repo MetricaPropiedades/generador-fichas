@@ -439,7 +439,7 @@ function compressImage(file){
 }
 
 function defaultLocal(){
-  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supEP:'',supSS:'',altura:'',tipoPiso:'',porton:'',incendio:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',luminosidad:'',aptoCredito:'',aptoProfesional:'',mascotas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
+  return{id:nextId++,address:'',disponibilidad:'',supCubierta:'',supPB:'',supPA:'',supEP:'',supSS:'',supDeposito:'',supServicios:'',supPlaya:'',frenteTerreno:'',altura:'',tipoPiso:'',porton:'',incendio:'',supDescubierta:'',supTerreno:'',espAereo:'No',frente:'',fondo:'',posicion:'',banos:'',toilettes:'',cocheras:'',antiguedad:'',expensas:'',servicios:'',condicion:'',plantas:'',ambientes:'',dormitorios:'',supSemi:'',supTotal:'',piso:'',disposicion:'',orientacion:'',amenities:'',luminosidad:'',aptoCredito:'',aptoProfesional:'',mascotas:'',currency:'USD',precio:'',comentarios:'',photos:[],planos:[],collapsed:false};
 }
 function setTipo(t){
   tipoOperacion=t;
@@ -729,7 +729,7 @@ function renderSidebar(){
           '</div></div>'+
           '<div class="field"><label>Mapa</label><button class="btn-sec" onclick="triggerMapGen()">🗺 '+(showMap?'Actualizar mapa':'Agregar mapa')+'</button></div>'+
         '</div>'+
-        (tipoInmueble==='depto'?camposDepto(l):(
+        (tipoInmueble==='depto'?camposDepto(l):tipoInmueble==='deposito'?camposDeposito(l):(
         '<div class="field"><label>Disponibilidad</label>'+
           '<input type="text" value="'+esc(l.disponibilidad)+'" placeholder="Ej: Inmediata" data-id="'+l.id+'" data-f="disponibilidad" oninput="sLev(this)">'+
         '</div>'+
@@ -773,7 +773,6 @@ function renderSidebar(){
             '<input type="text" value="'+esc(l.supTerreno)+'" data-id="'+l.id+'" data-f="supTerreno" oninput="sLev(this)">'+
           '</div>'+
         '</div>'+
-        (tipoInmueble==='deposito'?camposDeposito(l):'')+
         '<div class="field"><label>Expensas</label>'+
           '<input type="text" value="'+esc(l.expensas)+'" data-id="'+l.id+'" data-f="expensas" oninput="sLev(this)">'+
         '</div>'
@@ -840,11 +839,43 @@ function filasSupExtra(l){
   });
 }
 
-/* campos propios de un depósito (el resto son los de locales) */
+/* campos del panel para un depósito, en el mismo orden que la tabla de la ficha (depositoFilas) */
 function camposDeposito(l){
-  const f=(lab,k,ph)=>'<div class="field"><label>'+lab+'</label><input type="text" value="'+esc(l[k])+'" placeholder="'+ph+'" data-id="'+l.id+'" data-f="'+k+'" oninput="sLev(this)"></div>';
-  return '<div class="field-row">'+f('Altura','altura','Ej: 8 m mínimo')+f('Piso','tipoPiso','Ej: Hormigón armado')+'</div>'+
-    '<div class="field-row">'+f('Portón','porton','Ej: Apto camión semi')+f('Contra incendios','incendio','Ej: A confirmar')+'</div>';
+  const f=(lab,k,ph)=>'<div class="field"><label>'+lab+'</label><input type="text" value="'+esc(l[k]||'')+'"'+(ph?' placeholder="'+ph+'"':'')+' data-id="'+l.id+'" data-f="'+k+'" oninput="sLev(this)"></div>';
+  return '<div class="field-row">'+f('Disponibilidad','disponibilidad','Ej: Inmediata')+
+      '<div class="field"><label class="sup-x-lab"><span>Espacio aéreo</span>'+
+        (l.espAereoElegido?'<button class="sup-x-del" title="Sacar de la ficha" onclick="quitarAereo('+l.id+')">✕</button>':'')+'</label>'+
+        '<div class="tog">'+
+          '<button class="'+(aereoVisible(l)&&l.espAereo==='No'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="No" onclick="sLbt(this)">No</button>'+
+          '<button class="'+(aereoVisible(l)&&l.espAereo==='Sí'?'on':'')+'" data-id="'+l.id+'" data-f="espAereo" data-v="Sí" onclick="sLbt(this)">Sí</button>'+
+        '</div></div>'+
+    '</div>'+
+    '<div class="field-row3">'+f('Sup. cubierta m²','supCubierta')+f('Sup. depósito m²','supDeposito')+f('Sup. de servicios m²','supServicios')+'</div>'+
+    camposSupExtra(l)+
+    '<div class="field-row3">'+f('Sup. playa de maniobras m²','supPlaya')+f('Sup. descubierta m²','supDescubierta')+f('Sup. terreno m²','supTerreno')+'</div>'+
+    '<div class="field-row">'+f('Frente terreno (m)','frenteTerreno')+f('Portón del depósito','porton','Ej: Apto camión semi')+'</div>'+
+    '<div class="field-row">'+f('Altura del depósito','altura','Ej: 8 m mínimo')+f('Sist. contra incendios','incendio','Ej: A confirmar')+'</div>'+
+    '<div class="field-row">'+f('Piso','tipoPiso','Ej: Hormigón armado')+f('Expensas','expensas')+'</div>';
+}
+/* tabla de la ficha de un depósito */
+function depositoFilas(l){
+  const r=[],m=v=>medida(v);
+  if(l.disponibilidad)r.push(['Disponibilidad',esc(l.disponibilidad)]);
+  if(l.espAereo&&aereoVisible(l))r.push(['Espacio Aéreo Propio',esc(l.espAereo)]);
+  if(l.supCubierta)r.push(['Sup. Cubierta',m(l.supCubierta)]);
+  if(l.supDeposito)r.push(['Sup. Depósito',m(l.supDeposito)]);
+  if(l.supServicios)r.push(['Sup. de Servicios',m(l.supServicios)]);
+  filasSupExtra(l).forEach(x=>r.push(['Sup. '+x[0].replace(/^Superficie /,''),x[1]]));
+  if(l.supPlaya)r.push(['Sup. Playa de Maniobras',m(l.supPlaya)]);
+  if(l.supDescubierta)r.push(['Sup. Descubierta',m(l.supDescubierta)]);
+  if(l.supTerreno)r.push(['Sup. Terreno',m(l.supTerreno)]);
+  if(l.frenteTerreno)r.push(['Frente Terreno',medida(l.frenteTerreno,'m')]);
+  if(l.porton)r.push(['Portón del Depósito',esc(l.porton)]);
+  if(l.altura)r.push(['Altura del Depósito',medida(l.altura,'m')]);
+  if(l.incendio)r.push(['Sist. contra Incendios',esc(l.incendio)]);
+  if(l.tipoPiso)r.push(['Piso',esc(l.tipoPiso)]);
+  if(l.expensas)r.push(['Expensas',esc(l.expensas)]);
+  return r;
 }
 
 /* campos del panel para un departamento */
@@ -928,7 +959,8 @@ function rLocal(l,idx){
   const num=idx+1;
   const dash='—';
   const rows=[];
-  if(tipoInmueble==='depto'){filasDepto(l).forEach(r=>rows.push(r));}else{
+  if(tipoInmueble==='depto'){filasDepto(l).forEach(r=>rows.push(r));}
+  else if(tipoInmueble==='deposito'){depositoFilas(l).forEach(r=>rows.push(r));}else{
   if(l.disponibilidad)rows.push(['Disponibilidad',esc(l.disponibilidad)]);
   if(l.posicion)rows.push(['Posici\u00f3n Relativa',esc(l.posicion)]);
   if(l.espAereo&&aereoVisible(l))rows.push(['Espacio A\u00e9reo Propio',esc(l.espAereo)]);
@@ -940,12 +972,6 @@ function rLocal(l,idx){
   filasSupExtra(l).forEach(x=>rows.push(x));
   if(l.frente)rows.push(['Frente del '+NOMBRES[tipoInmueble].uno,medida(l.frente,'m')]);
   if(l.supTerreno)rows.push(['Terreno',medida(l.supTerreno)]);
-  if(tipoInmueble==='deposito'){
-    if(l.altura)rows.push(['Altura',esc(l.altura)]);
-    if(l.tipoPiso)rows.push(['Piso',esc(l.tipoPiso)]);
-    if(l.porton)rows.push(['Port\u00f3n',esc(l.porton)]);
-    if(l.incendio)rows.push(['Sistema contra incendios',esc(l.incendio)]);
-  }
   if(l.expensas)rows.push(['Expensas',esc(l.expensas)]);
   }
   const tableRows=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
@@ -1655,6 +1681,7 @@ async function importarPdfAjeno(pdf,bytes){
       :['address','supCubierta','supPB','supDescubierta','supTerreno','frente','fondo','currency','precio','comentarios',
         'banos','toilettes','cocheras','antiguedad','expensas','condicion','plantas']).forEach(k=>{if(d[k])l[k]=d[k];});
     if(tipoInmueble==='depto'){const am=amenitiesDe(texto);if(am)l.amenities=am;rasgosDepto(l,texto);}
+    if(tipoInmueble==='deposito'&&d.frente&&!l.frenteTerreno)l.frenteTerreno=d.frente;
     if(d.operacion&&d.operacion!==tipoOperacion)setTipo(d.operacion);
     const fotos=fotosDelPdf(pdf);
     impEstado('<span class="rueda"></span>Sacando las fotos del PDF…');
