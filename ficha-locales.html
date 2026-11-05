@@ -1494,7 +1494,9 @@ function loadJSON(input){
 /* Los PDF que arma este generador llevan adentro los datos de la ficha (fotos incluidas).
    Abrir el PDF devuelve la ficha tal cual estaba, lista para seguir editando: no hace falta otro archivo. */
 const CLAVE_DATOS_PDF='MetricaFicha';
-async function abrirPDF(archivo){
+/* conservarTipo: desde "Fichas guardadas" se abre en su pestaña original. Si el broker sube un PDF estando en
+   Locales o Depósitos, se queda en la pestaña donde está (comparten los mismos campos); deptos tiene otro formato. */
+async function abrirPDF(archivo,conservarTipo){
   try{
     const bytes=new Uint8Array(await archivo.arrayBuffer());
     const pdf=await PDFLib.PDFDocument.load(bytes,{updateMetadata:false});
@@ -1502,7 +1504,9 @@ async function abrirPDF(archivo){
     if(!ref){await importarPdfAjeno(pdf,bytes);return;}
     const stream=pdf.context.lookup(ref);
     const datos=PDFLib.decodePDFRawStream(stream).decode();
-    applyState(JSON.parse(new TextDecoder().decode(datos)));
+    const st=JSON.parse(new TextDecoder().decode(datos));
+    if(!conservarTipo&&tipoInmueble!=='depto'&&(st.tipoInmueble||'local')!=='depto')st.tipoInmueble=tipoInmueble;
+    applyState(st);
     autoSave();
   }catch(e){alert('No se pudo abrir el PDF: '+(e.message||e));}
 }
@@ -1859,7 +1863,7 @@ document.getElementById('gd-lista').addEventListener('click',async ev=>{
   try{
     const j=await llamarGuardadas({accion:'abrir',id:f.id});
     const bytes=Uint8Array.from(atob(j.pdf),c=>c.charCodeAt(0));
-    if(b.dataset.gd==='editar'){await abrirPDF(new Blob([bytes],{type:'application/pdf'}));cerrarGuardadas();}
+    if(b.dataset.gd==='editar'){await abrirPDF(new Blob([bytes],{type:'application/pdf'}),true);cerrarGuardadas();}
     else{const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),download:j.nombre||f.nombre});
       document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
   }catch(e){alert('No se pudo abrir: '+e.message);}
