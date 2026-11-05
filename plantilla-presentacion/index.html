@@ -16,7 +16,7 @@
 :root{
   --gold:#D19C1D; --gold-deep:#8A6512; --gold-soft:#E6C77E;
   --gray:#4F5254; --char:#3E4348; --ink:#2B2B2B; --black:#2E3236;
-  --paper:#EBEBEC; --muted:#6B6F74; --line:rgba(43,43,43,.14);
+  --paper:#EBEBEC; --barra:#4F5254; --muted:#6B6F74; --line:rgba(43,43,43,.14);
   --on-dark:#FFFFFF; --on-dark-2:rgba(255,255,255,.66); --line-dark:rgba(255,255,255,.16);
   --display:"Big Shoulders Display","Arial Narrow",sans-serif;
   --body:"Barlow","Helvetica Neue",Arial,sans-serif;
@@ -33,9 +33,9 @@ html.static{scroll-snap-type:none}
 .static .slide{height:810px}
 .static .stage{transform:translate(-50%,-50%)}
 .s-dark{background:var(--char);color:var(--on-dark)}
-.s-black{background:var(--black);color:var(--on-dark)}
+.s-black{background:var(--char);color:var(--on-dark)}
 .s-paper{background:var(--paper)}
-.s-gray{background:var(--gray);color:var(--on-dark)}
+.s-gray{background:var(--char);color:var(--on-dark)}
 .pad{padding:64px 88px}
 .vcenter{display:flex;flex-direction:column;justify-content:center}
 
@@ -129,7 +129,7 @@ html.static{scroll-snap-type:none}
 .video-note a{color:var(--gold);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(209,156,29,.4)}
 .head-row{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:26px;gap:24px}
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:262px;gap:16px}
-.pcard{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);padding:12px 14px 10px;cursor:zoom-in;min-width:0}
+.pcard{position:relative;display:flex;flex-direction:column;background:#fff;color:var(--ink);border:1px solid var(--line);padding:12px 14px 10px;cursor:zoom-in;min-width:0}
 .pcard:hover{border-color:var(--gold)}
 .pimg{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .pimg img{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
@@ -185,9 +185,9 @@ input.num.money{width:7.2ch;color:#fff;border-bottom-color:rgba(255,255,255,.7)}
 .seg-ctl{display:inline-flex;border:1.5px solid var(--ink);border-radius:999px;padding:4px;gap:4px;flex:none}
 .seg-ctl button{background:none;border:0;border-radius:999px;padding:10px 18px;font:600 13px/1 var(--body);letter-spacing:.06em;color:var(--ink);cursor:pointer}
 .seg-ctl button.on{background:var(--ink);color:#fff}
-.seg-ctl.dark{border-color:rgba(255,255,255,.6)}
-.seg-ctl.dark button{color:var(--on-dark)}
-.seg-ctl.dark button.on{background:var(--gold);color:var(--ink)}
+.s-dark .seg-ctl{border-color:rgba(255,255,255,.6)}
+.s-dark .seg-ctl button{color:var(--on-dark)}
+.s-dark .seg-ctl button.on{background:var(--gold);color:var(--ink)}
 .charts{display:grid;grid-template-columns:1fr 1fr;gap:64px;margin-top:34px}
 svg text{font-family:var(--body)}
 .static .btn-s,.static .edit-hint,.static .seg-ctl,.static .pencil,.static .tap-hint{display:none}
@@ -207,9 +207,32 @@ svg text{font-family:var(--body)}
 .tl-foot .tot{font:900 52px/1 var(--display)}
 .tl-foot .tot small{font:600 12px/1.4 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--on-dark-2);display:block;margin-bottom:8px}
 
+/* fondos intercalados: cada diapositiva va en gris o en claro según su lugar; estas son las variantes para el otro fondo */
+.s-dark{--barra:#A3A6AA}
+.s-paper .video-note,.s-paper .desc-box{color:var(--muted)}
+.s-paper .video-note a{color:var(--gold-deep);border-bottom-color:rgba(138,101,18,.4)}
+.s-dark .pcard{border-color:transparent}
+.s-dark .edit-hint,.s-dark .kpi .k,.s-dark .seg .sl,.s-dark .comp-obra .sl,.s-dark .comp-obra .sp,.s-dark .legend{color:var(--on-dark-2)}
+.s-dark .seg .sp{color:var(--on-dark)}
+.s-dark .reset{border-color:var(--line-dark);color:var(--on-dark)}
+.s-dark .kpis{border-top-color:var(--on-dark);border-bottom-color:var(--line-dark)}
+.s-dark .kpi + .kpi{border-left-color:var(--line-dark)}
+.s-dark .kpi .v.g,.s-dark .ch-h .ch-h2,.s-dark .edit-hint .pen{color:var(--gold)}
+.s-dark .kpi.edk{background:rgba(209,156,29,.12)}
+.s-dark .btn-s{background:transparent;border-color:var(--gold);color:var(--gold)}
+.s-dark .btn-s.sm{border-color:#fff;color:#fff}
+.s-dark .seg.s1 .sb{background:#2B2E32;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.s-paper .tl::before{background:rgba(43,43,43,.2)}
+.s-paper .tl .when{color:var(--gold-deep)}
+.s-paper .tl p,.s-paper .tl-foot .tot small{color:var(--muted)}
+.s-paper .tl-foot{border-top-color:var(--line)}
+.s-paper .closing::before{background:linear-gradient(90deg,var(--paper) 0%,var(--paper) 40%,rgba(235,235,236,.6) 56%,rgba(235,235,236,0) 74%),linear-gradient(0deg,rgba(235,235,236,.92) 0%,rgba(235,235,236,0) 22%)}
+.s-paper .closing-in,.s-paper a.fl{color:var(--ink)}
+.s-paper .foot{border-top-color:var(--line);color:var(--muted)}
+
 /* cierre */
 .closing img.bg{position:absolute;right:0;top:0;width:58%;height:100%;object-fit:cover;object-position:50% 20%}
-.closing::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,var(--black) 0%,var(--black) 40%,rgba(46,50,54,.55) 56%,rgba(46,50,54,0) 74%),linear-gradient(0deg,rgba(46,50,54,.85) 0%,rgba(46,50,54,0) 22%)}
+.closing::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,var(--char) 0%,var(--char) 40%,rgba(62,67,72,.55) 56%,rgba(62,67,72,0) 74%),linear-gradient(0deg,rgba(62,67,72,.85) 0%,rgba(62,67,72,0) 22%)}
 .closing .logo{position:absolute;z-index:3;top:32px;right:80px;height:74px;width:auto;box-sizing:content-box;padding:10px 14px;background:rgba(46,50,54,.82);border-radius:4px}
 .closing-in{position:absolute;inset:0;z-index:2;padding:64px 88px 0;display:flex;flex-direction:column;color:var(--on-dark)}
 .closing h2{font:900 112px/.96 var(--display);text-transform:uppercase;margin-top:auto;max-width:640px}
@@ -761,7 +784,7 @@ function sFicha(){const f=P.ficha,fm=fichaMapa(),cj=fichaCaja();
 
 /* ---------- ficha 2: descripción + mapa ---------- */
 function sDescMapa(){const f=P.ficha,fm=fichaMapa();if(!f.descripcion&&(!f.mapa.lat||fm)&&!EDIT)return "";return `
-<section class="slide s-black grain" id="sl-desc"><div class="stage pad">
+<section class="slide s-black grain" id="sl-desc"${!f.descripcion&&(!f.mapa.lat||fm)?' data-ed="1"':""}><div class="stage pad">
   <div class="dm${fm?" solo":""}">
     <div class="dm-l">
       ${E("ficha.descTitulo","span","kicker")}
@@ -822,7 +845,7 @@ function galeriaItems(){
 const ZOOM='<span class="zoom" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg></span>';
 function sGalerias(){
   const f=P.ficha,items=galeriaItems();
-  if(!items.length)return EDIT?`<section class="slide s-gray grain"><div class="stage pad vcenter"><span class="kicker">Fotos</span><h2 class="title">Sin fotos adicionales</h2><div>${ADD("fotos","+ Fotos")}${ADD("plano","+ Plano")}${ADD("video","+ Video")}</div></div></section>`:"";
+  if(!items.length)return EDIT?`<section class="slide s-gray grain" data-ed="1"><div class="stage pad vcenter"><span class="kicker">Fotos</span><h2 class="title">Sin fotos adicionales</h2><div>${ADD("fotos","+ Fotos")}${ADD("plano","+ Plano")}${ADD("video","+ Video")}</div></div></section>`:"";
   const pages=paginate(items),hasPl=f.planos.length&&f.planos.length<=2,vid=f.video;
   return pages.map((pg,pi)=>{let k=0;
     const rows=pg.lay.rows.map((n,ri)=>{const h=pg.lay.heights[ri];const its=pg.items.slice(k,k+n);k+=n;
@@ -889,7 +912,7 @@ function sGraficos(){return `
   </div>
   <div class="charts">
     <div><h3 class="ch-title" data-b="c1Title"></h3><svg id="c-cuotas" width="100%" height="390" role="img" aria-label="Cuotas frente a alquiler" style="margin-top:22px"></svg><div class="legend" id="lg-1"></div></div>
-    <div><h3 class="ch-title">Recupero de la inversión</h3><svg id="c-payback" width="100%" height="390" role="img" aria-label="Recupero" style="margin-top:22px"></svg><div class="legend"><span><i style="background:var(--gray)"></i>Capital invertido acumulado</span><span><i style="background:var(--gold)"></i>Alquiler acumulado</span></div></div>
+    <div><h3 class="ch-title">Recupero de la inversión</h3><svg id="c-payback" width="100%" height="390" role="img" aria-label="Recupero" style="margin-top:22px"></svg><div class="legend"><span><i style="background:var(--barra)"></i>Capital invertido acumulado</span><span><i style="background:var(--gold)"></i>Alquiler acumulado</span></div></div>
   </div>
 </div></section>`}
 
@@ -898,7 +921,7 @@ function sResumen(){const st=(svg,when,title,amt,p)=>{const a=v=>v.startsWith("d
   return `
 <section class="slide s-gray grain" id="sl-res"><div class="stage pad">
   <div class="ch-top">
-    <div><span class="kicker" style="color:var(--gold-soft)">En resumen</span>${E("resumen.titulo","h2","title")}${E("resumen.subtitulo","p","sub")}</div>
+    <div><span class="kicker">En resumen</span>${E("resumen.titulo","h2","title")}${E("resumen.subtitulo","p","sub")}</div>
     ${PAYCTL(true,false)}
   </div>
   <div class="tl">
@@ -987,10 +1010,12 @@ const tip=$("#tip");
 function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;tip.style.left=(e.clientX+16)+"px";tip.style.top=(e.clientY-12)+"px"}
 function hover(node,html){node.addEventListener("mousemove",e=>showTip(e,html));node.addEventListener("mouseleave",()=>tip.style.opacity=0)}
 const size=svg=>({w:svg.parentElement.clientWidth,h:+svg.getAttribute("height")});
+// sobre fondo gris los textos y líneas van claros y la barra gris se aclara
+const colores=svg=>svg.closest(".s-dark")?{...C,ink:"#FFFFFF",muted:"rgba(255,255,255,.66)",line:"rgba(255,255,255,.16)",paper:"#3E4348",gray:"#A3A6AA",goldDeep:"#E6C77E"}:C;
 function barPath(x,y,w,h,r){r=Math.min(r,w/2,h/2);return`M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`}
 function drawCuotas(c){
-  const svg=$("#c-cuotas");svg.innerHTML="";const{w,h}=size(svg);const lg=$("#lg-1");let data;
-  if(c.fin){data=[...Array(c.N)].map((_,i)=>({k:"Cuota "+(i+1),m:"Mes "+12*(i+1),a:c.cuota,r:c.rentIn(12*i,12*(i+1))}));lg.innerHTML='<span><i style="background:var(--gray)"></i>Cuota anual del saldo</span><span><i style="background:var(--gold)"></i>Alquiler cobrado en el período</span>'}
+  const svg=$("#c-cuotas");svg.innerHTML="";const C=colores(svg);const{w,h}=size(svg);const lg=$("#lg-1");let data;
+  if(c.fin){data=[...Array(c.N)].map((_,i)=>({k:"Cuota "+(i+1),m:"Mes "+12*(i+1),a:c.cuota,r:c.rentIn(12*i,12*(i+1))}));lg.innerHTML='<span><i style="background:var(--barra)"></i>Cuota anual del saldo</span><span><i style="background:var(--gold)"></i>Alquiler cobrado en el período</span>'}
   else{data=[1,2,3,4].map(y=>({k:"Año "+y,m:"",a:null,r:c.rentIn(12*(y-1),12*y)}));lg.innerHTML='<span><i style="background:var(--gold)"></i>Alquiler cobrado en el año</span>'}
   const T=30,Bm=76,Lp=62,compact=data.length>3;const vmax=Math.max(...data.map(d=>Math.max(d.a||0,d.r)))*1.12||1;
   const step=[10000,25000,50000,100000,200000,250000,500000,1e6,2e6].find(s=>vmax/s<=5)||5e6;const max=Math.ceil(vmax/step)*step,sy=v=>h-Bm-(h-Bm-T)*v/max;
@@ -1003,7 +1028,7 @@ function drawCuotas(c){
     if(c.fin){const diff=d.r-d.a,txt=compact?(diff>=0?"+":"−")+nf(Math.abs(diff)/1000,1)+" mil":(diff>=0?"Excedente ":"Aporte ")+usd(Math.abs(diff));el("text",{x:cx,y:h-Bm+62,"text-anchor":"middle","font-size":fs-1,"font-weight":700,fill:diff>=0?C.goldDeep:C.muted},svg,txt)}});
 }
 function drawPayback(c){
-  const svg=$("#c-payback");svg.innerHTML="";const{w,h}=size(svg);const pb=c.payback,M=Math.max(108,isFinite(pb)?Math.ceil((pb+6)/12)*12:108);
+  const svg=$("#c-payback");svg.innerHTML="";const C=colores(svg);const{w,h}=size(svg);const pb=c.payback,M=Math.max(108,isFinite(pb)?Math.ceil((pb+6)/12)*12:108);
   const T=26,B=40,Lp=78,R=8,sx=m=>Lp+(w-Lp-R)*m/M;const vmax=Math.max(c.total,c.rent(M))*1.05;
   const step=[50000,100000,250000,500000,1e6,2e6].find(s=>vmax/s<=7)||5e6,max=Math.ceil(vmax/step)*step,sy=v=>h-B-(h-B-T)*Math.min(v,max)/max;
   for(let v=0;v<=max;v+=step){el("line",{x1:Lp,x2:w,y1:sy(v),y2:sy(v),stroke:C.line},svg);el("text",{x:Lp-10,y:sy(v)+4,"text-anchor":"end","font-size":12,fill:C.muted},svg,v?(v>=1e6?"USD "+nf(v/1e6,v%1e6?1:0)+" M":"USD "+nf(v/1000)+" mil"):"0")}
@@ -1329,11 +1354,15 @@ function fitDescription(){const b=document.querySelector(".desc-box");if(!b)retu
 // título de portada: si la foto es ancha queda menos lugar; se achica la letra hasta que entre en 4 renglones
 function fitPortada(){const h=document.querySelector("#sl-portada h1"),c=document.querySelector("#sl-portada .cover-copy");if(!h)return;let fs=104;h.style.fontSize="";
   while(fs>68&&(h.offsetHeight>fs*.96*4+4||c.scrollHeight>c.clientHeight+1)){fs-=4;h.style.fontSize=fs+"px"}}
+// fondos uno y uno: gris, claro, gris, claro… (la portada siempre gris), así en el PDF se distingue cada hoja
+function intercalar(){let i=0;document.querySelectorAll("#deck>section.slide").forEach(sec=>{sec.classList.remove("s-dark","s-black","s-gray","s-paper");
+  sec.classList.add(i%2?"s-paper":"s-dark");if(!sec.dataset.ed)i++})}
 let MEASURING=false;
 function render(){
   if(!MEASURING&&[P.portada.foto,P.cierre.foto,...P.ficha.fotos,...P.ficha.planos.map(p=>p.img)].some(x=>x&&!ASPECT.has(x))){MEASURING=true;measureImages().then(()=>{MEASURING=false;render()});return}
   document.title=String(P.meta.tituloPestana||"Presentación Métrica").replace(/<[^>]+>/g,"");
   $("#deck").innerHTML=[sPortada(),sFicha(),sDescMapa(),sGalerias(),sPlanos(),sInversion(),sGraficos(),sResumen(),sCierre()].join("");
+  intercalar();
   bindModel();renderModel();drawMap();fitDescription();fitPortada();aplicarRecortes();bindViewers();if(EDIT)enableEditing();updUndo();
   if(EDIT&&esMovil())marcarMovil();if(MS.open)pintarHoja();
 }
