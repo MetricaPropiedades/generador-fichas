@@ -1354,8 +1354,9 @@ function fitDescription(){const b=document.querySelector(".desc-box");if(!b)retu
 // título de portada: si la foto es ancha queda menos lugar; se achica la letra hasta que entre en 4 renglones
 function fitPortada(){const h=document.querySelector("#sl-portada h1"),c=document.querySelector("#sl-portada .cover-copy");if(!h)return;let fs=104;h.style.fontSize="";
   while(fs>68&&(h.offsetHeight>fs*.96*4+4||c.scrollHeight>c.clientHeight+1)){fs-=4;h.style.fontSize=fs+"px"}}
-// fondos fijos por diapositiva, intercalados gris y claro; si las fotos (o los planos) ocupan varias diapositivas, todas van del mismo color
-const FONDO={portada:"s-dark",ficha:"s-paper",desc:"s-dark",fotos:"s-paper",planos:"s-paper",inv:"s-dark",graf:"s-paper",res:"s-dark",cierre:"s-paper"};
+// fondos fijos por diapositiva, intercalados gris y claro; si las fotos (o los planos) ocupan varias diapositivas, todas van del mismo color.
+// Inversión y gráficos son un bloque (los dos en gris), así el cierre queda en gris
+const FONDO={portada:"s-dark",ficha:"s-paper",desc:"s-dark",fotos:"s-paper",planos:"s-paper",inv:"s-dark",graf:"s-dark",res:"s-paper",cierre:"s-dark"};
 function intercalar(){document.querySelectorAll("#deck>section.slide").forEach(sec=>{sec.classList.remove("s-dark","s-black","s-gray","s-paper");sec.classList.add(FONDO[tipoSlide(sec)]||"s-dark")})}
 let MEASURING=false;
 function render(){
