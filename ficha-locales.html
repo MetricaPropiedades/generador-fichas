@@ -494,6 +494,10 @@ async function fotoComoDato(url){
   const blob=await r.blob();
   return await new Promise(res=>{const fr=new FileReader();fr.onload=e=>res(e.target.result);fr.readAsDataURL(blob);});
 }
+/* logos, íconos y banners de la página no son fotos del inmueble: se descartan las imágenes chicas */
+function esFotoDeVerdad(dato){
+  return new Promise(res=>{const im=new Image();im.onload=()=>res(im.naturalWidth>=300&&im.naturalHeight>=200);im.onerror=()=>res(false);im.src=dato;});
+}
 async function importarAviso(){
   const url=(document.getElementById('imp-url').value||'').trim();
   if(!url){impEstado('Pegá primero el link del aviso.',true);return;}
@@ -533,7 +537,7 @@ async function importarAviso(){
       impEstado('<span class="rueda"></span>Trayendo '+fotos.length+' fotos…');
       let listas=0;
       for(const f of fotos){
-        try{const dato=await fotoComoDato(f);l.photos.push({photo:dato,photoOrig:dato});listas++;}catch(e){}
+        try{const dato=await fotoComoDato(f);if(await esFotoDeVerdad(dato)){l.photos.push({photo:dato,photoOrig:dato});listas++;}}catch(e){}
       }
       renderSidebar();renderPreview();
       impEstado('Listo: datos cargados y '+listas+' fotos. Revisá y corregí lo que haga falta.');
