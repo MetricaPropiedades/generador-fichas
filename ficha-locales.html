@@ -363,13 +363,13 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
     <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:13px;"></div>
     <div id="save-status" class="save-status"></div>
     <div class="sb-import">
-      <input id="imp-url" type="url" placeholder="Pegá el link: ZonaProp, Argenprop, Mercado Libre o ficha de Tokko (ficha.info)"
+      <input id="imp-url" type="url" placeholder="Pegá el link del aviso o de la ficha de cualquier inmobiliaria"
              onkeydown="if(event.key==='Enter'){event.preventDefault();importarAviso();}">
       <div class="fila">
         <button class="btn-add" id="imp-btn" onclick="importarAviso()">Traer datos del aviso</button>
         <label class="btn-sec" style="cursor:pointer" title="Ficha en PDF de Tokko, ZonaProp u otra inmobiliaria: se leen los datos y las fotos">📄 Subir PDF del aviso<input type="file" accept=".pdf,application/pdf" style="display:none" onchange="loadJSON(this)"></label>
       </div>
-      <div class="imp-ayuda">Pegá el link o subí (o arrastrá acá) el PDF de Tokko, ZonaProp u otro portal.</div>
+      <div class="imp-ayuda">Sirven ZonaProp, Argenprop, Mercado Libre, Tokko y la ficha web de cualquier otra inmobiliaria: se leen los datos, la descripción y las fotos. También podés subir (o arrastrar acá) el PDF.</div>
       <div id="imp-estado" class="estado"></div>
     </div>
   </div>
@@ -503,13 +503,18 @@ async function importarAviso(){
   try{
     const r=await fetch(API_FICHAS+'/aviso?url='+encodeURIComponent(url));
     const d=await r.json();
-    if(!r.ok)throw new Error(d.detail||'No se pudo leer el aviso');
+    if(!r.ok)throw new Error(d.detail||d.error||'No se pudo leer el aviso');
     /* si el último local está vacío se completa ese, y si no se agrega uno nuevo */
     let l=locals[locals.length-1];
     if(!l||l.address||l.supCubierta||l.precio){l=defaultLocal();locals.push(l);}
+    /* si es la primera propiedad de la ficha, la ficha toma la operación del aviso (alquiler o venta) */
+    if(locals.length===1&&(d.operacion==='Alquiler'||d.operacion==='Venta')&&d.operacion!==tipoOperacion){
+      tipoOperacion=d.operacion;document.getElementById('sb-title-label').textContent='Ficha de '+tipoOperacion;
+      if(document.getElementById('btn-add-item'))actualizarUIInmueble();
+    }
     const claves=tipoInmueble==='depto'
       ?['address','supCubierta','supTotal','currency','precio','comentarios','disponibilidad','ambientes','dormitorios','banos','toilettes','cocheras','antiguedad','expensas','servicios','condicion']
-      :['address','supCubierta','supPB','supPA','supSS','supTerreno','frente','fondo','posicion','currency','precio','comentarios',
+      :['address','supCubierta','supPB','supPA','supSS','supTerreno','supSemi','supDescubierta','frente','fondo','posicion','currency','precio','comentarios',
         'disponibilidad','banos','toilettes','cocheras','antiguedad','expensas','servicios','condicion','plantas'];
     claves.forEach(function(k){ if(d[k]!==undefined&&d[k]!=='') l[k]=d[k]; });
     /* la app manda las medidas con coma decimal ("62,3"); los campos numéricos necesitan punto */
