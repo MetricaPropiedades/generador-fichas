@@ -1,6 +1,6 @@
 {
-  "name": "Central Métrica",
-  "short_name": "Métrica",
+  "name": "Métrica 360",
+  "short_name": "Métrica 360",
   "description": "Accesos a las herramientas de Métrica Propiedades y Métrica Tasaciones",
   "lang": "es",
   "start_url": "./",
