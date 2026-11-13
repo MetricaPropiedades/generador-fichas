@@ -1451,7 +1451,7 @@ function rSection(comps,tipo,ss){
     ['Valor / m²',vals.map((v,i)=>v.pm2>0?`${comps[i].currency} ${fN(Math.round(v.pm2))}`:'—')],
   ];
   const S=sujeto(), fx=(k)=>vals.map(v=>v.f[k]==null?'—':v.f[k]);
-  const ref=(txt)=>txt?`<span style="display:block;font-weight:400;font-size:6.5pt;color:#999">Tasada: ${esc(txt)}</span>`:'';
+  const ref=(txt)=>txt?`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#999">Tasada: ${esc(txt)}</span>`:'';
   const altTxt={'1':'Estándar','1.05':'Alta'};
   const amenS=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
   const inc=k=>`<span class="det-inc" style="font-weight:400;color:#999"> · ${Math.round(INC[k]*100)}%</span>`;
