@@ -1472,7 +1472,11 @@ function rSection(comps,tipo,ss){
   ].filter(([,vs])=>vs.some(v=>v!=='—'));
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const ap=(k,v)=>{if(!k||INC[k]>=1)return'';const a=aplicado(k,parseFloat(v));return`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#888">aplica ${String(Math.round(a*1000)/1000).replace('.',',')}</span>`;};
-  const fRow=([lbl,vs,k])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}${ap(k,v)}</td>`).join('')}</tr>`;
+  /* detalle interno de cada celda: arriba lo que se aplica, abajo la respuesta del comparable (ej.: "Muy buena") */
+  const TXT={ubicacion:c=>c.ubicSel,edificio:c=>c.edificio,antiguedad:c=>c.antiguedad?c.antiguedad+' años':'',alturaEdif:c=>c.alturaEdificio,
+    posicion:c=>c.posicionDepto,ocupacion:c=>c.ocupacion,calidad:c=>c.calidad,estado:c=>c.estadoConst,luminosidad:c=>c.luminosidad,altura:c=>altTxt[c.alturaInterna]};
+  const resp=(k,i)=>{const x=TXT[k]&&TXT[k](comps[i]);return x?`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#999">${esc(x)}</span>`:'';};
+  const fRow=([lbl,vs,k])=>`<tr><td class="lc">${lbl}</td>${vs.map((v,i)=>v==='—'?`<td class="vc neutral">—${resp(k,i)}</td>`:`<td class="vc ${fcls(v)}">${ap(k,v)}${parseFloat(v).toFixed(2)}${resp(k,i)}</td>`).join('')}</tr>`;
   const tipoLabel=tipo==='ALQUILER'?'Alquiler':'Venta';
 
   return`<div class="d-section comp-section">
