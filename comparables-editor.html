@@ -298,7 +298,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
     ✓ Borrador restaurado: <span id="draft-ts" style="font-weight:700"></span><span id="draft-nophotos" style="display:none;font-size:10px;opacity:.7"> · sin fotos (cargá el .json para recuperarlas)</span>
     <div style="display:flex;gap:6px;margin-top:7px;">
       <button onclick="closeBanner()" style="flex:1;padding:5px;background:rgba(200,148,26,.25);color:#e8c87a;border:1px solid rgba(200,148,26,.4);border-radius:3px;font-weight:700;cursor:pointer;font-family:inherit;font-size:11px;">OK</button>
-      <button onclick="discardDraft()" style="flex:1;padding:5px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.08);border-radius:3px;cursor:pointer;font-family:inherit;font-size:11px;">Empezar de cero</button>
+      <button onclick="limpiarTodo(true)" style="flex:1;padding:5px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.08);border-radius:3px;cursor:pointer;font-family:inherit;font-size:11px;">Empezar de cero</button>
     </div>
   </div>
 
@@ -306,6 +306,10 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
     <button class="btn btn-g" onclick="exportPDF()">📄 PDF</button>
     <button class="btn btn-o" onclick="saveJSON()">💾 Guardar</button>
     <label class="btn btn-o" style="cursor:pointer">📂 Cargar<input type="file" accept=".pdf,.json" onchange="loadJSON(this)" style="display:none"></label>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-o" id="btn-deshacer" onclick="deshacer()" disabled style="flex:1;opacity:.45" title="Volver al paso anterior (Ctrl+Z)">↶ Deshacer</button>
+    <button class="btn btn-o" onclick="limpiarTodo()" style="flex:1" title="Borrar todo para empezar una tasación nueva">🧹 Limpiar todo</button>
   </div>
 
   <h2>Propiedad Tasada</h2>
@@ -1895,7 +1899,8 @@ const FIRMA_B64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOwAAAC6CAYAAACtB
     const raw=localStorage.getItem(DRAFT_KEY);
     if(raw){
       const parsed=JSON.parse(raw);
-      if(parsed&&(parsed.subject?.nombre||(parsed.comparables?.length>0))){
+      /* version 4 = borrador del tasador de deptos (antes compartían la clave): no mezclarlo */
+      if(parsed&&parsed.version!==4&&(parsed.subject?.nombre||(parsed.comparables?.length>0))){
         applyState(parsed);
         const tsEl=document.getElementById('draft-ts');
         if(tsEl)tsEl.textContent=parsed._savedAt||'fecha desconocida';
@@ -1940,6 +1945,57 @@ window.addEventListener('beforeunload',()=>{if(_autoSaveEnabled)autoSave();});
   });
   window.addEventListener('load',window.autoAltoTextos);
   setTimeout(window.autoAltoTextos,0);
+})();
+</script>
+<script>
+/* DESHACER y LIMPIAR TODO.
+   Cada vez que algo cambia (y se deja de escribir ~0,7 s) se guarda cómo estaba antes; "Deshacer" vuelve un paso (hasta 40).
+   Las fotos no se duplican en memoria: los pasos comparten los mismos textos de imagen.
+   "Limpiar todo" borra la tasación (deja el nombre del analista) y se puede deshacer. */
+(function(){
+  const MAX=40;
+  let pila=[], actual=null, timer=null, rebase=false;
+  const clon=o=>Array.isArray(o)?o.map(clon):(o&&typeof o==='object')?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,clon(v)])):o;
+  const firma=st=>JSON.stringify(st,(k,v)=>(k==='_savedAt'||k==='capturedMapImg')?undefined:(typeof v==='string'&&v.length>400?'#'+v.length+v.slice(-40):v));
+  function leer(){try{const s=clon(getState());return{s,f:firma(s)};}catch(e){return null;}}
+  function botones(){const b=document.getElementById('btn-deshacer');if(b){b.disabled=!pila.length;b.style.opacity=pila.length?'':'.45';}}
+  function revisar(){
+    clearTimeout(timer);timer=null;
+    const n=leer();if(!n)return;
+    if(!actual||rebase){actual=n;rebase=false;botones();return;}
+    if(n.f===actual.f)return;
+    pila.push(actual);if(pila.length>MAX)pila.shift();
+    actual=n;botones();
+  }
+  function programar(){clearTimeout(timer);timer=setTimeout(revisar,700);}
+  const guardarOrig=window.autoSave;
+  window.autoSave=function(){const r=guardarOrig.apply(this,arguments);programar();return r;};
+  document.addEventListener('input',programar,true);
+  document.addEventListener('change',programar,true);
+  document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.sidebar'))programar();},true);
+  window.deshacer=function(){
+    revisar();
+    if(!pila.length){botones();return;}
+    const prev=pila.pop();
+    applyState(clon(prev.s));
+    actual=prev;rebase=true;programar();botones();
+  };
+  window.limpiarTodo=function(sinPreguntar){
+    if(!sinPreguntar&&!confirm('¿Borrar todos los datos para empezar una tasación nueva?\n\nSi te arrepentís, tocá «Deshacer».'))return;
+    revisar();
+    const an=document.getElementById('s-analista'), analista=an?an.value:'';
+    applyState({});
+    if(an)an.value=analista;
+    _fh=null;
+    if(typeof closeBanner==='function')closeBanner();
+    renderPreview();
+    revisar();
+  };
+  document.addEventListener('keydown',e=>{
+    if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.key.toLowerCase()!=='z')return;
+    const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
+    e.preventDefault();window.deshacer();
+  });
 })();
 </script>
 <div id="mob-bar"><button id="mob-edit" class="on" onclick="vistaMovil(false)">✏️ Editar</button><button id="mob-ver" onclick="vistaMovil(true)">👁 Ver tasación</button></div>
