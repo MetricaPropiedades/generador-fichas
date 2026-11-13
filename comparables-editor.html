@@ -92,7 +92,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .d-header-l h2{font-size:8pt;font-weight:400;color:rgba(255,255,255,.4);margin-top:1.5mm;}
 .d-header img{height:66px;flex-shrink:0;}
 
-.d-subject{background:var(--cream);padding:8mm 13mm;}
+.d-subject{background:var(--cream);padding:8mm 13mm;display:flow-root;}
 .d-over{font-size:7pt;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.35);margin-bottom:2mm;}
 .d-addr{font-size:14.5pt;font-weight:800;color:var(--dark);line-height:1.2;}
 .d-meta{display:flex;gap:7mm;margin-top:4mm;flex-wrap:wrap;align-items:flex-start;}
@@ -113,10 +113,10 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 /* tarjeta de comparable: foto siempre cuadrada a la izquierda; si el texto es largo sigue por debajo de la foto */
 .icard{display:flow-root;padding:5mm;border:1px solid var(--border);border-radius:4px;margin-bottom:3.5mm;background:#fff;}
 .icard:last-child{margin-bottom:0;}
-.icard-photo[data-cid]{cursor:pointer;}
-.icard-photo{background-size:cover;background-position:center;background-repeat:no-repeat;float:left;width:52mm;height:52mm;margin:0 5mm 3mm 0;border-radius:3px;overflow:hidden;background-color:#f5f5f5;}
+.icard-photo[data-enc]{cursor:pointer;}
+.icard-photo{background-size:cover;background-position:center;background-repeat:no-repeat;float:left;width:72mm;height:54mm;margin:0 5mm 3mm 0;border-radius:3px;overflow:hidden;background-color:#f5f5f5;}
 .icard-photo img{width:100%;height:100%;object-fit:cover;display:block;}
-.icard-no-photo{float:left;width:52mm;height:52mm;margin:0 5mm 3mm 0;border-radius:3px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#ccc;}
+.icard-no-photo{float:left;width:72mm;height:54mm;margin:0 5mm 3mm 0;border-radius:3px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#ccc;}
 .icard-body{min-width:0;}
 .icard-top{display:flex;align-items:center;gap:3mm;margin-bottom:2.5mm;flex-wrap:wrap;}
 .icard-num-badge{background:var(--g);color:#fff;font-size:8pt;font-weight:800;padding:1px 7px;border-radius:3px;flex-shrink:0;}
@@ -124,8 +124,22 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .icard-chip{font-size:6.5pt;font-weight:700;padding:1.5px 5px;border-radius:10px;background:rgba(100,100,100,.1);color:#555;}
 .icard-chip.real{background:rgba(60,60,180,.1);color:#3030a0;}
 .icard-addr{font-size:10.5pt;font-weight:700;color:var(--dark);line-height:1.2;margin-bottom:3mm;}
-.icard-grid{display:flex;flex-wrap:wrap;gap:2.5mm 5mm;margin-bottom:2.5mm;}
-.icard-datum{flex:0 0 calc(50% - 2.5mm);}
+/* datos en columnas parejas, uno al lado del otro en orden: si falta un dato no queda hueco */
+.icard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(30mm,1fr));gap:2.5mm 5mm;margin-bottom:2.5mm;}
+.icard-datum{min-width:0;}
+/* ── fotos de la tasación: todas 4:3. La 1 va grande a la izquierda; las demás abajo de la descripción, 3 por fila ── */
+.d-subj-photo{float:left;width:80mm;height:60mm;margin:0 6mm 3mm 0;border-radius:3px;background:#eee center/cover no-repeat;cursor:pointer;}
+.foto-galeria{clear:both;display:grid;grid-template-columns:repeat(3,1fr);gap:2.5mm;padding-top:3mm;}
+.foto-gal{aspect-ratio:4/3;border-radius:3px;background:#f5f5f5 center/cover no-repeat;cursor:pointer;}
+/* fotos de cada comparable en la barra: 3 por fila, ordenables */
+.sb-fotos-comp{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.sb-fotos-comp .sp-wrap{width:auto;height:auto;margin:0;aspect-ratio:4/3;cursor:grab;}
+.sb-fotos-comp .sp-wrap img{width:100%;height:100%;}
+.sb-fotos-comp .sp-del,.sb-fotos-comp .sp-crop,.sp-star{width:22px;height:22px;font-size:13px;}
+.sp-star{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.75);border:none;color:#fff;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.sp-star:hover{background:var(--g);color:#000;}
+.sp-num{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.75);color:#fff;border-radius:3px;font-size:11px;font-weight:700;padding:1px 6px;}
+.sp-wrap .sp-num.principal{background:var(--g);color:#1c1c1c;}
 .icard-datum .lbl{font-size:6.5pt;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;}
 .icard-datum .val{font-size:9pt;font-weight:600;color:var(--dark);}
 .icard-notes{font-size:7.5pt;color:#888;line-height:1.55;border-top:1px solid #f0f0f0;padding-top:2mm;word-break:break-word;overflow-wrap:break-word;white-space:pre-wrap;max-width:100%;}
@@ -503,23 +517,31 @@ function compressImage(file){
 // ══════════════════════════════════════
 let _cropper=null, _cropCb=null;
 
-/* forma del recuadro donde sale la foto de un comparable en la hoja (alto = el de la tarjeta).
-   Si la hoja está oculta (celular, pantalla Editar) se muestra un instante para medirla. */
-function formaFotoComparable(id){
-  const medir=()=>{const el=document.querySelector('.icard-photo[data-cid="'+id+'"]'),b=el&&el.getBoundingClientRect();return b&&b.width>10&&b.height>10?b.width/b.height:0;};
-  let r=medir();
-  if(!r&&!document.body.classList.contains('ver-doc')){document.body.classList.add('ver-doc');r=medir();document.body.classList.remove('ver-doc');}
-  return r||4/3;
+/* todas las fotos de la tasación salen en recuadros 4:3: el encuadre usa esa forma y el broker elige qué parte se ve */
+const FORMA_FOTO=4/3;
+function encuadrarComparable(c,i){
+  if(!c)return;i=i||0;
+  const arr=fotosComp(c),p=arr[i];if(!p)return;
+  openCrop(p.photoOrig||p.photo,r=>{arr[i]={photo:r,photoOrig:p.photoOrig||p.photo};ponerFotosComp(c,arr);renderCompPhotoSb(c);renderPreview();},FORMA_FOTO);
 }
-function encuadrarComparable(c){
-  if(!c||!(c.photoOrig||c.photo))return;
-  openCrop(c.photoOrig||c.photo,r=>{c.photo=r;renderCompPhotoSb(c);renderPreview();},formaFotoComparable(c.id));
+function encuadrarSujeto(i){
+  const p=subjectPhotos[i];if(!p)return;
+  openCrop(p.photoOrig||p.photo,r=>{subjectPhotos[i]={photo:r,photoOrig:p.photoOrig||p.photo};renderSubjectPhotoSb();renderPreview();},FORMA_FOTO);
 }
-/* clic en la foto de un comparable en la hoja: abre el encuadre */
+/* clic en una foto de la hoja: abre su encuadre */
 document.addEventListener('click',e=>{
-  const el=e.target.closest&&e.target.closest('.icard-photo[data-cid]');if(!el)return;
-  encuadrarComparable(comparables.find(x=>String(x.id)===el.dataset.cid));
+  const el=e.target.closest&&e.target.closest('[data-enc]');if(!el)return;
+  const [t,a,b]=el.dataset.enc.split(':');
+  if(t==='c')encuadrarComparable(comparables.find(x=>String(x.id)===a),+b||0);
+  else if(t==='s')encuadrarSujeto(+a||0);
 });
+/* fotos de un comparable: la 1 es la principal (c.photo); las demás salen abajo de la descripción (c.fotosExtra) */
+function fotosComp(c){return(c.photo?[{photo:c.photo,photoOrig:c.photoOrig||c.photo}]:[]).concat((c.fotosExtra||[]).filter(p=>p&&p.photo));}
+function ponerFotosComp(c,arr){
+  const a=arr.filter(p=>p&&p.photo);
+  c.photo=a[0]?a[0].photo:null;c.photoOrig=a[0]?(a[0].photoOrig||a[0].photo):null;
+  c.fotosExtra=a.slice(1).map(p=>({photo:p.photo,photoOrig:p.photoOrig||p.photo}));
+}
 function openCrop(src,callback,forma){
   _cropCb=callback;
   const ay=document.getElementById('crop-ayuda');
@@ -626,11 +648,11 @@ async function loadPhotoFromLink(id){
   }
 }
 async function loadCompPhoto(input,id){
-  const file=input.files[0];if(!file)return;
-  const compressed=await compressImage(file);
+  const files=Array.from(input.files||[]);if(!files.length)return;
   const c=comparables.find(x=>x.id===id);if(!c)return;
-  c.photoOrig=compressed;c.photo=compressed;
-  renderCompPhotoSb(c);renderPreview();input.value='';
+  const arr=fotosComp(c);
+  for(const file of files){const x=await compressImage(file);arr.push({photo:x,photoOrig:x});}
+  ponerFotosComp(c,arr);renderCompPhotoSb(c);renderPreview();input.value='';
 }
 
 // ── Sidebar thumbnail renders ──
@@ -643,7 +665,7 @@ function renderSubjectPhotoSb(){
     const del=document.createElement('button');del.className='sp-del';del.textContent='×';
     del.onclick=()=>{subjectPhotos.splice(i,1);renderSubjectPhotoSb();renderPreview();};
     const crop=document.createElement('button');crop.className='sp-crop';crop.textContent='✂';crop.title='Recortar';
-    crop.onclick=()=>openCrop(p.photoOrig||p.photo,r=>{subjectPhotos[i]={photo:r,photoOrig:p.photoOrig||p.photo};renderSubjectPhotoSb();renderPreview();});
+    crop.onclick=()=>encuadrarSujeto(i);
     wrap.appendChild(img);wrap.appendChild(del);wrap.appendChild(crop);sb.appendChild(wrap);
   });
 }
@@ -659,17 +681,28 @@ function renderMapPhotoSb(){
   wrap.appendChild(img);wrap.appendChild(del);wrap.appendChild(crop);
   sb.innerHTML='';sb.appendChild(wrap);
 }
+let _arrastraComp=null;
 function renderCompPhotoSb(c){
   const sb=document.getElementById(`sb-cp-${c.id}`);if(!sb)return;
-  if(!c.photo){sb.innerHTML='';return;}
-  const wrap=document.createElement('div');wrap.className='sp-wrap';
-  const img=document.createElement('img');img.src=c.photo;
-  const del=document.createElement('button');del.className='sp-del';del.textContent='×';
-  del.onclick=()=>{c.photo=null;c.photoOrig=null;renderCompPhotoSb(c);renderPreview();};
-  const crop=document.createElement('button');crop.className='sp-crop';crop.textContent='✂';crop.title='Recortar';
-  crop.onclick=()=>encuadrarComparable(c);
-  wrap.appendChild(img);wrap.appendChild(del);wrap.appendChild(crop);
-  sb.innerHTML='';sb.appendChild(wrap);
+  sb.innerHTML='';
+  const fotos=fotosComp(c);
+  const mover=(de,a)=>{const arr=fotosComp(c);const [f]=arr.splice(de,1);arr.splice(a,0,f);ponerFotosComp(c,arr);renderCompPhotoSb(c);renderPreview();};
+  fotos.forEach((p,i)=>{
+    const wrap=document.createElement('div');wrap.className='sp-wrap';wrap.draggable=true;wrap.title='Arrastrá para cambiar el orden';
+    wrap.ondragstart=e=>{_arrastraComp={id:c.id,i};e.dataTransfer.effectAllowed='move';};
+    wrap.ondragend=()=>{_arrastraComp=null;};
+    wrap.ondragover=e=>{if(_arrastraComp&&_arrastraComp.id===c.id)e.preventDefault();};
+    wrap.ondrop=e=>{e.preventDefault();const a=_arrastraComp;_arrastraComp=null;if(a&&a.id===c.id&&a.i!==i)mover(a.i,i);};
+    const img=document.createElement('img');img.src=p.photo;img.draggable=false;
+    const num=document.createElement('span');num.className='sp-num'+(i===0?' principal':'');num.textContent=i===0?'1 · Principal':String(i+1);
+    const del=document.createElement('button');del.className='sp-del';del.textContent='×';del.title='Quitar';
+    del.onclick=()=>{const arr=fotosComp(c);arr.splice(i,1);ponerFotosComp(c,arr);renderCompPhotoSb(c);renderPreview();};
+    const crop=document.createElement('button');crop.className='sp-crop';crop.textContent='✂';crop.title='Elegir qué parte se ve';
+    crop.onclick=()=>encuadrarComparable(c,i);
+    wrap.append(img,num,del,crop);
+    if(i>0){const st=document.createElement('button');st.className='sp-star';st.textContent='★';st.title='Hacer principal';st.onclick=()=>mover(i,0);wrap.append(st);}
+    sb.appendChild(wrap);
+  });
 }
 
 // ══════════════════════════════════════
@@ -868,9 +901,10 @@ function renderSidebar(){
     <input type="number" value="${c.sfOverride}" placeholder="auto" step="0.01" oninput="setC(${c.id},'sfOverride',this.value)">
   </div>
   <div class="field">
-    <label>Foto del comparable</label>
-    <label class="file-label">📷 Agregar foto<input type="file" accept="image/*" onchange="loadCompPhoto(this,${c.id})"></label>
-    <div class="sb-photos" id="sb-cp-${c.id}"></div>
+    <label>Fotos del comparable</label>
+    <label class="file-label">📷 Agregar fotos<input type="file" accept="image/*" multiple onchange="loadCompPhoto(this,${c.id})"></label>
+    <div style="font-size:10px;opacity:.55;margin-top:3px;line-height:1.4">La 1 sale grande al lado de los datos; las demás, abajo de la descripción (3 por fila). ★ = hacer principal.</div>
+    <div class="sb-photos sb-fotos-comp" id="sb-cp-${c.id}"></div>
   </div>
   <div class="field"><label>Notas</label><textarea rows="2" oninput="setC(${c.id},'notes',this.value)">${esc(c.notes)}</textarea></div>
 </div>
@@ -1334,14 +1368,16 @@ function rHeader(nombre,fecha){
   </div>`;
 }
 
-function rSubjectPhotos(){
-  if(!subjectPhotos.length)return'';
-  const n=subjectPhotos.length;
-  if(n===1)return'<img class="subject-photo" src="'+subjectPhotos[0].photo+'" alt="" style="margin-top:4mm">';
-  const cols=n===2?2:3;
-  const imgs=subjectPhotos.map(p=>'<img src="'+p.photo+'" style="width:100%;height:auto;border-radius:3px;display:block;" alt="">').join('');
-  return'<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:2mm;margin-top:4mm">'+imgs+'</div>';
+/* fotos 2 en adelante: abajo de la descripción, 3 por fila */
+function galeriaFotos(fotos,enc){
+  if(!fotos.length)return'';
+  return'<div class="foto-galeria">'+fotos.map((p,i)=>'<div class="foto-gal" data-enc="'+enc(i)+'" title="Clic para elegir qué parte de la foto se ve" style="background-image:url(\''+p.photo+'\')"></div>').join('')+'</div>';
 }
+function rFotoPrincipalSujeto(){
+  const p=subjectPhotos[0];
+  return p?'<div class="d-subj-photo" data-enc="s:0" title="Clic para elegir qué parte de la foto se ve" style="background-image:url(\''+p.photo+'\')"></div>':'';
+}
+function rSubjectPhotos(){return galeriaFotos(subjectPhotos.slice(1),i=>'s:'+(i+1));}
 function rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,frente){
   const metaItems=[];
   if(frente>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(frente)} m</strong><span>Frente</span></div>`);
@@ -1353,6 +1389,7 @@ function rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,frente){
   
   // analista is internal only — not rendered in ficha
   return`<div class="d-subject">
+    ${rFotoPrincipalSujeto()}
     <div class="d-over">Propiedad Tasada</div>
     <div class="d-addr">${esc(nombre)||'Dirección no especificada'}</div>
     ${metaItems.length?`<div class="d-meta">${metaItems.join('')}</div>`:''}
@@ -1406,7 +1443,7 @@ function rSection(comps,tipo,ss){
       c.fecha?['Fecha',esc(c.fecha)]:null,
     ].filter(Boolean).map(([l,v2])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${v2}</span></div>`).join('');
     return`<div class="icard">
-      ${c.photo?`<div class="icard-photo" data-cid="${c.id}" title="Clic para elegir qué parte de la foto se ve" style="background-image:url('${c.photo}')"></div>`:`<div class="icard-no-photo">Sin foto</div>`}
+      ${c.photo?`<div class="icard-photo" data-enc="c:${c.id}:0" title="Clic para elegir qué parte de la foto se ve" style="background-image:url('${c.photo}')"></div>`:`<div class="icard-no-photo">Sin foto</div>`}
       <div class="icard-body">
         <div class="icard-top">
           <div class="icard-num-badge">Comp. ${i+1}</div>
@@ -1416,6 +1453,7 @@ function rSection(comps,tipo,ss){
         <div class="icard-grid">${data}</div>
         ${c.notes?`<div class="icard-notes">${esc(c.notes)}</div>`:''}
       </div>
+      ${galeriaFotos(fotosComp(c).slice(1),k=>'c:'+c.id+':'+(k+1))}
     </div>`;
   }).join('');
 
@@ -1511,18 +1549,27 @@ function toggleFirma(){
   renderPreview();
 }
 
+const _IDB_LOC='metrica-tasador-locales';
+function _idbLoc(){return new Promise((ok,mal)=>{const r=indexedDB.open(_IDB_LOC,1);r.onupgradeneeded=e=>e.target.result.createObjectStore('fotos');r.onsuccess=e=>ok(e.target.result);r.onerror=()=>mal(r.error);});}
+async function fotosBorrador(v){
+  try{const db=await _idbLoc();return await new Promise((ok,mal)=>{
+    const tx=db.transaction('fotos',v===undefined?'readonly':'readwrite'),os=tx.objectStore('fotos');
+    if(v===undefined){const q=os.get('borrador');q.onsuccess=()=>ok(q.result||null);q.onerror=()=>mal(q.error);}
+    else{os.put(v,'borrador');tx.oncomplete=()=>ok(true);tx.onerror=()=>mal(tx.error);}
+  });}catch(e){return null;}
+}
+/* borrador automático: los datos van a localStorage y las fotos a IndexedDB (no tiene el límite de ~5 MB) */
 function autoSave(){
   if(!_autoSaveEnabled)return;
   const ts=new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-  const mkStripped=()=>{const st=getState();if(st.subject){st.subject.photos=[];st.subject.mapPhoto=null;st.subject.mapPhotoOrig=null;}if(st.map)st.map.capturedMapImg=null;if(st.comparables)st.comparables.forEach(c=>{c.photo=null;c.photoOrig=null;});st._savedAt=ts;st._hasPhotos=false;return st;};
-  try{
-    const st=getState();
-    if(st.map)st.map.capturedMapImg=null;
-    st._savedAt=ts;st._hasPhotos=true;
-    localStorage.setItem(DRAFT_KEY,JSON.stringify(st));
-  }catch(e){
-    try{localStorage.setItem(DRAFT_KEY,JSON.stringify(mkStripped()));}catch(e2){}
-  }
+  const st=getState();
+  const fotos={subject:st.subject.photos||[],mapPhoto:st.subject.mapPhoto||null,mapPhotoOrig:st.subject.mapPhotoOrig||null,comps:{}};
+  (st.comparables||[]).forEach(c=>{fotos.comps[c.id]={photo:c.photo||null,photoOrig:c.photoOrig||null,fotosExtra:c.fotosExtra||[]};c.photo=null;c.photoOrig=null;c.fotosExtra=[];});
+  st.subject.photos=[];st.subject.mapPhoto=null;st.subject.mapPhotoOrig=null;
+  if(st.map)st.map.capturedMapImg=null;
+  st._savedAt=ts;st._fotosIDB=true;
+  fotosBorrador(fotos);
+  try{localStorage.setItem(DRAFT_KEY,JSON.stringify(st));}catch(e){}
 }
 function closeBanner(){document.getElementById('recovery-banner').style.display='none';}
 function discardDraft(){
@@ -1755,7 +1802,7 @@ function aplicarComp(id,d){
   const c=comparables.find(x=>x.id===id);if(!c)return'';
   Object.assign(c,{address:d.direccion||'',link:d.link||'',currency:d.precio?(d.currency||c.currency):c.currency,price:d.precio||'',
     fuente:d.fuente||c.fuente,fecha:mesAnio(),frente:numTxt(d.frente),pb:numTxt(d.pb||d.cub),ss:numTxt(d.ss),p1:numTxt(d.p1),p2:'',customFloors:[],
-    notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,photoLink:''});
+    notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,fotosExtra:(d.fotos||[]).slice(1,4).map(f=>({photo:f,photoOrig:f})),photoLink:''});
   const pos=posCuadraDe(d.posicion||d.texto);if(pos)c.posicion=pos;
   renderSidebar();renderPreview();
   if(showMap&&c.address)triggerMapGen();
@@ -1893,8 +1940,10 @@ const FIRMA_B64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOwAAAC6CAYAAACtB
 // ══════════════════════════════════════
 // INIT — restaura borrador ANTES de cualquier render
 // ══════════════════════════════════════
-(function init(){
+(async function init(){
   let restored=false;
+  let fotosGuardadas=null;
+  try{const r0=localStorage.getItem(DRAFT_KEY);if(r0&&JSON.parse(r0)._fotosIDB)fotosGuardadas=await fotosBorrador();}catch(e){}
   _autoSaveEnabled=true; // habilitar ANTES de applyState para que el primer renderPreview ya guarde
   try{
     const raw=localStorage.getItem(DRAFT_KEY);
@@ -1902,6 +1951,9 @@ const FIRMA_B64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOwAAAC6CAYAAACtB
       const parsed=JSON.parse(raw);
       /* version 4 = borrador del tasador de deptos (antes compartían la clave): no mezclarlo */
       if(parsed&&parsed.version!==4&&(parsed.subject?.nombre||(parsed.comparables?.length>0))){
+        if(parsed._fotosIDB&&fotosGuardadas){const f=fotosGuardadas;parsed.subject=parsed.subject||{};
+          parsed.subject.photos=f.subject||[];parsed.subject.mapPhoto=f.mapPhoto||null;parsed.subject.mapPhotoOrig=f.mapPhotoOrig||null;
+          (parsed.comparables||[]).forEach(c=>{const x=f.comps&&f.comps[c.id];if(x){c.photo=x.photo;c.photoOrig=x.photoOrig;c.fotosExtra=x.fotosExtra||[];}});}
         applyState(parsed);
         const tsEl=document.getElementById('draft-ts');
         if(tsEl)tsEl.textContent=parsed._savedAt||'fecha desconocida';
