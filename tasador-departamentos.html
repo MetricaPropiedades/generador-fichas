@@ -379,7 +379,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
     <div class="field"><label>Ubicación</label>
       <select id="s-ubicacion" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy buena">Muy buena</option><option value="Buena">Buena</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
     <div class="field"><label>Tipo de edificio</label>
-      <select id="s-edificio" onchange="renderPreview()"><option value="">—</option><option value="Torre en esquina">Torre en esquina</option><option value="Torre">Torre</option><option value="Sobre linderos">Sobre linderos</option></select></div>
+      <select id="s-edificio" onchange="renderPreview()"><option value="">—</option><option value="Torre en esquina">Torre en esquina</option><option value="Esquina">Esquina</option><option value="Torre">Torre</option><option value="Sobre linderos">Sobre linderos</option></select></div>
   </div>
   <div class="field-row">
     <div class="field"><label>Antigüedad</label>
@@ -456,7 +456,7 @@ const ALTURA_EDIF_COEF={'Alta':1.05,'Media':1.00,'Último piso':0.98,'Baja':0.95
 const OCUPACION_COEF={'Piso':1.04,'Semipiso':1.00,'3 o más por piso':0.96}; /*(*)*/
 const POSICION_DEPTO_COEF={'Pasante':1.03/*(*)*/,'Frente':1.00,'Lateral':0.96,'Contrafrente':0.93};
 const LUMINOSIDAD_COEF={'Muy buena':1.00,'Estándar':0.93,'Mala':0.85};
-const EDIFICIO_COEF={'Torre en esquina':1.03/*(*)*/,'Torre':1.00,'Sobre linderos':0.94};
+const EDIFICIO_COEF={'Torre en esquina':1.03/*(*)*/,'Esquina':1.02/*(*)*/,'Torre':1.00,'Sobre linderos':0.94};
 const ANTIGUEDAD_COEF={'0-5':1.00,'5-10':0.95,'10-20':0.88,'20-50':0.82,'50+':0.76};
 const ALTURA_COEF={'1':1.00,'1.05':1.05};
 const UBICACION_COEF={'Excelente':1.08/*(*)*/,'Muy buena':1.00,'Buena':0.93,'Media':0.85,'Baja':0.75};
@@ -852,6 +852,7 @@ function renderSidebar(){
     <select onchange="setC(${c.id},'edificio',this.value);renderPreview()">
       <option value="" ${!c.edificio?'selected':''}>—</option>
       <option value="Torre en esquina" ${c.edificio==='Torre en esquina'?'selected':''}>Torre en esquina</option>
+      <option value="Esquina" ${c.edificio==='Esquina'?'selected':''}>Esquina</option>
       <option value="Torre" ${c.edificio==='Torre'?'selected':''}>Torre</option>
       <option value="Sobre linderos" ${c.edificio==='Sobre linderos'?'selected':''}>Sobre linderos</option>
     </select>
