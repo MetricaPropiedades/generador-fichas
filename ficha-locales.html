@@ -347,7 +347,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
       <label class="btn-sec" style="cursor:pointer" title="Abrí un PDF hecho con este generador para seguir editándolo">📂 Abrir PDF<input type="file" accept=".pdf,.json" style="display:none" onchange="loadJSON(this)"></label>
     </div>
     <div class="sb-extra-btns">
-      <button class="btn-sec" id="btn-deshacer" onclick="deshacer()" disabled style="flex:1;opacity:.45" title="Volver al paso anterior (Ctrl+Z)">↶ Deshacer</button>
+      <button class="btn-sec" id="btn-deshacer" onclick="deshacer()" disabled style="flex:0 0 56px;opacity:.45;padding:4px;display:flex;align-items:center;justify-content:center" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:auto"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button class="btn-sec" id="btn-rehacer" onclick="rehacer()" disabled style="flex:0 0 56px;opacity:.45;padding:4px;display:flex;align-items:center;justify-content:center" title="Rehacer (Ctrl+Y)" aria-label="Rehacer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:auto"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
       <button class="btn-sec" onclick="limpiarTodo()" style="flex:1" title="Borrar todo para empezar una ficha nueva">🧹 Limpiar todo</button>
     </div>
     <button class="btn-guardadas" onclick="abrirGuardadas()">
@@ -2020,25 +2020,25 @@ ajustarZoomFicha();
 init();
 </script>
 <script>
-/* DESHACER y LIMPIAR TODO.
+/* DESHACER, REHACER y LIMPIAR TODO.
    Cada vez que algo cambia (y se deja de escribir ~0,7 s) se guarda cómo estaba antes; "Deshacer" vuelve un paso (hasta 40).
    Las fotos no se duplican en memoria: los pasos comparten los mismos textos de imagen.
    "Limpiar todo" deja la ficha vacía para empezar otra, y también se puede deshacer. */
 (function(){
   const MAX=40, grupo=s=>s.tipoInmueble;
-  let pila=[], actual=null, timer=null, rebase=false, calma=0; /* calma: lo que se acomoda solo (mapa, etc.) justo después de deshacer o limpiar no cuenta como un paso */
+  let pila=[], rehechos=[], actual=null, timer=null, rebase=false, calma=0; /* calma: lo que se acomoda solo (mapa, etc.) justo después de deshacer o limpiar no cuenta como un paso */
   const clon=o=>Array.isArray(o)?o.map(clon):(o&&typeof o==='object')?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,clon(v)])):o;
   const firma=st=>JSON.stringify(st,(k,v)=>(k==='_savedAt'||k==='timestamp'||k==='map')?undefined:(typeof v==='string'&&v.length>400?'#'+v.length+v.slice(-40):v));
   function leer(){try{const s=clon(getState());return{s,f:firma(s)};}catch(e){return null;}}
-  function botones(){const b=document.getElementById('btn-deshacer');if(b){b.disabled=!pila.length;b.style.opacity=pila.length?'':'.45';}}
+  function botones(){[['btn-deshacer',pila],['btn-rehacer',rehechos]].forEach(([id,p])=>{const b=document.getElementById(id);if(b){b.disabled=!p.length;b.style.opacity=p.length?'':'.45';}});}
   function revisar(){
     clearTimeout(timer);timer=null;
     const n=leer();if(!n)return;
     /* cambiar de pestaña (locales/deptos/depósitos) es otra ficha: el historial empieza de nuevo */
-    if(actual&&grupo&&grupo(n.s)!==grupo(actual.s)){pila=[];actual=n;rebase=false;botones();return;}
+    if(actual&&grupo&&grupo(n.s)!==grupo(actual.s)){pila=[];rehechos=[];actual=n;rebase=false;botones();return;}
     if(!actual||rebase||Date.now()<calma){actual=n;rebase=false;botones();return;}
     if(n.f===actual.f){actual=n;return;} /* el mapa se acomoda solo: no es un paso para deshacer */
-    pila.push(actual);if(pila.length>MAX)pila.shift();
+    pila.push(actual);if(pila.length>MAX)pila.shift();rehechos=[]; /* un cambio nuevo borra lo que había para rehacer */
     actual=n;botones();
   }
   function programar(){clearTimeout(timer);timer=setTimeout(revisar,700);}
@@ -2051,22 +2051,31 @@ init();
   window.deshacer=function(){
     revisar();
     if(!pila.length){botones();return;}
-    const prev=pila.pop();
+    const prev=pila.pop();rehechos.push(actual);
     applyState(clon(prev.s));
     if(typeof autoSave==='function')autoSave();
     actual=prev;rebase=true;calma=Date.now()+1500;programar();botones();
   };
+  window.rehacer=function(){
+    revisar();
+    if(!rehechos.length){botones();return;}
+    const sig=rehechos.pop();pila.push(actual);
+    applyState(clon(sig.s));
+    if(typeof autoSave==='function')autoSave();
+    actual=sig;rebase=true;calma=Date.now()+1500;programar();botones();
+  };
   window.limpiarTodo=function(){
-    if(!confirm('¿Borrar todos los datos para empezar una ficha nueva?\n\nSi te arrepentís, tocá «Deshacer».'))return;
+    if(!confirm('¿Borrar todos los datos para empezar una ficha nueva?\n\nSi te arrepentís, tocá la flecha de deshacer (↶).'))return;
     revisar();
     applyState({tipoInmueble,tipoOperacion,locals:[]});showMap=true;addLocal();
     if(typeof autoSave==='function')autoSave();
     revisar();calma=Date.now()+1500;
   };
   document.addEventListener('keydown',e=>{
-    if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.key.toLowerCase()!=='z')return;
+    if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+    const k=e.key.toLowerCase(),re=k==='y'||(k==='z'&&e.shiftKey);if(k!=='z'&&!re)return;
     const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
-    e.preventDefault();window.deshacer();
+    e.preventDefault();re?window.rehacer():window.deshacer();
   });
 })();
 </script>

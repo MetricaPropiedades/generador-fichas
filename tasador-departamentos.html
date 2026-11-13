@@ -131,6 +131,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 /* datos en columnas parejas, uno al lado del otro en orden: si falta un dato no queda hueco */
 .icard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(30mm,1fr));gap:2.5mm 5mm;margin-bottom:2.5mm;}
 .icard-datum{min-width:0;}
+.coef-fijo{padding:6px 8px;border:1px solid rgba(255,255,255,.08);border-radius:4px;font-size:12px;color:rgba(255,255,255,.5);white-space:nowrap;}
 /* ── fotos de la tasación: todas 4:3. La 1 va grande a la izquierda; las demás abajo de la descripción, 3 por fila ── */
 .d-subj-photo{float:left;width:80mm;height:60mm;margin:0 6mm 3mm 0;border-radius:3px;background:#eee center/cover no-repeat;cursor:pointer;}
 .foto-galeria{clear:both;display:grid;grid-template-columns:repeat(3,1fr);gap:2.5mm;padding-top:3mm;}
@@ -325,7 +326,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
     <label class="btn btn-o" style="cursor:pointer">📂 Cargar<input type="file" accept=".pdf,.json" onchange="loadJSON(this)" style="display:none"></label>
   </div>
   <div class="btn-row">
-    <button class="btn btn-o" id="btn-deshacer" onclick="deshacer()" disabled style="flex:1;opacity:.45" title="Volver al paso anterior (Ctrl+Z)">↶ Deshacer</button>
+    <button class="btn btn-o" id="btn-deshacer" onclick="deshacer()" disabled style="flex:0 0 56px;opacity:.45;padding:4px;display:flex;align-items:center;justify-content:center" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:auto"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button class="btn btn-o" id="btn-rehacer" onclick="rehacer()" disabled style="flex:0 0 56px;opacity:.45;padding:4px;display:flex;align-items:center;justify-content:center" title="Rehacer (Ctrl+Y)" aria-label="Rehacer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:auto"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <button class="btn btn-o" onclick="limpiarTodo()" style="flex:1" title="Borrar todo para empezar una tasación nueva">🧹 Limpiar todo</button>
   </div>
 
@@ -353,19 +354,15 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
     <div class="sb-photos" id="sb-subject-photo"></div>
   </div>
 
-  <h2>Mapa Automatico</h2>
-  <div class="field-hint">Se geocodifican las direcciones ingresadas. Completa la direccion del tasado y de los comparables, luego presiona el boton.</div>
-  <button onclick="triggerMapGen()" class="btn-add" style="margin-top:4px">🗺 Generar / Actualizar mapa</button>
+  <h2>Mapa</h2>
+  <div class="field-hint">Se arma solo con las direcciones del tasado y de los comparables, y se actualiza cada vez que cambiás una.</div>
   <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:14px;"></div>
 
   <h2>Superficie Departamento</h2>
-  <div class="field-row">
+  <div class="field-row" style="align-items:flex-end">
     <div class="field"><label>Cubierta (m²)</label><input type="number" id="s-cub" placeholder="0" oninput="renderPreview()"></div>
     <div class="field"><label>Semicubierta (m²)</label><input type="number" id="s-semi" placeholder="0" oninput="renderPreview()"></div>
-  </div>
-  <div class="field-row">
-    <div class="field"><label>Descubierta (m²)</label><input type="number" id="s-descu" placeholder="0" oninput="renderPreview()"></div>
-    <div class="field"><label>Terraza (m²)</label><input type="number" id="s-terr" placeholder="0" oninput="renderPreview()"></div>
+    <div class="field" style="max-width:72px"><label title="Coeficiente de homogeneización de la semicubierta (vale también para los comparables)">Coef ×</label><input type="number" id="w-semi" value="0.50" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
   </div>
   <div class="field-calc" id="s-calc">Sup. considerada: —</div>
   <div id="s-extras-list"></div>
@@ -402,16 +399,6 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field"><label>Otros amenities</label>
     <input type="text" id="s-amen-otros" placeholder="ej: Gimnasio, Sauna..." oninput="renderPreview()"></div>
 
-  <h2>Coeficientes de Homogeneización</h2>
-  <div class="field-hint">Factor de reducción de superficie respecto a cubierta. Semicubierta: 0.50. Descubierta: 0.25. Terraza: 0.25.</div>
-  <div class="field-row">
-    <div class="field"><label>Semicubierta ×</label><input type="number" id="w-semi" value="0.50" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
-    <div class="field"><label>Descubierta ×</label><input type="number" id="w-descu" value="0.25" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
-  </div>
-  <div class="field-row">
-    <div class="field"><label>Terraza ×</label><input type="number" id="w-terr" value="0.25" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
-  </div>
-
   <h2>Comparables</h2>
   <div id="comp-list"></div>
   <button class="btn-add" onclick="addComparable()">+ Agregar Comparable</button>
@@ -439,11 +426,11 @@ let mapPhoto=null, mapPhotoOrig=null;
 let showMap=false, geoCoords={subject:null,comparables:[]}, capturedMapImg=null, geoCache={};
 let leafletMap=null;
 
-function W(){return{semi:parseFloat(document.getElementById('w-semi').value)||0.5,descu:parseFloat(document.getElementById('w-descu').value)||0.25,terr:parseFloat(document.getElementById('w-terr').value)||0.25};}
+function W(){return{semi:parseFloat(document.getElementById('w-semi').value)||0.5};}
 
 
-function subSup(){const w=W();let s=(parseFloat(document.getElementById('s-cub').value)||0)+(parseFloat(document.getElementById('s-semi').value)||0)*w.semi+(parseFloat(document.getElementById('s-descu').value)||0)*w.descu+(parseFloat(document.getElementById('s-terr').value)||0)*w.terr;(subjectExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
-function cSup(c){const w=W();let s=(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0)*w.semi+(parseFloat(c.descu)||0)*w.descu+(parseFloat(c.terr)||0)*w.terr;(c.supExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
+function subSup(){const w=W();let s=(parseFloat(document.getElementById('s-cub').value)||0)+(parseFloat(document.getElementById('s-semi').value)||0)*w.semi;(subjectExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
+function cSup(c){const w=W();let s=(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0)*w.semi;(c.supExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
@@ -854,13 +841,10 @@ function renderSidebar(){
     <input type="text" value="${esc(c.amenitiesOtros||'')}" placeholder="ej: Gimnasio, Sauna..." oninput="setC(${c.id},'amenitiesOtros',this.value)">
   </div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Superficie del departamento</div>
-  <div class="field-row">
+  <div class="field-row" style="align-items:flex-end">
     <div class="field"><label>Cubierta (m²)</label><input type="number" value="${c.cub}" placeholder="0" oninput="setC(${c.id},'cub',this.value)"></div>
     <div class="field"><label>Semicubierta (m²)</label><input type="number" value="${c.semi}" placeholder="0" oninput="setC(${c.id},'semi',this.value)"></div>
-  </div>
-  <div class="field-row">
-    <div class="field"><label>Descubierta (m²)</label><input type="number" value="${c.descu}" placeholder="0" oninput="setC(${c.id},'descu',this.value)"></div>
-    <div class="field"><label>Terraza (m²)</label><input type="number" value="${c.terr}" placeholder="0" oninput="setC(${c.id},'terr',this.value)"></div>
+    <div class="field" style="max-width:72px"><label>Coef</label><div class="coef-fijo" title="Es el mismo de la propiedad tasada: se cambia ahí">×<span class="coef-semi-txt">${W().semi.toFixed(2)}</span></div></div>
   </div>
   ${(c.supExtras||[]).map((e,i)=>`<div class="field-row" style="align-items:flex-end;gap:4px;margin-bottom:4px"><div class="field" style="flex:2"><label>Personalizable — nombre</label><input type="text" value="${e.nombre||''}" placeholder="ej: Baulera, Jardín..." oninput="setSupExtra(${c.id},${i},'nombre',this.value)"></div><div class="field"><label>m²</label><input type="number" value="${e.m2||''}" placeholder="0" oninput="setSupExtra(${c.id},${i},'m2',this.value)"></div><div class="field"><label>Coef ×</label><input type="number" value="${e.coef||'1.00'}" step="0.05" min="0" max="1" oninput="setSupExtra(${c.id},${i},'coef',this.value)"></div><button onclick="removeSupExtra(${c.id},${i})" style="margin-top:16px;padding:4px 8px;background:#b55;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px;flex-shrink:0">✕</button></div>`).join('')}
   <button onclick="addSupExtra(${c.id})" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
@@ -896,7 +880,7 @@ function renderSidebar(){
   }).join('');
   // Re-render photo thumbnails for each comparable (since innerHTML was rebuilt)
   comparables.forEach(c=>{if(c.photo)renderCompPhotoSb(c);});
-  document.querySelectorAll('#comp-list input.dir-inp').forEach(i=>conectarAutocompletado(i,()=>{if(showMap)triggerMapGen();}));
+  document.querySelectorAll('#comp-list input.dir-inp').forEach(i=>conectarAutocompletado(i,()=>triggerMapGen()));
 }
 
 // ══════════════════════════════════════
@@ -911,8 +895,8 @@ function renderPreview(){
   const desc=document.getElementById('s-desc').value.trim();
   const cub=parseFloat(document.getElementById('s-cub').value)||0;
   const semi=parseFloat(document.getElementById('s-semi').value)||0;
-  const descu=parseFloat(document.getElementById('s-descu').value)||0;
-  const terr=parseFloat(document.getElementById('s-terr').value)||0;
+  const descu=0, terr=0; /* Descubierta y Terraza ya no se usan */
+  document.querySelectorAll('.coef-semi-txt').forEach(e=>e.textContent=W().semi.toFixed(2));
   
   const w=W();
   const alqs=comparables.filter(c=>c.tipo==='Alquiler');
@@ -925,6 +909,7 @@ function renderPreview(){
     rFooter(analista);
   if(showMap&&!capturedMapImg)setTimeout(()=>initMapFromCache(),60);
   autoSave();
+  programarMapa();
 }
 
 // ══════════════════════════════════════
@@ -1167,7 +1152,6 @@ function initMapFromCache(){
   if(!mapDiv){if(st2)st2.textContent='ERROR: leaflet-map div no encontrado';return;}
   // Debug: mostrar qué coords tenemos
   const nComp=geoCoords.comparables.filter(x=>x&&x.coord).length;
-  if(st2)st2.textContent='Restaurando: sujeto '+(geoCoords.subject?'✓':'✗')+', comparables '+nComp+'/'+geoCoords.comparables.length;
   if(leafletMap){leafletMap.remove();leafletMap=null;}
   leafletMap=L.map('leaflet-map',{zoomControl:true,attributionControl:true});
   L.tileLayer('https://{s}.tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey=799db6d6ca3343839a985264e7476796',{
@@ -1193,32 +1177,46 @@ function initMapFromCache(){
   else leafletMap.fitBounds(bounds,{padding:[40,40],maxZoom:15});
 }
 
+/* MAPA AUTOMÁTICO: cada vez que cambia una dirección (del tasado o de un comparable) el mapa se rehace solo,
+   ~1 s después de dejar de escribir. Solo se buscan las direcciones nuevas (las ya encontradas quedan guardadas).
+   Si se subió una imagen de mapa a mano, manda esa. */
+let _mapaClave='',_mapaTimer=null,_mapaCorriendo=false,_mapaPendiente=false;
+const _noEncontradas=new Set();
+function claveMapa(){return JSON.stringify([(document.getElementById('s-nombre').value||'').trim().toLowerCase(),comparables.map(c=>[c.id,(c.address||'').trim().toLowerCase()])]);}
+function programarMapa(){clearTimeout(_mapaTimer);_mapaTimer=setTimeout(()=>{if(claveMapa()!==_mapaClave)triggerMapGen();},1000);}
+async function ubicar(dir){const k=dir.trim().toLowerCase();if(geoElegidos[k])return geoElegidos[k];if(_noEncontradas.has(k))return null;const r=await nominatim(dir);if(!r)_noEncontradas.add(k);return r;}
 async function triggerMapGen(){
-  showMap=true;capturedMapImg=null;
-  // Limpiar caché para reintentar geocodificación fresca
-  Object.keys(geoCache).forEach(k=>delete geoCache[k]);
-  const st=document.getElementById('map-status');
-  if(st)st.textContent='Buscando ubicaciones...';
-  renderPreview();
-  await delay(80);
-  const subjectAddr=(document.getElementById('s-nombre').value||'').trim();
-  if(st)st.textContent='Buscando propiedad tasada...';
-  geoCoords.subject=subjectAddr?await nominatim(subjectAddr):null;
-  if(st)st.textContent='Tasada: '+(geoCoords.subject?'✓':'✗ no encontrada - revisá la dirección en Nombre/Dirección');
-  geoCoords.comparables=[];
-  for(let i=0;i<comparables.length;i++){
-    const c=comparables[i];
-    await delay(400);
-    if(c.address&&c.address.trim()){
-      if(st)st.textContent='Buscando comp '+(i+1)+'...';
-      const coord=await nominatim(c.address);
-      geoCoords.comparables.push({id:c.id,addr:c.address,coord});
-      if(st)st.textContent='Comp '+(i+1)+': '+(coord?'✓ encontrado':'✗ no encontrado');
-    } else geoCoords.comparables.push({id:c.id,addr:'',coord:null});
+  if(_mapaCorriendo){_mapaPendiente=true;return;}
+  if(mapPhoto)return;
+  _mapaCorriendo=true;
+  try{
+    const clave=claveMapa(), st=document.getElementById('map-status');
+    const subjectAddr=(document.getElementById('s-nombre').value||'').trim();
+    if(!subjectAddr&&!comparables.some(c=>c.address&&c.address.trim())){
+      _mapaClave=clave;
+      if(showMap){showMap=false;geoCoords={subject:null,comparables:[]};capturedMapImg=null;renderPreview();}
+      if(st)st.textContent='';
+      return;
+    }
+    if(st)st.textContent='Buscando ubicaciones…';
+    const nuevo={subject:subjectAddr?await ubicar(subjectAddr):null,comparables:[]};
+    for(const c of comparables){
+      const a=(c.address||'').trim();
+      nuevo.comparables.push({id:c.id,addr:c.address||'',coord:a?await ubicar(a):null});
+    }
+    if(claveMapa()!==clave){_mapaPendiente=true;return;} /* cambiaron mientras buscaba: se vuelve a armar */
+    geoCoords=nuevo;_mapaClave=clave;
+    const found=[nuevo.subject,...nuevo.comparables.map(x=>x.coord)].filter(Boolean).length;
+    const faltan=(subjectAddr&&!nuevo.subject?1:0)+nuevo.comparables.filter(x=>x.addr.trim()&&!x.coord).length;
+    if(st)st.textContent=found?('Mapa actualizado · '+found+(found===1?' ubicación':' ubicaciones')+(faltan?' · '+faltan+' sin encontrar (revisá la dirección)':'')):'No se encontraron las direcciones';
+    const estaba=showMap&&document.getElementById('leaflet-map');
+    showMap=true;capturedMapImg=null;
+    if(estaba)initMapFromCache();else renderPreview();
+    autoSave();
+  }finally{
+    _mapaCorriendo=false;
+    if(_mapaPendiente){_mapaPendiente=false;programarMapa();}
   }
-  const found=[geoCoords.subject,...geoCoords.comparables.map(x=>x&&x.coord)].filter(Boolean).length;
-  if(st)st.textContent=found?'Mapa generado ('+found+' ubicaciones)':'No se encontraron ubicaciones';
-  initMapFromCache();autoSave();
 }
 
 async function captureLeafletMap(){
@@ -1457,8 +1455,8 @@ function autoSave(){
 function closeBanner(){document.getElementById('recovery-banner').style.display='none';}
 function discardDraft(){
   localStorage.removeItem(DRAFT_KEY);clearPhotosIDB();
-  ['s-nombre','s-fecha','s-analista','s-desc','s-fund','s-cub','s-semi','s-descu','s-terr'].forEach(id=>{document.getElementById(id).value='';});
-  document.getElementById('w-semi').value='0.50';document.getElementById('w-descu').value='0.25';document.getElementById('w-terr').value='0.25';
+  ['s-nombre','s-fecha','s-analista','s-desc','s-fund','s-cub','s-semi'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('w-semi').value='0.50';
   subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;subjectExtras=[];renderSubjectExtrasSb();ponerCaractSujeto({});
   renderSubjectPhotoSb();renderMapPhotoSb();
   comparables=[];nextId=1;renderSidebar();renderPreview();closeBanner();
@@ -1663,7 +1661,7 @@ async function importarDesde(origen,idEstado,aplicar){
 
 // ── Departamentos: qué completa cada carga ──
 function limpiarSujeto(){
-  ['s-nombre','s-desc','s-cub','s-semi','s-descu','s-terr'].forEach(id=>{document.getElementById(id).value='';});
+  ['s-nombre','s-desc','s-cub','s-semi'].forEach(id=>{document.getElementById(id).value='';});
   ponerCaractSujeto({});
   subjectPhotos=[];subjectExtras=[];renderSubjectExtrasSb();
 }
@@ -1671,7 +1669,7 @@ function aplicarSujeto(d){
   limpiarSujeto();
   const set=(id,v)=>{if(v!=null&&String(v).trim()!=='')document.getElementById(id).value=v;};
   set('s-nombre',d.direccion);set('s-desc',d.desc);
-  set('s-cub',numTxt(d.cub||d.pb));set('s-semi',numTxt(d.semi));set('s-descu',numTxt(d.descu));
+  set('s-cub',numTxt(d.cub||d.pb));set('s-semi',numTxt(d.semi));
   set('s-antiguedad',bucketAntig(d.antiguedad));
   const r=rasgosDeTexto(d.texto);
   document.getElementById('s-pileta').checked=r.pileta;document.getElementById('s-sum').checked=r.sum;document.getElementById('s-baulera').checked=r.baulera;
@@ -1685,7 +1683,7 @@ function aplicarSujeto(d){
 function aplicarComp(id,d){
   const c=comparables.find(x=>x.id===id);if(!c)return'';
   Object.assign(c,{address:d.direccion||'',link:d.link||'',currency:d.precio?(d.currency||c.currency):c.currency,price:d.precio||'',
-    fuente:d.fuente||c.fuente,fecha:mesAnio(),cub:numTxt(d.cub||d.pb),semi:numTxt(d.semi),descu:numTxt(d.descu),terr:'',supExtras:[],
+    fuente:d.fuente||c.fuente,fecha:mesAnio(),cub:numTxt(d.cub||d.pb),semi:numTxt(d.semi),descu:'',terr:'',supExtras:[],
     notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,fotosExtra:(d.fotos||[]).slice(1,4).map(f=>({photo:f,photoOrig:f}))});
   const ant=bucketAntig(d.antiguedad);if(ant)c.antiguedad=ant;
   const r=rasgosDeTexto(d.texto);
@@ -1774,7 +1772,7 @@ function ponerCaractSujeto(k){
   ['pileta','sum','baulera'].forEach(key=>{const e=document.getElementById('s-'+key);if(e)e.checked=!!k[key];});
 }
 function getState(){
-  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,fund:document.getElementById('s-fund').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,descu:document.getElementById('s-descu').value,terr:document.getElementById('s-terr').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig,subjectExtras:[...(subjectExtras||[])],caract:sujeto()},weights:{semi:document.getElementById('w-semi').value,descu:document.getElementById('w-descu').value,terr:document.getElementById('w-terr').value,},comparables:comparables.map(c=>({...c})),tipoOperacion:document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta',map:{showMap,geoCoords,capturedMapImg}};
+  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,fund:document.getElementById('s-fund').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig,subjectExtras:[...(subjectExtras||[])],caract:sujeto()},weights:{semi:document.getElementById('w-semi').value,},comparables:comparables.map(c=>({...c})),tipoOperacion:document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta',map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1785,20 +1783,20 @@ function applyState(state){
   document.getElementById('s-desc').value=s.desc||'';document.getElementById('s-fund').value=s.fund||'';
   document.getElementById('s-cub').value=s.cub||'';
   document.getElementById('s-semi').value=s.semi||'';
-  document.getElementById('s-descu').value=s.descu||'';
-  document.getElementById('s-terr').value=s.terr||'';
     subjectPhotos=(s.photos||[]).map(p=>({photo:p.photo,photoOrig:p.photoOrig||p.photo}));
   if(!subjectPhotos.length&&s.photo){subjectPhotos=[{photo:s.photo,photoOrig:s.photoOrig||s.photo}];}
   mapPhoto=s.mapPhoto||null;mapPhotoOrig=s.mapPhotoOrig||null;
   const w=state.weights||{};
   document.getElementById('w-semi').value=w.semi||'0.50';
-  document.getElementById('w-descu').value=w.descu||'0.25';
-  document.getElementById('w-terr').value=w.terr||'0.25';
   
   subjectExtras=(state.subject&&state.subject.subjectExtras)||[];
+  /* Descubierta y Terraza ya no están: si una tasación vieja las tenía, pasan a personalizados con su coeficiente (el resultado no cambia) */
+  const pasarViejas=(o,ex)=>{const out=[...(ex||[])];[['descu','Descubierta'],['terr','Terraza']].forEach(([k,nom])=>{if(parseFloat(o[k])>0)out.push({nombre:nom,m2:String(o[k]),coef:String(w[k]||'0.25')});});return out;};
+  subjectExtras=pasarViejas(s,subjectExtras);
   ponerCaractSujeto(s.caract||{});
   comparables=(state.comparables||[]).map(c=>{
     const x={...c};
+    x.supExtras=pasarViejas(x,x.supExtras);x.descu='';x.terr='';
     /* archivos viejos: la ubicación era un número escrito a mano; si no era 1 se conserva como personalizado */
     if(x.ubicSel===undefined)x.ubicSel=(x.ubicacion&&parseFloat(x.ubicacion)!==1)?'Personalizado':'';
     return x;
@@ -1905,26 +1903,26 @@ window.addEventListener('beforeunload',()=>{if(_autoSaveEnabled)autoSave();});
   window.addEventListener('load',window.autoAltoTextos);
   setTimeout(window.autoAltoTextos,0);
 })();
-conectarAutocompletado(document.getElementById('s-nombre'),()=>{if(showMap)triggerMapGen();});
+conectarAutocompletado(document.getElementById('s-nombre'),()=>triggerMapGen());
 </script>
 <script>
-/* DESHACER y LIMPIAR TODO.
+/* DESHACER, REHACER y LIMPIAR TODO.
    Cada vez que algo cambia (y se deja de escribir ~0,7 s) se guarda cómo estaba antes; "Deshacer" vuelve un paso (hasta 40).
    Las fotos no se duplican en memoria: los pasos comparten los mismos textos de imagen.
    "Limpiar todo" borra la tasación (deja el nombre del analista) y se puede deshacer. */
 (function(){
   const MAX=40;
-  let pila=[], actual=null, timer=null, rebase=false, calma=0; /* calma: lo que se acomoda solo (mapa, etc.) justo después de deshacer o limpiar no cuenta como un paso */
+  let pila=[], rehechos=[], actual=null, timer=null, rebase=false, calma=0; /* calma: lo que se acomoda solo (mapa, etc.) justo después de deshacer o limpiar no cuenta como un paso */
   const clon=o=>Array.isArray(o)?o.map(clon):(o&&typeof o==='object')?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,clon(v)])):o;
   const firma=st=>JSON.stringify(st,(k,v)=>(k==='_savedAt'||k==='map')?undefined:(typeof v==='string'&&v.length>400?'#'+v.length+v.slice(-40):v));
   function leer(){try{const s=clon(getState());return{s,f:firma(s)};}catch(e){return null;}}
-  function botones(){const b=document.getElementById('btn-deshacer');if(b){b.disabled=!pila.length;b.style.opacity=pila.length?'':'.45';}}
+  function botones(){[['btn-deshacer',pila],['btn-rehacer',rehechos]].forEach(([id,p])=>{const b=document.getElementById(id);if(b){b.disabled=!p.length;b.style.opacity=p.length?'':'.45';}});}
   function revisar(){
     clearTimeout(timer);timer=null;
     const n=leer();if(!n)return;
     if(!actual||rebase||Date.now()<calma){actual=n;rebase=false;botones();return;}
     if(n.f===actual.f){actual=n;return;} /* el mapa se acomoda solo: no es un paso para deshacer */
-    pila.push(actual);if(pila.length>MAX)pila.shift();
+    pila.push(actual);if(pila.length>MAX)pila.shift();rehechos=[]; /* un cambio nuevo borra lo que había para rehacer */
     actual=n;botones();
   }
   function programar(){clearTimeout(timer);timer=setTimeout(revisar,700);}
@@ -1936,12 +1934,20 @@ conectarAutocompletado(document.getElementById('s-nombre'),()=>{if(showMap)trigg
   window.deshacer=function(){
     revisar();
     if(!pila.length){botones();return;}
-    const prev=pila.pop();
+    const prev=pila.pop();rehechos.push(actual);
     applyState(clon(prev.s));
     actual=prev;rebase=true;calma=Date.now()+1500;programar();botones();
   };
+  window.rehacer=function(){
+    revisar();
+    if(!rehechos.length){botones();return;}
+    const sig=rehechos.pop();pila.push(actual);
+    applyState(clon(sig.s));
+    if(typeof autoSave==='function')autoSave();
+    actual=sig;rebase=true;calma=Date.now()+1500;programar();botones();
+  };
   window.limpiarTodo=function(sinPreguntar){
-    if(!sinPreguntar&&!confirm('¿Borrar todos los datos para empezar una tasación nueva?\n\nSi te arrepentís, tocá «Deshacer».'))return;
+    if(!sinPreguntar&&!confirm('¿Borrar todos los datos para empezar una tasación nueva?\n\nSi te arrepentís, tocá la flecha de deshacer (↶).'))return;
     revisar();
     const an=document.getElementById('s-analista'), analista=an?an.value:'';
     applyState({});
@@ -1952,9 +1958,10 @@ conectarAutocompletado(document.getElementById('s-nombre'),()=>{if(showMap)trigg
     revisar();calma=Date.now()+1500;
   };
   document.addEventListener('keydown',e=>{
-    if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.key.toLowerCase()!=='z')return;
+    if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+    const k=e.key.toLowerCase(),re=k==='y'||(k==='z'&&e.shiftKey);if(k!=='z'&&!re)return;
     const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
-    e.preventDefault();window.deshacer();
+    e.preventDefault();re?window.rehacer():window.deshacer();
   });
 })();
 </script>
