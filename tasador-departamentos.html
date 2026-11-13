@@ -395,7 +395,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
     <div class="field"><label>Posición en el edificio</label>
       <select id="s-posicion" onchange="renderPreview()"><option value="">—</option><option value="Pasante">Pasante</option><option value="Frente">Frente</option><option value="Contrafrente">Contrafrente</option><option value="Lateral">Lateral</option></select></div>
     <div class="field"><label>Ocupación en planta</label>
-      <select id="s-ocupacion" onchange="renderPreview()"><option value="">—</option><option value="Piso">Piso</option><option value="Semipiso">Semipiso</option><option value="3 o más por piso">3 o más por piso</option></select></div>
+      <select id="s-ocupacion" onchange="renderPreview()"><option value="">—</option><option value="Piso">Piso</option><option value="Semipiso">Semipiso</option><option value="3 o más por piso">3 o más por piso</option><option value="Sin definir">Sin definir</option></select></div>
   </div>
   <div class="field-row">
     <div class="field"><label>Calidad constructiva</label>
@@ -466,7 +466,7 @@ const AJUSTE={
   antiguedad:{max:0.10,orden:['0-5','5-10','10-20','20-50','50+']},
   alturaEdificio:{max:0.10,orden:['Alta','Media','Último piso','Baja','Primer piso']}, /* 'Otra' no ajusta */
   posicionDepto:{max:0.10,orden:['Pasante','Frente','Contrafrente','Lateral']},
-  ocupacion:{max:0.10,orden:['Piso','Semipiso','3 o más por piso']},
+  ocupacion:{max:0.10,orden:['Piso','Semipiso','3 o más por piso']}, /* 'Sin definir' no ajusta */
   estadoConst:{max:0.10,orden:['Excelente','Muy bueno','Bueno','Medio','Bajo']},
   luminosidad:{max:0.10,orden:['Muy buena','Estándar','Mala']},
   alturaInterna:{max:0.01,orden:['1.05','1']} /* Alta, Estándar: solo 2 opciones → 1% */
@@ -915,6 +915,7 @@ function renderSidebar(){
       <option value="Piso" ${c.ocupacion==='Piso'?'selected':''}>Piso</option>
       <option value="Semipiso" ${c.ocupacion==='Semipiso'?'selected':''}>Semipiso</option>
       <option value="3 o más por piso" ${c.ocupacion==='3 o más por piso'?'selected':''}>3 o más por piso</option>
+      <option value="Sin definir" ${c.ocupacion==='Sin definir'?'selected':''}>Sin definir</option>
     </select>
   </div>
   <div class="field"><label>Calidad constructiva</label>
@@ -1352,7 +1353,7 @@ function rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss,subExtras)
   const S=sujeto();
   const amen=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
   const chars=[['Ubicación',S.ubicacion],['Tipo de edificio',S.edificio],['Antigüedad',S.antiguedad?S.antiguedad+' años':''],['Altura en el edificio',S.alturaEdificio],['Posición',S.posicionDepto],
-    ['Ocupación en planta',S.ocupacion],['Calidad constructiva',S.calidad],['Estado constructivo',S.estadoConst],['Luminosidad',S.luminosidad],
+    ['Ocupación en planta',S.ocupacion==='Sin definir'?'':S.ocupacion],['Calidad constructiva',S.calidad],['Estado constructivo',S.estadoConst],['Luminosidad',S.luminosidad],
     ['Altura interna',{'1':'Estándar','1.05':'Alta'}[S.alturaInterna]||''],['Cochera',S.cochera||(parseArg(S.cocheraPrecio)?'Sí':'')],['Amenities',amen]]
     .filter(([,v])=>v).map(([l,v])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${esc(v)}</span></div>`).join('');
   // analista is internal only — not rendered in ficha
