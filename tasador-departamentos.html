@@ -384,22 +384,24 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field-row">
     <div class="field"><label>Antigüedad</label>
       <select id="s-antiguedad" onchange="renderPreview()"><option value="">—</option><option value="0-5">0–5 años</option><option value="5-10">5–10 años</option><option value="10-20">10–20 años</option><option value="20-50">20–50 años</option><option value="50+">50+ años</option></select></div>
+    <div class="field"><label>Altura en el edificio</label>
+      <select id="s-altura-edif" onchange="renderPreview()"><option value="">—</option><option value="Alta">Alta</option><option value="Media">Media</option><option value="Último piso">Último piso</option><option value="Baja">Baja</option><option value="Primer piso">Primer piso</option><option value="Otra">Otra</option></select></div>
+  </div>
+  <div class="field-row">
     <div class="field"><label>Posición en el edificio</label>
       <select id="s-posicion" onchange="renderPreview()"><option value="">—</option><option value="Pasante">Pasante</option><option value="Frente">Frente</option><option value="Contrafrente">Contrafrente</option><option value="Lateral">Lateral</option></select></div>
-  </div>
-  <div class="field-row">
     <div class="field"><label>Ocupación en planta</label>
       <select id="s-ocupacion" onchange="renderPreview()"><option value="">—</option><option value="Piso">Piso</option><option value="Semipiso">Semipiso</option><option value="3 o más por piso">3 o más por piso</option></select></div>
+  </div>
+  <div class="field-row">
     <div class="field"><label>Calidad constructiva</label>
       <select id="s-calidad" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy buena">Muy buena</option><option value="Buena">Buena</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
-  </div>
-  <div class="field-row">
     <div class="field"><label>Estado constructivo</label>
       <select id="s-estado" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy bueno">Muy bueno</option><option value="Bueno">Bueno</option><option value="Medio">Medio</option><option value="Bajo">Bajo</option></select></div>
-    <div class="field"><label>Luminosidad</label>
-      <select id="s-luminosidad" onchange="renderPreview()"><option value="">—</option><option value="Muy buena">Muy buena</option><option value="Estándar">Estándar</option><option value="Mala">Mala</option></select></div>
   </div>
   <div class="field-row">
+    <div class="field"><label>Luminosidad</label>
+      <select id="s-luminosidad" onchange="renderPreview()"><option value="">—</option><option value="Muy buena">Muy buena</option><option value="Estándar">Estándar</option><option value="Mala">Mala</option></select></div>
     <div class="field"><label>Altura interna</label>
       <select id="s-altura" onchange="renderPreview()"><option value="">—</option><option value="1">Estándar</option><option value="1.05">Alta</option></select></div>
   </div>
@@ -450,6 +452,7 @@ function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace('
 /* Coeficientes de cada característica (factor = comparable / tasada). Los marcados (*) son nuevos, propuestos: confirmarlos con el tasador. */
 const CALIDAD_COEF={'Excelente':1.10/*(*)*/,'Muy buena':1.00,'Buena':0.90,'Media':0.75,'Baja':0.60};
 const ESTADO_COEF={'Excelente':1.05,'Muy bueno':1.00,'Bueno':0.95,'Medio':0.88,'Bajo':0.80}; /*(*)*/
+const ALTURA_EDIF_COEF={'Alta':1.05,'Media':1.00,'Último piso':0.98,'Baja':0.95,'Primer piso':0.92}; /*(*) 'Otra' no ajusta */
 const OCUPACION_COEF={'Piso':1.04,'Semipiso':1.00,'3 o más por piso':0.96}; /*(*)*/
 const POSICION_DEPTO_COEF={'Pasante':1.03/*(*)*/,'Frente':1.00,'Lateral':0.96,'Contrafrente':0.93};
 const LUMINOSIDAD_COEF={'Muy buena':1.00,'Estándar':0.93,'Mala':0.85};
@@ -467,7 +470,7 @@ function vS(id){const e=document.getElementById(id);return e?(e.type==='checkbox
 function sujeto(){
   return{ubicacion:vS('s-ubicacion'),calidad:vS('s-calidad'),posicionDepto:vS('s-posicion'),luminosidad:vS('s-luminosidad'),
     edificio:vS('s-edificio'),antiguedad:vS('s-antiguedad'),alturaInterna:vS('s-altura'),
-    ocupacion:vS('s-ocupacion'),estadoConst:vS('s-estado'),cochera:vS('s-cochera'),cocheraPrecio:vS('s-cochera-precio'),
+    ocupacion:vS('s-ocupacion'),alturaEdificio:vS('s-altura-edif'),estadoConst:vS('s-estado'),cochera:vS('s-cochera'),cocheraPrecio:vS('s-cochera-precio'),
     pileta:vS('s-pileta'),sum:vS('s-sum'),baulera:vS('s-baulera'),amenitiesOtros:vS('s-amen-otros')};
 }
 function numArg(v){const n=parseFloat(String(v==null?'':v).replace(',','.'));return isNaN(n)?null:n;}
@@ -483,6 +486,7 @@ function factoresC(c){
     /* estado constructivo; las tasaciones viejas tenían un número escrito a mano (se respeta si no se eligió el estado) */
     estado:(c.estadoConst&&s.estadoConst)?relF(ESTADO_COEF,c.estadoConst,s.estadoConst):(c.estadoConst?null:numArg(c.estado)),
     ocupacion:relF(OCUPACION_COEF,c.ocupacion,s.ocupacion),
+    alturaEdif:relF(ALTURA_EDIF_COEF,c.alturaEdificio,s.alturaEdificio),
     calidad:relF(CALIDAD_COEF,c.calidad,s.calidad),
     posicion:relF(POSICION_DEPTO_COEF,c.posicionDepto,s.posicionDepto),
     luminosidad:relF(LUMINOSIDAD_COEF,c.luminosidad,s.luminosidad),
@@ -695,7 +699,7 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',calidad:'',cub:'',semi:'',descu:'',terr:'',oferta:'0.9',ubicSel:'',ubicacion:'1',estado:'1',superficie:'1',sfOverride:'',posicionDepto:'',luminosidad:'',edificio:'',antiguedad:'',alturaInterna:'',ocupacion:'',estadoConst:'',cochera:'',cocheraPrecio:'',pileta:false,sum:false,amenitiesOtros:'',baulera:false,notes:'',photo:null,photoOrig:null,supExtras:[]});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',calidad:'',cub:'',semi:'',descu:'',terr:'',oferta:'0.9',ubicSel:'',ubicacion:'1',estado:'1',superficie:'1',sfOverride:'',posicionDepto:'',luminosidad:'',edificio:'',antiguedad:'',alturaInterna:'',ocupacion:'',alturaEdificio:'',estadoConst:'',cochera:'',cocheraPrecio:'',pileta:false,sum:false,amenitiesOtros:'',baulera:false,notes:'',photo:null,photoOrig:null,supExtras:[]});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -860,6 +864,17 @@ function renderSidebar(){
       <option value="10-20" ${c.antiguedad==='10-20'?'selected':''}>10–20 años</option>
       <option value="20-50" ${c.antiguedad==='20-50'?'selected':''}>20–50 años</option>
       <option value="50+" ${c.antiguedad==='50+'?'selected':''}>50+ años</option>
+    </select>
+  </div>
+  <div class="field"><label>Altura en el edificio</label>
+    <select onchange="setC(${c.id},'alturaEdificio',this.value);renderPreview()">
+      <option value="" ${!c.alturaEdificio?'selected':''}>—</option>
+      <option value="Alta" ${c.alturaEdificio==='Alta'?'selected':''}>Alta</option>
+      <option value="Media" ${c.alturaEdificio==='Media'?'selected':''}>Media</option>
+      <option value="Último piso" ${c.alturaEdificio==='Último piso'?'selected':''}>Último piso</option>
+      <option value="Baja" ${c.alturaEdificio==='Baja'?'selected':''}>Baja</option>
+      <option value="Primer piso" ${c.alturaEdificio==='Primer piso'?'selected':''}>Primer piso</option>
+      <option value="Otra" ${c.alturaEdificio==='Otra'?'selected':''}>Otra</option>
     </select>
   </div>
   <div class="field"><label>Posición en el edificio</label>
@@ -1311,7 +1326,7 @@ function rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss,subExtras)
   
   const S=sujeto();
   const amen=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.baulera?'Baulera':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
-  const chars=[['Ubicación',S.ubicacion],['Tipo de edificio',S.edificio],['Antigüedad',S.antiguedad?S.antiguedad+' años':''],['Posición',S.posicionDepto],
+  const chars=[['Ubicación',S.ubicacion],['Tipo de edificio',S.edificio],['Antigüedad',S.antiguedad?S.antiguedad+' años':''],['Altura en el edificio',S.alturaEdificio],['Posición',S.posicionDepto],
     ['Ocupación en planta',S.ocupacion],['Calidad constructiva',S.calidad],['Estado constructivo',S.estadoConst],['Luminosidad',S.luminosidad],
     ['Altura interna',{'1':'Estándar','1.05':'Alta'}[S.alturaInterna]||''],['Cochera',S.cochera||(parseArg(S.cocheraPrecio)?'Sí':'')],['Amenities',amen]]
     .filter(([,v])=>v).map(([l,v])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${esc(v)}</span></div>`).join('');
@@ -1404,6 +1419,7 @@ function rSection(comps,tipo,ss){
     ['Ubicación'+ref(S.ubicacion),fx('ubicacion')],
     ['Tipo de edificio'+ref(S.edificio),fx('edificio')],
     ['Antigüedad'+ref(S.antiguedad?S.antiguedad+' años':''),fx('antiguedad')],
+    ['Altura en edificio'+ref(S.alturaEdificio),fx('alturaEdif')],
     ['Posición edificio'+ref(S.posicionDepto),fx('posicion')],
     ['Ocupación en planta'+ref(S.ocupacion),fx('ocupacion')],
     ['Calidad'+ref(S.calidad),fx('calidad')],
@@ -1554,6 +1570,7 @@ function rasgosDeTexto(texto){
   return{
     pileta:/pileta|piscina/.test(t), sum:/\bs\.?u\.?m\b|sal[oó]n de usos/.test(t), baulera:/baulera/.test(t),
     otros:[['Gimnasio',/gimnasio|\bgym\b/],['Sauna',/sauna/],['Solarium',/solarium/],['Parrilla',/parrilla/],['Laundry',/laundry/],['Jacuzzi',/jacuzzi/]].filter(([,r])=>r.test(t)).map(([n])=>n),
+    alturaEdificio:/[uú]ltimo piso/.test(t)?'Último piso':(/piso alto|alto piso/.test(t)?'Alta':''),
     ocupacion:/semi ?piso/.test(t)?'Semipiso':(/piso exclusivo|planta completa|[uú]nico por piso|uno por piso|piso entero/.test(t)?'Piso':''),
     cochera:/sin cochera|no (tiene|posee) cochera/.test(t)?'':(/cochera doble|doble cochera|2 cocheras|dos cocheras/.test(t)?'Doble':(/cochera[^.]{0,20}m[oó]vil/.test(t)?'Móvil':(/cochera[^.]{0,20}fija/.test(t)?'Fija':''))),
     posicionDepto:/pasante/.test(t)?'Pasante':/contrafrente/.test(t)?'Contrafrente':(/disposici[oó]n:?\s*frente|al frente|a la calle/.test(t)?'Frente':(/disposici[oó]n:?\s*lateral/.test(t)?'Lateral':'')),
@@ -1729,7 +1746,7 @@ function aplicarSujeto(d){
   const r=rasgosDeTexto(d.texto);
   document.getElementById('s-pileta').checked=r.pileta;document.getElementById('s-sum').checked=r.sum;document.getElementById('s-baulera').checked=r.baulera;
   document.getElementById('s-amen-otros').value=r.otros.join(', ');
-  set('s-posicion',r.posicionDepto);set('s-ocupacion',r.ocupacion);set('s-cochera',r.cochera);if(r.luminoso)set('s-luminosidad','Muy buena');
+  set('s-posicion',r.posicionDepto);set('s-ocupacion',r.ocupacion);set('s-altura-edif',r.alturaEdificio);set('s-cochera',r.cochera);if(r.luminoso)set('s-luminosidad','Muy buena');
   subjectPhotos=d.fotos.map(f=>({photo:f,photoOrig:f}));
   renderSubjectPhotoSb();renderPreview();
   if(document.getElementById('s-nombre').value.trim())triggerMapGen();
@@ -1743,7 +1760,7 @@ function aplicarComp(id,d){
   const ant=bucketAntig(d.antiguedad);if(ant)c.antiguedad=ant;
   const r=rasgosDeTexto(d.texto);
   c.pileta=r.pileta;c.sum=r.sum;c.baulera=r.baulera;c.amenitiesOtros=r.otros.join(', ');
-  if(r.posicionDepto)c.posicionDepto=r.posicionDepto;if(r.ocupacion)c.ocupacion=r.ocupacion;if(r.cochera)c.cochera=r.cochera;
+  if(r.posicionDepto)c.posicionDepto=r.posicionDepto;if(r.ocupacion)c.ocupacion=r.ocupacion;if(r.alturaEdificio)c.alturaEdificio=r.alturaEdificio;if(r.cochera)c.cochera=r.cochera;
   if(r.luminoso)c.luminosidad='Muy buena';
   renderSidebar();renderPreview();
   if(showMap&&c.address)triggerMapGen();
@@ -1823,7 +1840,7 @@ async function abrirTasacionPDF(file){
 function ponerCaractSujeto(k){
   const m={'s-ubicacion':'ubicacion','s-calidad':'calidad','s-posicion':'posicionDepto','s-luminosidad':'luminosidad','s-edificio':'edificio',
     's-antiguedad':'antiguedad','s-altura':'alturaInterna','s-amen-otros':'amenitiesOtros',
-    's-ocupacion':'ocupacion','s-estado':'estadoConst','s-cochera':'cochera','s-cochera-precio':'cocheraPrecio'};
+    's-ocupacion':'ocupacion','s-altura-edif':'alturaEdificio','s-estado':'estadoConst','s-cochera':'cochera','s-cochera-precio':'cocheraPrecio'};
   Object.entries(m).forEach(([id,key])=>{const e=document.getElementById(id);if(e)e.value=k[key]||'';});
   ['pileta','sum','baulera'].forEach(key=>{const e=document.getElementById('s-'+key);if(e)e.checked=!!k[key];});
 }
