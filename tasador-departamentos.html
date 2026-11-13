@@ -369,6 +369,10 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
     <div class="field"><label>Cochera</label><select id="s-cochera" onchange="renderPreview()"><option value="">—</option><option>Doble</option><option>Fija</option><option>Móvil</option></select></div>
     <div class="field"><label>Valor cochera <small style="font-weight:400;opacity:.55">(opcional)</small></label><input type="text" inputmode="decimal" id="s-cochera-precio" placeholder="se suma al valor final" oninput="renderPreview()"></div>
   </div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field"><label>Baulera (m²)</label><input type="number" id="s-baul" placeholder="0" oninput="renderPreview()"></div>
+    <div class="field" style="max-width:72px"><label title="Coeficiente de homogeneización de la baulera (vale también para los comparables)">Coef ×</label><input type="number" id="w-baul" value="0.50" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
+  </div>
   <div class="field-calc" id="s-calc">Superficie homogeneizada: —</div>
   <div id="s-extras-list"></div>
   <button onclick="addSubjectExtra()" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
@@ -409,7 +413,6 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field-row" style="align-items:center;gap:12px">
     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" id="s-pileta" onchange="renderPreview()"> Pileta</label>
     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" id="s-sum" onchange="renderPreview()"> SUM</label>
-    <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" id="s-baulera" onchange="renderPreview()"> Baulera</label>
   </div>
   <div class="field"><label>Otros amenities</label>
     <input type="text" id="s-amen-otros" placeholder="ej: Gimnasio, Sauna..." oninput="renderPreview()"></div>
@@ -441,11 +444,11 @@ let mapPhoto=null, mapPhotoOrig=null;
 let showMap=false, geoCoords={subject:null,comparables:[]}, capturedMapImg=null, geoCache={};
 let leafletMap=null;
 
-function W(){return{semi:parseFloat(document.getElementById('w-semi').value)||0.5};}
+function W(){const b=parseFloat(document.getElementById('w-baul').value);return{semi:parseFloat(document.getElementById('w-semi').value)||0.5,baul:isNaN(b)?0.5:b};}
 
 
-function subSup(){const w=W();let s=(parseFloat(document.getElementById('s-cub').value)||0)+(parseFloat(document.getElementById('s-semi').value)||0)*w.semi;(subjectExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
-function cSup(c){const w=W();let s=(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0)*w.semi;(c.supExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
+function subSup(){const w=W();let s=(parseFloat(document.getElementById('s-cub').value)||0)+(parseFloat(document.getElementById('s-semi').value)||0)*w.semi+(parseFloat(document.getElementById('s-baul').value)||0)*w.baul;(subjectExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
+function cSup(c){const w=W();let s=(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0)*w.semi+(parseFloat(c.baul)||0)*w.baul;(c.supExtras||[]).forEach(e=>s+=(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1));return s;}
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
@@ -460,10 +463,10 @@ const EDIFICIO_COEF={'Torre en esquina':1.03/*(*)*/,'Esquina':1.02/*(*)*/,'Torre
 const ANTIGUEDAD_COEF={'0-5':1.00,'5-10':0.95,'10-20':0.88,'20-50':0.82,'50+':0.76};
 const ALTURA_COEF={'1':1.00,'1.05':1.05};
 const UBICACION_COEF={'Excelente':1.08/*(*)*/,'Muy buena':1.00,'Buena':0.93,'Media':0.85,'Baja':0.75};
-/* amenities: cada uno suma al valor del edificio (pileta 4%, SUM 2%, baulera 2%, cada otro amenity 1%) */
+/* amenities: cada uno suma al valor del edificio (pileta 4%, SUM 2%, cada otro amenity 1%). La baulera ya no es amenity: va con la superficie */
 function amenCoef(o){
   const otros=String(o.amenitiesOtros||'').split(/[,;·\/]+|\sy\s/).map(s=>s.trim()).filter(Boolean).length;
-  return 1+(o.pileta?0.04:0)+(o.sum?0.02:0)+(o.baulera?0.02:0)+0.01*otros;
+  return 1+(o.pileta?0.04:0)+(o.sum?0.02:0)+0.01*otros;
 }
 function vS(id){const e=document.getElementById(id);return e?(e.type==='checkbox'?e.checked:e.value):'';}
 /* características de la propiedad tasada, con las mismas claves que los comparables */
@@ -471,7 +474,7 @@ function sujeto(){
   return{ubicacion:vS('s-ubicacion'),calidad:vS('s-calidad'),posicionDepto:vS('s-posicion'),luminosidad:vS('s-luminosidad'),
     edificio:vS('s-edificio'),antiguedad:vS('s-antiguedad'),alturaInterna:vS('s-altura'),
     ocupacion:vS('s-ocupacion'),alturaEdificio:vS('s-altura-edif'),estadoConst:vS('s-estado'),cochera:vS('s-cochera'),cocheraPrecio:vS('s-cochera-precio'),
-    pileta:vS('s-pileta'),sum:vS('s-sum'),baulera:vS('s-baulera'),amenitiesOtros:vS('s-amen-otros')};
+    pileta:vS('s-pileta'),sum:vS('s-sum'),amenitiesOtros:vS('s-amen-otros')};
 }
 function numArg(v){const n=parseFloat(String(v==null?'':v).replace(',','.'));return isNaN(n)?null:n;}
 /* Factor = comparable / propiedad tasada: 1.00 si son iguales, >1 si el comparable es superior, <1 si es inferior.
@@ -480,7 +483,7 @@ function relF(tabla,a,b){const x=tabla[a],y=tabla[b];return(x&&y)?x/y:null;}
 function factoresC(c){
   const s=sujeto();
   const ubic=c.ubicSel==='Personalizado'?numArg(c.ubicacion):relF(UBICACION_COEF,c.ubicSel,s.ubicacion);
-  const amenTiene=o=>o.pileta||o.sum||o.baulera||String(o.amenitiesOtros||'').trim();
+  const amenTiene=o=>o.pileta||o.sum||String(o.amenitiesOtros||'').trim();
   return{
     ubicacion:ubic,
     /* estado constructivo; las tasaciones viejas tenían un número escrito a mano (se respeta si no se eligió el estado) */
@@ -836,6 +839,10 @@ function renderSidebar(){
     <div class="field"><label>Cochera</label><select onchange="setC(${c.id},'cochera',this.value);renderPreview()"><option value="" ${!c.cochera?'selected':''}>—</option>${['Doble','Fija','Móvil'].map(o=>`<option ${c.cochera===o?'selected':''}>${o}</option>`).join('')}</select></div>
     <div class="field"><label>Valor cochera <small style="font-weight:400;opacity:.55">(opcional)</small></label><input type="text" inputmode="decimal" value="${esc(c.cocheraPrecio||'')}" placeholder="se descuenta del precio" oninput="setC(${c.id},'cocheraPrecio',this.value)"></div>
   </div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field"><label>Baulera (m²)</label><input type="number" value="${c.baul||''}" placeholder="0" oninput="setC(${c.id},'baul',this.value)"></div>
+    <div class="field" style="max-width:72px"><label>Coef</label><div class="coef-fijo" title="Es el mismo de la propiedad tasada: se cambia ahí">×<span class="coef-baul-txt">${W().baul.toFixed(2)}</span></div></div>
+  </div>
   ${(c.supExtras||[]).map((e,i)=>`<div class="field-row" style="align-items:flex-end;gap:4px;margin-bottom:4px"><div class="field" style="flex:2"><label>Personalizable — nombre</label><input type="text" value="${e.nombre||''}" placeholder="ej: Baulera, Jardín..." oninput="setSupExtra(${c.id},${i},'nombre',this.value)"></div><div class="field"><label>m²</label><input type="number" value="${e.m2||''}" placeholder="0" oninput="setSupExtra(${c.id},${i},'m2',this.value)"></div><div class="field"><label>Coef ×</label><input type="number" value="${e.coef||'1.00'}" step="0.05" min="0" max="1" oninput="setSupExtra(${c.id},${i},'coef',this.value)"></div><button onclick="removeSupExtra(${c.id},${i})" style="margin-top:16px;padding:4px 8px;background:#b55;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px;flex-shrink:0">✕</button></div>`).join('')}
   <button onclick="addSupExtra(${c.id})" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
   <div class="field-calc">${calcTxt}</div>
@@ -934,7 +941,6 @@ function renderSidebar(){
   <div class="field-row" style="align-items:center;gap:12px">
     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" ${c.pileta?'checked':''} onchange="setC(${c.id},'pileta',this.checked)"> Pileta</label>
     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" ${c.sum?'checked':''} onchange="setC(${c.id},'sum',this.checked)"> SUM</label>
-    <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" ${c.baulera?'checked':''} onchange="setC(${c.id},'baulera',this.checked)"> Baulera</label>
   </div>
   <div class="field"><label>Otros amenities</label>
     <input type="text" value="${esc(c.amenitiesOtros||'')}" placeholder="ej: Gimnasio, Sauna..." oninput="setC(${c.id},'amenitiesOtros',this.value)">
@@ -962,6 +968,7 @@ function renderPreview(){
   const semi=parseFloat(document.getElementById('s-semi').value)||0;
   const descu=0, terr=0; /* Descubierta y Terraza ya no se usan */
   document.querySelectorAll('.coef-semi-txt').forEach(e=>e.textContent=W().semi.toFixed(2));
+  document.querySelectorAll('.coef-baul-txt').forEach(e=>e.textContent=W().baul.toFixed(2));
   
   const w=W();
   const alqs=comparables.filter(c=>c.tipo==='Alquiler');
@@ -1322,11 +1329,12 @@ function rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss,subExtras)
   if(cub>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(cub)} m²</strong><span>Cubierta</span></div>`);
   if(semi>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(semi)} m²</strong><span>Balcón</span></div>`);
   if(descu>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(descu)} m²</strong><span>Descubierta</span></div>`);
-  if(terr>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(terr)} m²</strong><span>Terraza</span></div>`);
+  const baul=parseFloat((document.getElementById('s-baul')||{}).value)||0;
+  if(baul>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(baul)} m²</strong><span>Baulera</span></div>`);
   (subExtras||[]).forEach(e=>{if(parseFloat(e.m2)>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(parseFloat(e.m2))} m²</strong><span>${esc(e.nombre||'Personalizado')}</span></div>`);});
   
   const S=sujeto();
-  const amen=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.baulera?'Baulera':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
+  const amen=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
   const chars=[['Ubicación',S.ubicacion],['Tipo de edificio',S.edificio],['Antigüedad',S.antiguedad?S.antiguedad+' años':''],['Altura en el edificio',S.alturaEdificio],['Posición',S.posicionDepto],
     ['Ocupación en planta',S.ocupacion],['Calidad constructiva',S.calidad],['Estado constructivo',S.estadoConst],['Luminosidad',S.luminosidad],
     ['Altura interna',{'1':'Estándar','1.05':'Alta'}[S.alturaInterna]||''],['Cochera',S.cochera||(parseArg(S.cocheraPrecio)?'Sí':'')],['Amenities',amen]]
@@ -1376,7 +1384,7 @@ function rSection(comps,tipo,ss){
   const cards=comps.map((c,i)=>{
     const v=vals[i];
     const chips='';
-    const amenChips=[c.pileta?'Pileta':null,c.sum?'SUM':null,c.baulera?'Baulera':null,c.amenitiesOtros||null].filter(Boolean).join(', ');
+    const amenChips=[c.pileta?'Pileta':null,c.sum?'SUM':null,c.amenitiesOtros||null].filter(Boolean).join(', ');
     const data=[
       ['Sup. Total',v.sup>0?`${fN(Math.round(v.sup))} m²`:'—'],
       ['Valor',c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—'],
@@ -1406,7 +1414,7 @@ function rSection(comps,tipo,ss){
     ['Sup. Total',vals.map(v=>v.sup>0?`<strong>${fN(Math.round(v.sup))} m²</strong>`:'—')],
     ['Calidad',comps.map(c=>esc(c.calidad)||'—')],
     ...(comps.some((c,i)=>c.cochera||vals[i].cochV)?[['Cochera',comps.map((c,i)=>(c.cochera||vals[i].cochV)?esc(c.cochera||'Sí')+(vals[i].cochV?` · ${c.currency} ${fN(vals[i].cochV)}`:''):'—')]]:[]),
-    ['Amenities',comps.map(c=>[c.pileta?'Pileta':null,c.sum?'SUM':null,c.baulera?'Baulera':null,c.amenitiesOtros||null].filter(Boolean).join(', ')||'—')],
+    ['Amenities',comps.map(c=>[c.pileta?'Pileta':null,c.sum?'SUM':null,c.amenitiesOtros||null].filter(Boolean).join(', ')||'—')],
     ['Fuente',comps.map(c=>esc(c.fuente)||'—')],
     ['Valor',comps.map(c=>c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—')],
     ['Valor / m²',vals.map((v,i)=>v.pm2>0?`${comps[i].currency} ${fN(Math.round(v.pm2))}`:'—')],
@@ -1414,7 +1422,7 @@ function rSection(comps,tipo,ss){
   const S=sujeto(), fx=(k)=>vals.map(v=>v.f[k]==null?'—':v.f[k]);
   const ref=(txt)=>txt?`<span style="display:block;font-weight:400;font-size:6.5pt;color:#999">Tasada: ${esc(txt)}</span>`:'';
   const altTxt={'1':'Estándar','1.05':'Alta'};
-  const amenS=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.baulera?'Baulera':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
+  const amenS=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
   const fRows=[
     ['% Negociación',comps.map(c=>c.oferta)],
     ['Ubicación'+ref(S.ubicacion),fx('ubicacion')],
@@ -1525,8 +1533,8 @@ function autoSave(){
 function closeBanner(){document.getElementById('recovery-banner').style.display='none';}
 function discardDraft(){
   localStorage.removeItem(DRAFT_KEY);clearPhotosIDB();
-  ['s-nombre','s-fecha','s-analista','s-desc','s-fund','s-cub','s-semi'].forEach(id=>{document.getElementById(id).value='';});
-  document.getElementById('w-semi').value='0.50';
+  ['s-nombre','s-fecha','s-analista','s-desc','s-fund','s-cub','s-semi','s-baul'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('w-semi').value='0.50';document.getElementById('w-baul').value='0.50';
   subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;subjectExtras=[];renderSubjectExtrasSb();ponerCaractSujeto({});
   renderSubjectPhotoSb();renderMapPhotoSb();
   comparables=[];nextId=1;renderSidebar();renderPreview();closeBanner();
@@ -1569,7 +1577,7 @@ function mesAnio(){const d=new Date();return String(d.getMonth()+1).padStart(2,'
 function rasgosDeTexto(texto){
   const t=(texto||'').toLowerCase();
   return{
-    pileta:/pileta|piscina/.test(t), sum:/\bs\.?u\.?m\b|sal[oó]n de usos/.test(t), baulera:/baulera/.test(t),
+    pileta:/pileta|piscina/.test(t), sum:/\bs\.?u\.?m\b|sal[oó]n de usos/.test(t),
     otros:[['Gimnasio',/gimnasio|\bgym\b/],['Sauna',/sauna/],['Solarium',/solarium/],['Parrilla',/parrilla/],['Laundry',/laundry/],['Jacuzzi',/jacuzzi/]].filter(([,r])=>r.test(t)).map(([n])=>n),
     alturaEdificio:/[uú]ltimo piso/.test(t)?'Último piso':(/piso alto|alto piso/.test(t)?'Alta':''),
     ocupacion:/semi ?piso/.test(t)?'Semipiso':(/piso exclusivo|planta completa|[uú]nico por piso|uno por piso|piso entero/.test(t)?'Piso':''),
@@ -1734,7 +1742,7 @@ async function importarDesde(origen,idEstado,aplicar){
 
 // ── Departamentos: qué completa cada carga ──
 function limpiarSujeto(){
-  ['s-nombre','s-desc','s-cub','s-semi'].forEach(id=>{document.getElementById(id).value='';});
+  ['s-nombre','s-desc','s-cub','s-semi','s-baul'].forEach(id=>{document.getElementById(id).value='';});
   ponerCaractSujeto({});
   subjectPhotos=[];subjectExtras=[];renderSubjectExtrasSb();
 }
@@ -1745,7 +1753,7 @@ function aplicarSujeto(d){
   set('s-cub',numTxt(d.cub||d.pb));set('s-semi',numTxt(d.semi));
   set('s-antiguedad',bucketAntig(d.antiguedad));
   const r=rasgosDeTexto(d.texto);
-  document.getElementById('s-pileta').checked=r.pileta;document.getElementById('s-sum').checked=r.sum;document.getElementById('s-baulera').checked=r.baulera;
+  document.getElementById('s-pileta').checked=r.pileta;document.getElementById('s-sum').checked=r.sum;
   document.getElementById('s-amen-otros').value=r.otros.join(', ');
   set('s-posicion',r.posicionDepto);set('s-ocupacion',r.ocupacion);set('s-altura-edif',r.alturaEdificio);set('s-cochera',r.cochera);if(r.luminoso)set('s-luminosidad','Muy buena');
   subjectPhotos=d.fotos.map(f=>({photo:f,photoOrig:f}));
@@ -1760,7 +1768,7 @@ function aplicarComp(id,d){
     notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,fotosExtra:(d.fotos||[]).slice(1).map(f=>({photo:f,photoOrig:f}))});
   const ant=bucketAntig(d.antiguedad);if(ant)c.antiguedad=ant;
   const r=rasgosDeTexto(d.texto);
-  c.pileta=r.pileta;c.sum=r.sum;c.baulera=r.baulera;c.amenitiesOtros=r.otros.join(', ');
+  c.pileta=r.pileta;c.sum=r.sum;c.amenitiesOtros=r.otros.join(', ');
   if(r.posicionDepto)c.posicionDepto=r.posicionDepto;if(r.ocupacion)c.ocupacion=r.ocupacion;if(r.alturaEdificio)c.alturaEdificio=r.alturaEdificio;if(r.cochera)c.cochera=r.cochera;
   if(r.luminoso)c.luminosidad='Muy buena';
   renderSidebar();renderPreview();
@@ -1843,10 +1851,10 @@ function ponerCaractSujeto(k){
     's-antiguedad':'antiguedad','s-altura':'alturaInterna','s-amen-otros':'amenitiesOtros',
     's-ocupacion':'ocupacion','s-altura-edif':'alturaEdificio','s-estado':'estadoConst','s-cochera':'cochera','s-cochera-precio':'cocheraPrecio'};
   Object.entries(m).forEach(([id,key])=>{const e=document.getElementById(id);if(e)e.value=k[key]||'';});
-  ['pileta','sum','baulera'].forEach(key=>{const e=document.getElementById('s-'+key);if(e)e.checked=!!k[key];});
+  ['pileta','sum'].forEach(key=>{const e=document.getElementById('s-'+key);if(e)e.checked=!!k[key];});
 }
 function getState(){
-  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,fund:document.getElementById('s-fund').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig,subjectExtras:[...(subjectExtras||[])],caract:sujeto()},weights:{semi:document.getElementById('w-semi').value,},comparables:comparables.map(c=>({...c})),tipoOperacion:document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta',map:{showMap,geoCoords,capturedMapImg}};
+  return{version:4,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,fund:document.getElementById('s-fund').value,cub:document.getElementById('s-cub').value,semi:document.getElementById('s-semi').value,baul:document.getElementById('s-baul').value,photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig,subjectExtras:[...(subjectExtras||[])],caract:sujeto()},weights:{semi:document.getElementById('w-semi').value,baul:document.getElementById('w-baul').value,},comparables:comparables.map(c=>({...c})),tipoOperacion:document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta',map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -1857,11 +1865,13 @@ function applyState(state){
   document.getElementById('s-desc').value=s.desc||'';document.getElementById('s-fund').value=s.fund||'';
   document.getElementById('s-cub').value=s.cub||'';
   document.getElementById('s-semi').value=s.semi||'';
+  document.getElementById('s-baul').value=s.baul||'';
     subjectPhotos=(s.photos||[]).map(p=>({photo:p.photo,photoOrig:p.photoOrig||p.photo}));
   if(!subjectPhotos.length&&s.photo){subjectPhotos=[{photo:s.photo,photoOrig:s.photoOrig||s.photo}];}
   mapPhoto=s.mapPhoto||null;mapPhotoOrig=s.mapPhotoOrig||null;
   const w=state.weights||{};
   document.getElementById('w-semi').value=w.semi||'0.50';
+  document.getElementById('w-baul').value=w.baul||'0.50';
   
   subjectExtras=(state.subject&&state.subject.subjectExtras)||[];
   /* Descubierta y Terraza ya no están: si una tasación vieja las tenía, pasan a personalizados con su coeficiente (el resultado no cambia) */
