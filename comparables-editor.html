@@ -310,7 +310,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 <div class="sidebar">
 
   <div id="recovery-banner" style="display:none;background:rgba(200,148,26,.13);border:1px solid rgba(200,148,26,.35);border-radius:4px;padding:9px 11px;font-size:11.5px;color:#e8c87a;line-height:1.45;">
-    ✓ Borrador restaurado: <span id="draft-ts" style="font-weight:700"></span><span id="draft-nophotos" style="display:none;font-size:10px;opacity:.7"> · sin fotos (cargá el .json para recuperarlas)</span>
+    ✓ Borrador restaurado: <span id="draft-ts" style="font-weight:700"></span><span id="draft-nophotos" style="display:none;font-size:10px;opacity:.7"> · sin fotos (abrí el PDF para recuperarlas)</span>
     <div style="display:flex;gap:6px;margin-top:7px;">
       <button onclick="closeBanner()" style="flex:1;padding:5px;background:rgba(200,148,26,.25);color:#e8c87a;border:1px solid rgba(200,148,26,.4);border-radius:3px;font-weight:700;cursor:pointer;font-family:inherit;font-size:11px;">OK</button>
       <button onclick="limpiarTodo(true)" style="flex:1;padding:5px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.08);border-radius:3px;cursor:pointer;font-family:inherit;font-size:11px;">Empezar de cero</button>
@@ -319,8 +319,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 
   <div class="btn-row">
     <button class="btn btn-g" onclick="exportPDF()" title="Descargar la tasación en PDF"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>PDF</button>
-    <button class="btn btn-o" onclick="saveJSON()">💾 Guardar</button>
-    <label class="btn btn-o" style="cursor:pointer">📂 Cargar<input type="file" accept=".pdf,.json" onchange="loadJSON(this)" style="display:none"></label>
+    <label class="btn btn-o" style="cursor:pointer" title="Abrí un PDF hecho con este tasador para seguir editándolo">📂 Abrir PDF<input type="file" accept=".pdf,.json" onchange="loadJSON(this)" style="display:none"></label>
   </div>
   <div class="btn-row">
     <button class="btn btn-o" id="btn-deshacer" onclick="deshacer()" disabled style="flex:0 0 56px;opacity:.45;padding:4px;display:flex;align-items:center;justify-content:center" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:auto"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button class="btn btn-o" id="btn-rehacer" onclick="rehacer()" disabled style="flex:0 0 56px;opacity:.45;padding:4px;display:flex;align-items:center;justify-content:center" title="Rehacer (Ctrl+Y)" aria-label="Rehacer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:auto"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
