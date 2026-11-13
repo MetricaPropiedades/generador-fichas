@@ -495,7 +495,7 @@ function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
   const ss=subSup(),autoSF=(sup>0&&ss>0)?Math.pow(sup/ss,0.2):1;
   const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
-  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const calidadAdj=getCalidadAdj(c);const regimenAdj=getRegimenAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*planta*frenteAdj*posAdj*calidadAdj*regimenAdj*(parseFloat(c.alturaInterna)||1);
+  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const calidadAdj=getCalidadAdj(c);const regimenAdj=getRegimenAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*planta*frenteAdj*posAdj*calidadAdj*regimenAdj*(parseFloat(c.alturaInterna)||1)*(parseFloat(c.ajusteMercado)||1);
   return{sup,pm2,autoSF,sf,hom,planta};
 }
 
@@ -942,6 +942,7 @@ function renderSidebar(){
     <div class="field"><label>Estado</label><input type="number" value="${c.estado}" step="0.05" oninput="setC(${c.id},'estado',this.value)"></div>
   </div>
   <div class="field"><label>Planta</label><div class="field-row"><div class="field"><label style="cursor:pointer;${c.planta==='Subsuelo'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'Subsuelo',+c.pcs||0.30)">Subsuelo</label><input type="number" value="${c.pcs||0.30}" step="0.05" oninput="setC(${c.id},'pcs',parseFloat(this.value)||0.30);renderPreview()"></div><div class="field"><label style="cursor:pointer;${c.planta==='Entrepiso'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'Entrepiso',+c.pce||0.70)">Entrepiso</label><input type="number" value="${c.pce||0.70}" step="0.05" oninput="setC(${c.id},'pce',parseFloat(this.value)||0.70);renderPreview()"></div></div><div class="field-row"><div class="field"><label style="cursor:pointer;${c.planta==='1er piso'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'1er piso',+c.pc1||0.60)">1er piso</label><input type="number" value="${c.pc1||0.60}" step="0.05" oninput="setC(${c.id},'pc1',parseFloat(this.value)||0.60);renderPreview()"></div><div class="field"><label style="cursor:pointer;${c.planta==='2do piso'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'2do piso',+c.pc2||0.50)">2do piso</label><input type="number" value="${c.pc2||0.50}" step="0.05" oninput="setC(${c.id},'pc2',parseFloat(this.value)||0.50);renderPreview()"></div></div></div>
+  <div class="field"><label>Ajuste mercado <small style="font-weight:400;opacity:.55">(coeficiente manual)</small></label><input type="text" inputmode="decimal" value="${esc(c.ajusteMercado||'')}" placeholder="1.00 = sin ajuste" oninput="setC(${c.id},'ajusteMercado',this.value.replace(',','.'))"></div>
 </div>
 </div>`;
   }).join('');
@@ -1525,6 +1526,7 @@ function rSection(comps,tipo,ss){
     ['Calidad',comps.map(c=>c.calidad?getCalidadAdj(c).toFixed(2):'—')],
     ['Régimen',comps.map(c=>c.regimen?getRegimenAdj(c).toFixed(2):'—')],
     ['Altura interna PB',comps.map(c=>c.alturaInterna||'—')],
+    ['Ajuste mercado',comps.map(c=>c.ajusteMercado||'—')],
   ];
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;

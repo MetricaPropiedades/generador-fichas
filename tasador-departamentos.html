@@ -456,7 +456,7 @@ function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace('
    Las opciones van de mejor a peor. Entre la mejor y la peor opción el ajuste total es el % indicado,
    y los escalones del medio se reparten parejo. Ej.: estado constructivo ±5% con 5 opciones → 1,25% por escalón.
    Notorio 10%: ubicación, calidad · Medio 5%: tipo de edificio, antigüedad, altura en el edificio, posición,
-   ocupación en planta, estado constructivo, luminosidad · Bajo 3%: altura interna. (% negociación se aplica al 100%.) */
+   ocupación en planta, estado constructivo, luminosidad · Bajo 1%: altura interna. Ajuste mercado: coeficiente que se escribe a mano en cada comparable. (% negociación se aplica al 100%.) */
 const AJUSTE={
   ubicacion:{max:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']},
   calidad:{max:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']},
@@ -467,7 +467,7 @@ const AJUSTE={
   ocupacion:{max:0.05,orden:['Piso','Semipiso','3 o más por piso']},
   estadoConst:{max:0.05,orden:['Excelente','Muy bueno','Bueno','Medio','Bajo']},
   luminosidad:{max:0.05,orden:['Muy buena','Estándar','Mala']},
-  alturaInterna:{max:0.03,orden:['1.05','1']} /* Alta, Estándar */
+  alturaInterna:{max:0.01,orden:['1.05','1']} /* Alta, Estándar: solo 2 opciones → 1% */
 };
 /* amenities: cada uno suma al valor del edificio (pileta 4%, SUM 2%, cada otro amenity 1%). La baulera ya no es amenity: va con la superficie */
 function amenCoef(o){
@@ -506,6 +506,7 @@ function factoresC(c){
     edificio:nivF('edificio',c.edificio,s.edificio),
     antiguedad:nivF('antiguedad',c.antiguedad,s.antiguedad),
     altura:nivF('alturaInterna',c.alturaInterna,s.alturaInterna),
+    mercado:numArg(c.ajusteMercado), /* a mano; vacío = sin ajuste */
     amenities:(amenTiene(c)||amenTiene(s))?amenCoef(c)/amenCoef(s):null
   };
 }
@@ -947,6 +948,7 @@ function renderSidebar(){
       <option value="1.05" ${c.alturaInterna==='1.05'?'selected':''}>Alta</option>
     </select>
   </div>
+  <div class="field"><label>Ajuste mercado <small style="font-weight:400;opacity:.55">(coeficiente manual)</small></label><input type="text" inputmode="decimal" value="${esc(c.ajusteMercado||'')}" placeholder="1.00 = sin ajuste" oninput="setC(${c.id},'ajusteMercado',this.value.replace(',','.'))"></div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Amenities</div>
   <div class="field-row" style="align-items:center;gap:12px">
     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" ${c.pileta?'checked':''} onchange="setC(${c.id},'pileta',this.checked)"> Pileta</label>
@@ -1445,6 +1447,7 @@ function rSection(comps,tipo,ss){
     ['Estado constructivo'+ref(S.estadoConst),fx('estado')],
     ['Luminosidad'+ref(S.luminosidad),fx('luminosidad')],
     ['Altura interna'+ref(altTxt[S.alturaInterna]||''),fx('altura')],
+    ['Ajuste mercado',fx('mercado')],
     ['Amenities'+ref(amenS||(vals.some(v=>v.f.amenities!=null)?'sin amenities':'')),fx('amenities')],
   ].filter(([,vs])=>vs.some(v=>v!=='—'));
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
