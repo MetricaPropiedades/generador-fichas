@@ -114,13 +114,14 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .map-legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:2px;vertical-align:middle;}
 .d-firma-block{}
 
-.icard{display:flex;gap:5mm;padding:5mm;border:1px solid var(--border);border-radius:4px;margin-bottom:3.5mm;background:#fff;}
+/* tarjeta de comparable: foto siempre cuadrada a la izquierda; si el texto es largo sigue por debajo de la foto */
+.icard{display:flow-root;padding:5mm;border:1px solid var(--border);border-radius:4px;margin-bottom:3.5mm;background:#fff;}
 .icard:last-child{margin-bottom:0;}
 .icard-photo[data-cid]{cursor:pointer;}
-.icard-photo{background-size:cover;background-position:center;background-repeat:no-repeat;width:52mm;flex-shrink:0;border-radius:3px;overflow:hidden;background-color:#f5f5f5;align-self:stretch;}
+.icard-photo{background-size:cover;background-position:center;background-repeat:no-repeat;float:left;width:52mm;height:52mm;margin:0 5mm 3mm 0;border-radius:3px;overflow:hidden;background-color:#f5f5f5;}
 .icard-photo img{width:100%;height:100%;object-fit:cover;display:block;}
-.icard-no-photo{width:52mm;flex-shrink:0;border-radius:3px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:35mm;font-size:7pt;color:#ccc;}
-.icard-body{flex:1;min-width:0;}
+.icard-no-photo{float:left;width:52mm;height:52mm;margin:0 5mm 3mm 0;border-radius:3px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#ccc;}
+.icard-body{min-width:0;}
 .icard-top{display:flex;align-items:center;gap:3mm;margin-bottom:2.5mm;flex-wrap:wrap;}
 .icard-num-badge{background:var(--g);color:#fff;font-size:8pt;font-weight:800;padding:1px 7px;border-radius:3px;flex-shrink:0;}
 .icard-tipo{background:var(--dark);color:#fff;font-size:9pt;font-weight:700;padding:2px 9px;border-radius:3px;}
@@ -307,7 +308,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   </div>
 
   <div class="btn-row">
-    <button class="btn btn-g" onclick="exportPDF()">📄 PDF</button>
+    <button class="btn btn-g" onclick="exportPDF()" title="Descargar la tasación en PDF"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>PDF</button>
     <button class="btn btn-o" onclick="saveJSON()">💾 Guardar</button>
     <label class="btn btn-o" style="cursor:pointer">📂 Cargar<input type="file" accept=".pdf,.json" onchange="loadJSON(this)" style="display:none"></label>
   </div>
@@ -1877,16 +1878,16 @@ conectarAutocompletado(document.getElementById('s-nombre'),()=>{if(showMap)trigg
    "Limpiar todo" borra la tasación (deja el nombre del analista) y se puede deshacer. */
 (function(){
   const MAX=40;
-  let pila=[], actual=null, timer=null, rebase=false;
+  let pila=[], actual=null, timer=null, rebase=false, calma=0; /* calma: lo que se acomoda solo (mapa, etc.) justo después de deshacer o limpiar no cuenta como un paso */
   const clon=o=>Array.isArray(o)?o.map(clon):(o&&typeof o==='object')?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,clon(v)])):o;
-  const firma=st=>JSON.stringify(st,(k,v)=>(k==='_savedAt'||k==='capturedMapImg')?undefined:(typeof v==='string'&&v.length>400?'#'+v.length+v.slice(-40):v));
+  const firma=st=>JSON.stringify(st,(k,v)=>(k==='_savedAt'||k==='map')?undefined:(typeof v==='string'&&v.length>400?'#'+v.length+v.slice(-40):v));
   function leer(){try{const s=clon(getState());return{s,f:firma(s)};}catch(e){return null;}}
   function botones(){const b=document.getElementById('btn-deshacer');if(b){b.disabled=!pila.length;b.style.opacity=pila.length?'':'.45';}}
   function revisar(){
     clearTimeout(timer);timer=null;
     const n=leer();if(!n)return;
-    if(!actual||rebase){actual=n;rebase=false;botones();return;}
-    if(n.f===actual.f)return;
+    if(!actual||rebase||Date.now()<calma){actual=n;rebase=false;botones();return;}
+    if(n.f===actual.f){actual=n;return;} /* el mapa se acomoda solo: no es un paso para deshacer */
     pila.push(actual);if(pila.length>MAX)pila.shift();
     actual=n;botones();
   }
@@ -1901,7 +1902,7 @@ conectarAutocompletado(document.getElementById('s-nombre'),()=>{if(showMap)trigg
     if(!pila.length){botones();return;}
     const prev=pila.pop();
     applyState(clon(prev.s));
-    actual=prev;rebase=true;programar();botones();
+    actual=prev;rebase=true;calma=Date.now()+1500;programar();botones();
   };
   window.limpiarTodo=function(sinPreguntar){
     if(!sinPreguntar&&!confirm('¿Borrar todos los datos para empezar una tasación nueva?\n\nSi te arrepentís, tocá «Deshacer».'))return;
@@ -1912,7 +1913,7 @@ conectarAutocompletado(document.getElementById('s-nombre'),()=>{if(showMap)trigg
     _fh=null;
     if(typeof closeBanner==='function')closeBanner();
     renderPreview();
-    revisar();
+    revisar();calma=Date.now()+1500;
   };
   document.addEventListener('keydown',e=>{
     if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.key.toLowerCase()!=='z')return;

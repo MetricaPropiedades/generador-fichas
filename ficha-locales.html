@@ -38,6 +38,7 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .btn-add:hover{filter:brightness(1.1);}
 .btn-sec{background:rgba(255,255,255,.07);color:rgba(255,255,255,.7);border:1px solid var(--sb-border);padding:7px 12px;border-radius:var(--radius);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
 .btn-sec:hover{background:rgba(255,255,255,.12);}
+.btn-pdf{color:var(--gold,#C8941A);border-color:rgba(200,148,26,.55);font-weight:700;}
 .btn-danger{background:rgba(200,50,50,.15);color:#e07070;border:1px solid rgba(200,50,50,.2);padding:4px 8px;border-radius:var(--radius);font-size:10px;cursor:pointer;font-family:'Inter',sans-serif;}
 .sb-map-sec{padding:10px 16px;border-bottom:1px solid var(--sb-border);}
 .sb-map-sec h2{font-family:'Big Shoulders Display',sans-serif;font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;}
@@ -342,8 +343,12 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
       <button class="btn-add" id="btn-add-item" onclick="addLocal()">+ Agregar local</button>
     </div>
     <div class="sb-extra-btns">
-      <button class="btn-sec" onclick="exportPDF()">⬇ Descargar PDF</button>
+      <button class="btn-sec btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>Descargar PDF</button>
       <label class="btn-sec" style="cursor:pointer" title="Abrí un PDF hecho con este generador para seguir editándolo">📂 Abrir PDF<input type="file" accept=".pdf,.json" style="display:none" onchange="loadJSON(this)"></label>
+    </div>
+    <div class="sb-extra-btns">
+      <button class="btn-sec" id="btn-deshacer" onclick="deshacer()" disabled style="flex:1;opacity:.45" title="Volver al paso anterior (Ctrl+Z)">↶ Deshacer</button>
+      <button class="btn-sec" onclick="limpiarTodo()" style="flex:1" title="Borrar todo para empezar una ficha nueva">🧹 Limpiar todo</button>
     </div>
     <button class="btn-guardadas" onclick="abrirGuardadas()">
       <span class="bg-ico">🗂</span>
@@ -2013,6 +2018,57 @@ async function init(){
 }
 ajustarZoomFicha();
 init();
+</script>
+<script>
+/* DESHACER y LIMPIAR TODO.
+   Cada vez que algo cambia (y se deja de escribir ~0,7 s) se guarda cómo estaba antes; "Deshacer" vuelve un paso (hasta 40).
+   Las fotos no se duplican en memoria: los pasos comparten los mismos textos de imagen.
+   "Limpiar todo" deja la ficha vacía para empezar otra, y también se puede deshacer. */
+(function(){
+  const MAX=40, grupo=s=>s.tipoInmueble;
+  let pila=[], actual=null, timer=null, rebase=false, calma=0; /* calma: lo que se acomoda solo (mapa, etc.) justo después de deshacer o limpiar no cuenta como un paso */
+  const clon=o=>Array.isArray(o)?o.map(clon):(o&&typeof o==='object')?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,clon(v)])):o;
+  const firma=st=>JSON.stringify(st,(k,v)=>(k==='_savedAt'||k==='timestamp'||k==='map')?undefined:(typeof v==='string'&&v.length>400?'#'+v.length+v.slice(-40):v));
+  function leer(){try{const s=clon(getState());return{s,f:firma(s)};}catch(e){return null;}}
+  function botones(){const b=document.getElementById('btn-deshacer');if(b){b.disabled=!pila.length;b.style.opacity=pila.length?'':'.45';}}
+  function revisar(){
+    clearTimeout(timer);timer=null;
+    const n=leer();if(!n)return;
+    /* cambiar de pestaña (locales/deptos/depósitos) es otra ficha: el historial empieza de nuevo */
+    if(actual&&grupo&&grupo(n.s)!==grupo(actual.s)){pila=[];actual=n;rebase=false;botones();return;}
+    if(!actual||rebase||Date.now()<calma){actual=n;rebase=false;botones();return;}
+    if(n.f===actual.f){actual=n;return;} /* el mapa se acomoda solo: no es un paso para deshacer */
+    pila.push(actual);if(pila.length>MAX)pila.shift();
+    actual=n;botones();
+  }
+  function programar(){clearTimeout(timer);timer=setTimeout(revisar,700);}
+  const guardarOrig=window.autoSave;
+  window.autoSave=function(){const r=guardarOrig.apply(this,arguments);programar();return r;};
+  document.addEventListener('input',programar,true);
+  document.addEventListener('change',programar,true);
+  document.addEventListener('click',programar,true);
+  window.addEventListener('load',()=>setTimeout(()=>{if(!actual)revisar();},1200));
+  window.deshacer=function(){
+    revisar();
+    if(!pila.length){botones();return;}
+    const prev=pila.pop();
+    applyState(clon(prev.s));
+    if(typeof autoSave==='function')autoSave();
+    actual=prev;rebase=true;calma=Date.now()+1500;programar();botones();
+  };
+  window.limpiarTodo=function(){
+    if(!confirm('¿Borrar todos los datos para empezar una ficha nueva?\n\nSi te arrepentís, tocá «Deshacer».'))return;
+    revisar();
+    applyState({tipoInmueble,tipoOperacion,locals:[]});showMap=true;addLocal();
+    if(typeof autoSave==='function')autoSave();
+    revisar();calma=Date.now()+1500;
+  };
+  document.addEventListener('keydown',e=>{
+    if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.key.toLowerCase()!=='z')return;
+    const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
+    e.preventDefault();window.deshacer();
+  });
+})();
 </script>
 <script>
 /* cuadros de texto (comentarios, descripción, notas): crecen con lo que se escribe hasta 10 renglones;
