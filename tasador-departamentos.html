@@ -362,14 +362,14 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <h2>Superficie Departamento</h2>
   <div class="field-row" style="align-items:flex-end">
     <div class="field"><label>Cubierta (m²)</label><input type="number" id="s-cub" placeholder="0" oninput="renderPreview()"></div>
-    <div class="field"><label>Semicubierta (m²)</label><input type="number" id="s-semi" placeholder="0" oninput="renderPreview()"></div>
-    <div class="field" style="max-width:72px"><label title="Coeficiente de homogeneización de la semicubierta (vale también para los comparables)">Coef ×</label><input type="number" id="w-semi" value="0.50" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
+    <div class="field"><label>Balcón (m²)</label><input type="number" id="s-semi" placeholder="0" oninput="renderPreview()"></div>
+    <div class="field" style="max-width:72px"><label title="Coeficiente de homogeneización del balcón (vale también para los comparables)">Coef ×</label><input type="number" id="w-semi" value="0.50" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
   </div>
   <div class="field-row" style="align-items:flex-end">
     <div class="field"><label>Cochera</label><select id="s-cochera" onchange="renderPreview()"><option value="">—</option><option>Doble</option><option>Fija</option><option>Móvil</option></select></div>
     <div class="field"><label>Valor cochera <small style="font-weight:400;opacity:.55">(opcional)</small></label><input type="text" inputmode="decimal" id="s-cochera-precio" placeholder="se suma al valor final" oninput="renderPreview()"></div>
   </div>
-  <div class="field-calc" id="s-calc">Sup. considerada: —</div>
+  <div class="field-calc" id="s-calc">Superficie homogeneizada: —</div>
   <div id="s-extras-list"></div>
   <button onclick="addSubjectExtra()" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
 
@@ -761,7 +761,7 @@ function renderSidebar(){
   document.getElementById('comp-list').innerHTML=comparables.map((c,idx)=>{
     const num=idx+1;
     const{sup,pm2,autoSF}=calcC(c);
-    const calcTxt=sup>0?`Sup: ${fN(Math.round(sup))} m² · ${c.currency} ${fN(Math.round(pm2))}/m² · FacSup: ${autoSF.toFixed(2)}`:'Sup. considerada: —';
+    const calcTxt=sup>0?`Sup. homogeneizada: ${fN(Math.round(sup))} m² · ${c.currency} ${fN(Math.round(pm2))}/m² · FacSup: ${autoSF.toFixed(2)}`:'Sup. homogeneizada: —';
     return`<div class="sb-card" data-id="${c.id}">
 <div class="sb-card-hd" onclick="toggleBody(${c.id})">
   <div class="cnum">${num}</div>
@@ -790,7 +790,7 @@ function renderSidebar(){
   </div>
   
   <div class="field-row">
-    <div class="field"><label>Fuente <small style="font-weight:400;opacity:.55">(interno)</small></label>
+    <div class="field"><label>Fuente</label>
       <select onchange="setC(${c.id},'fuente',this.value)">
         <option ${c.fuente==='ZonaProp'?'selected':''}>ZonaProp</option>
         <option ${c.fuente==='Argenprop'?'selected':''}>Argenprop</option>
@@ -904,7 +904,7 @@ function renderSidebar(){
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Superficie del departamento</div>
   <div class="field-row" style="align-items:flex-end">
     <div class="field"><label>Cubierta (m²)</label><input type="number" value="${c.cub}" placeholder="0" oninput="setC(${c.id},'cub',this.value)"></div>
-    <div class="field"><label>Semicubierta (m²)</label><input type="number" value="${c.semi}" placeholder="0" oninput="setC(${c.id},'semi',this.value)"></div>
+    <div class="field"><label>Balcón (m²)</label><input type="number" value="${c.semi}" placeholder="0" oninput="setC(${c.id},'semi',this.value)"></div>
     <div class="field" style="max-width:72px"><label>Coef</label><div class="coef-fijo" title="Es el mismo de la propiedad tasada: se cambia ahí">×<span class="coef-semi-txt">${W().semi.toFixed(2)}</span></div></div>
   </div>
   <div class="field-row" style="align-items:flex-end">
@@ -945,7 +945,7 @@ ${(String(c.estado||'').trim()&&numArg(c.estado)!==1&&!c.estadoConst)?`  <div cl
 // ══════════════════════════════════════
 function renderPreview(){
   const ss=subSup();
-  document.getElementById('s-calc').textContent=ss>0?`Sup. considerada: ${fN(Math.round(ss))} m²`:'Sup. considerada: —';
+  document.getElementById('s-calc').textContent=ss>0?`Superficie homogeneizada: ${fN(Math.round(ss))} m²`:'Superficie homogeneizada: —';
   const nombre=document.getElementById('s-nombre').value.trim();
   const fecha=document.getElementById('s-fecha').value.trim();
   const analista=document.getElementById('s-analista').value.trim();
@@ -1310,9 +1310,9 @@ function rFotoPrincipalSujeto(){
 function rSubjectPhotos(){return galeriaFotos(subjectPhotos.slice(1),i=>'s:'+(i+1));}
 function rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss,subExtras){
   const metaItems=[];
-  if(ss>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(Math.round(ss))} m²</strong><span>Sup. Considerada</span></div>`);
+  if(ss>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(Math.round(ss))} m²</strong><span>Sup. Total</span></div>`);
   if(cub>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(cub)} m²</strong><span>Cubierta</span></div>`);
-  if(semi>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(semi)} m²</strong><span>Semicubierta</span></div>`);
+  if(semi>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(semi)} m²</strong><span>Balcón</span></div>`);
   if(descu>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(descu)} m²</strong><span>Descubierta</span></div>`);
   if(terr>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(terr)} m²</strong><span>Terraza</span></div>`);
   (subExtras||[]).forEach(e=>{if(parseFloat(e.m2)>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(parseFloat(e.m2))} m²</strong><span>${esc(e.nombre||'Personalizado')}</span></div>`);});
@@ -1370,12 +1370,13 @@ function rSection(comps,tipo,ss){
     const chips='';
     const amenChips=[c.pileta?'Pileta':null,c.sum?'SUM':null,c.baulera?'Baulera':null,c.amenitiesOtros||null].filter(Boolean).join(', ');
     const data=[
-      ['Sup. Considerada',v.sup>0?`${fN(Math.round(v.sup))} m²`:'—'],
+      ['Sup. Total',v.sup>0?`${fN(Math.round(v.sup))} m²`:'—'],
       ['Valor',c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—'],
       ['Valor / m²',v.pm2>0?`${c.currency} ${fN(Math.round(v.pm2))}`:'—'],
       c.calidad?['Calidad',esc(c.calidad)]:null,
       (c.cochera||v.cochV)?['Cochera',esc(c.cochera||'Sí')+(v.cochV?` · ${c.currency} ${fN(v.cochV)}`:'')]:null,
       amenChips?['Amenities',esc(amenChips)]:null,
+      c.fuente?['Fuente',esc(c.fuente)]:null,
     ].filter(Boolean).map(([l,v2])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${v2}</span></div>`).join('');
     return`<div class="icard">
       ${c.photo?`<div class="icard-photo" data-enc="c:${c.id}:0" title="Clic para elegir qué parte de la foto se ve" style="background-image:url('${c.photo}')"></div>`:`<div class="icard-no-photo">Sin foto</div>`}
@@ -1394,10 +1395,11 @@ function rSection(comps,tipo,ss){
 
   const iRows=[
     ['Nombre / Dirección',comps.map(c=>`<strong>${esc(c.address)||'—'}</strong>`)],
-    ['Sup. Considerada',vals.map(v=>v.sup>0?`<strong>${fN(Math.round(v.sup))} m²</strong>`:'—')],
+    ['Sup. Total',vals.map(v=>v.sup>0?`<strong>${fN(Math.round(v.sup))} m²</strong>`:'—')],
     ['Calidad',comps.map(c=>esc(c.calidad)||'—')],
     ...(comps.some((c,i)=>c.cochera||vals[i].cochV)?[['Cochera',comps.map((c,i)=>(c.cochera||vals[i].cochV)?esc(c.cochera||'Sí')+(vals[i].cochV?` · ${c.currency} ${fN(vals[i].cochV)}`:''):'—')]]:[]),
     ['Amenities',comps.map(c=>[c.pileta?'Pileta':null,c.sum?'SUM':null,c.baulera?'Baulera':null,c.amenitiesOtros||null].filter(Boolean).join(', ')||'—')],
+    ['Fuente',comps.map(c=>esc(c.fuente)||'—')],
     ['Valor',comps.map(c=>c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—')],
     ['Valor / m²',vals.map((v,i)=>v.pm2>0?`${comps[i].currency} ${fN(Math.round(v.pm2))}`:'—')],
   ];
@@ -1448,7 +1450,7 @@ function rSection(comps,tipo,ss){
     <div class="concl-box" style="justify-content:center;gap:12mm;">
       <div class="concl-item"><div class="concl-lbl">Valor Homogeneizado Promedio</div><div class="concl-val">${cur} ${fN(Math.round(avg))}/m²</div><div class="concl-sub">Promedio de comparables</div></div>
       <div class="concl-div"></div>
-      <div class="concl-item"><div class="concl-lbl">Superficie Tasado</div><div class="concl-val">${fN(Math.round(ss))} m²</div><div class="concl-sub">Sup. considerada</div></div>
+      <div class="concl-item"><div class="concl-lbl">Superficie Tasado</div><div class="concl-val">${fN(Math.round(ss))} m²</div><div class="concl-sub">Sup. total</div></div>
     </div>
     <div class="valor-box">
       <div class="valor-lbl">${tipo==='ALQUILER'?'Valor de Alquiler Mensual Estimado':'Valor de Venta Estimado'}</div>

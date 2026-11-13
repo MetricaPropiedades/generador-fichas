@@ -384,7 +384,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field-row">
     <div class="field"><label>1er Piso (m²)</label><input type="number" id="s-p1" placeholder="0" oninput="renderPreview()"></div>
   </div>
-  <div class="field-calc" id="s-calc">Sup. considerada: —</div>
+  <div class="field-calc" id="s-calc">Superficie homogeneizada: —</div>
   <div id="s-extras-list"></div>
   <button onclick="addSubjectExtra()" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
 
@@ -793,7 +793,7 @@ function renderSidebar(){
   document.getElementById('comp-list').innerHTML=comparables.map((c,idx)=>{
     const num=idx+1;
     const{sup,pm2,autoSF}=calcC(c);
-    const calcTxt=sup>0?`Sup: ${fN(Math.round(sup))} m² · ${c.currency} ${fN(Math.round(pm2))}/m² · FacSup: ${autoSF.toFixed(2)}`:'Sup. considerada: —';
+    const calcTxt=sup>0?`Sup. homogeneizada: ${fN(Math.round(sup))} m² · ${c.currency} ${fN(Math.round(pm2))}/m² · FacSup: ${autoSF.toFixed(2)}`:'Sup. homogeneizada: —';
     return`<div class="sb-card" data-id="${c.id}">
 <div class="sb-card-hd" onclick="toggleBody(${c.id})">
   <div class="cnum">${num}</div>
@@ -843,7 +843,7 @@ function renderSidebar(){
     <input class="tipoOp-custom" type="text" value="${esc(c.tipoOpLabel)}" placeholder="Escribi el tipo..." style="margin-top:3px;${c.tipoOp!=='Custom'?'display:none':''}" oninput="setC(${c.id},'tipoOpLabel',this.value)">
   </div>
   <div class="field-row">
-    <div class="field"><label>Fuente <small style="font-weight:400;opacity:.55">(interno)</small></label>
+    <div class="field"><label>Fuente</label>
       <select onchange="setC(${c.id},'fuente',this.value)">
         <option ${c.fuente==='ZonaProp'?'selected':''}>ZonaProp</option>
         <option ${c.fuente==='Argenprop'?'selected':''}>Argenprop</option>
@@ -959,7 +959,7 @@ function renderSidebar(){
 // ══════════════════════════════════════
 function renderPreview(){
   const ss=subSup();
-  document.getElementById('s-calc').textContent=ss>0?`Sup. considerada: ${fN(Math.round(ss))} m²`:'Sup. considerada: —';
+  document.getElementById('s-calc').textContent=ss>0?`Superficie homogeneizada: ${fN(Math.round(ss))} m²`:'Superficie homogeneizada: —';
   const nombre=document.getElementById('s-nombre').value.trim();
   const fecha=document.getElementById('s-fecha').value.trim();
   const analista=document.getElementById('s-analista').value.trim();
@@ -1435,7 +1435,7 @@ function rSubjectPhotos(){return galeriaFotos(subjectPhotos.slice(1),i=>'s:'+(i+
 function rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,frente){
   const metaItems=[];
   if(frente>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(frente)} m</strong><span>Frente</span></div>`);
-  if(ss>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(Math.round(ss))} m²</strong><span>Sup. Considerada</span></div>`);
+  if(ss>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(Math.round(ss))} m²</strong><span>Sup. Total</span></div>`);
   if(pb>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(pb)} m²</strong><span>Planta Baja</span></div>`);
   if(sv>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(sv)} m²</strong><span>Subsuelo ×${w.ss}</span></div>`);
   if(p1>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(p1)} m²</strong><span>1er Piso ×${w.p1}</span></div>`);
@@ -1489,10 +1489,11 @@ function rSection(comps,tipo,ss){
     ].filter(Boolean).join('');
     const data=[
       c.frente?['Frente',`${parseFloat(c.frente)} m`]:null,
-      ['Sup. Considerada',v.sup>0?`${fN(Math.round(v.sup))} m²`:'—'],
+      ['Sup. Total',v.sup>0?`${fN(Math.round(v.sup))} m²`:'—'],
       ['Valor',c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—'],
       ['Valor / m²',v.pm2>0?`${c.currency} ${fN(Math.round(v.pm2))}`:'—'],
       c.calidad?['Calidad',esc(c.calidad)]:null,
+      c.fuente?['Fuente',esc(c.fuente)]:null,
     ].filter(Boolean).map(([l,v2])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${v2}</span></div>`).join('');
     return`<div class="icard">
       ${c.photo?`<div class="icard-photo" data-enc="c:${c.id}:0" title="Clic para elegir qué parte de la foto se ve" style="background-image:url('${c.photo}')"></div>`:`<div class="icard-no-photo">Sin foto</div>`}
@@ -1512,9 +1513,10 @@ function rSection(comps,tipo,ss){
   const iRows=[
     ['Nombre / Dirección',comps.map(c=>`<strong>${esc(c.address)||'—'}</strong>`)],
     ['Tipo Operación',comps.map(c=>c.tipoOp==='Real'?'<span style="color:#267326;font-weight:700">Real</span>':c.tipoOp==='Custom'?(esc(c.tipoOpLabel)||'Custom'):'Oferta')],
-    ['Sup. Considerada',vals.map(v=>v.sup>0?`<strong>${fN(Math.round(v.sup))} m²</strong>`:'—')],
+    ['Sup. Total',vals.map(v=>v.sup>0?`<strong>${fN(Math.round(v.sup))} m²</strong>`:'—')],
     ['Régimen',comps.map(c=>esc(c.regimen)||'—')],
     ['Calidad',comps.map(c=>esc(c.calidad)||'—')],
+    ['Fuente',comps.map(c=>esc(c.fuente)||'—')],
     ['Valor',comps.map(c=>c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—')],
     ['Valor / m²',vals.map((v,i)=>v.pm2>0?`${comps[i].currency} ${fN(Math.round(v.pm2))}`:'—')],
   ];
@@ -1559,7 +1561,7 @@ function rSection(comps,tipo,ss){
     <div class="concl-box" style="justify-content:center;gap:12mm;">
       <div class="concl-item"><div class="concl-lbl">Valor Homogeneizado Promedio</div><div class="concl-val">${cur} ${fN(Math.round(avg))}/m²</div><div class="concl-sub">Promedio de comparables</div></div>
       <div class="concl-div"></div>
-      <div class="concl-item"><div class="concl-lbl">Superficie Tasado</div><div class="concl-val">${fN(Math.round(ss))} m²</div><div class="concl-sub">Sup. considerada</div></div>
+      <div class="concl-item"><div class="concl-lbl">Superficie Tasado</div><div class="concl-val">${fN(Math.round(ss))} m²</div><div class="concl-sub">Sup. total</div></div>
     </div>
     <div class="valor-box">
       <div class="valor-lbl">${tipo==='ALQUILER'?'Valor de Alquiler Mensual Estimado':'Valor de Venta Estimado'}</div>
