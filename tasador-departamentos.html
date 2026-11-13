@@ -454,19 +454,21 @@ function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace('
 
 /* IMPACTO DE CADA CARACTERÍSTICA (definido por Métrica, 11/2026).
    Las opciones van de mejor a peor. Entre la mejor y la peor opción el ajuste total es el % indicado,
-   y los escalones del medio se reparten parejo. Ej.: estado constructivo ±5% con 5 opciones → 1,25% por escalón.
-   Notorio 10%: ubicación, calidad · Medio 5%: tipo de edificio, antigüedad, altura en el edificio, posición,
-   ocupación en planta, estado constructivo, luminosidad · Bajo 1%: altura interna. Ajuste mercado: coeficiente que se escribe a mano en cada comparable. (% negociación se aplica al 100%.) */
+   y los escalones del medio se reparten parejo. Ej.: estado constructivo ±10% con 5 opciones → 2,5% por escalón.
+   Notorio 20%: ubicación, calidad · Medio 10%: tipo de edificio, antigüedad, altura en el edificio, posición,
+   ocupación en planta, estado constructivo, luminosidad · Bajo 3% (sin características por ahora) · Altura interna 1%. Todo factor queda entre 0,70 y 1,30 (RANGO). Ajuste mercado: coeficiente que se escribe a mano en cada comparable. (% negociación se aplica al 100%.) */
+const RANGO={min:0.70,max:1.30};
+const acot=v=>v==null?null:Math.min(RANGO.max,Math.max(RANGO.min,v));
 const AJUSTE={
-  ubicacion:{max:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']},
-  calidad:{max:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']},
-  edificio:{max:0.05,orden:['Torre en esquina','Esquina','Torre','Sobre linderos']},
-  antiguedad:{max:0.05,orden:['0-5','5-10','10-20','20-50','50+']},
-  alturaEdificio:{max:0.05,orden:['Alta','Media','Último piso','Baja','Primer piso']}, /* 'Otra' no ajusta */
-  posicionDepto:{max:0.05,orden:['Pasante','Frente','Contrafrente','Lateral']},
-  ocupacion:{max:0.05,orden:['Piso','Semipiso','3 o más por piso']},
-  estadoConst:{max:0.05,orden:['Excelente','Muy bueno','Bueno','Medio','Bajo']},
-  luminosidad:{max:0.05,orden:['Muy buena','Estándar','Mala']},
+  ubicacion:{max:0.20,orden:['Excelente','Muy buena','Buena','Media','Baja']},
+  calidad:{max:0.20,orden:['Excelente','Muy buena','Buena','Media','Baja']},
+  edificio:{max:0.10,orden:['Torre en esquina','Esquina','Torre','Sobre linderos']},
+  antiguedad:{max:0.10,orden:['0-5','5-10','10-20','20-50','50+']},
+  alturaEdificio:{max:0.10,orden:['Alta','Media','Último piso','Baja','Primer piso']}, /* 'Otra' no ajusta */
+  posicionDepto:{max:0.10,orden:['Pasante','Frente','Contrafrente','Lateral']},
+  ocupacion:{max:0.10,orden:['Piso','Semipiso','3 o más por piso']},
+  estadoConst:{max:0.10,orden:['Excelente','Muy bueno','Bueno','Medio','Bajo']},
+  luminosidad:{max:0.10,orden:['Muy buena','Estándar','Mala']},
   alturaInterna:{max:0.01,orden:['1.05','1']} /* Alta, Estándar: solo 2 opciones → 1% */
 };
 /* amenities: cada uno suma al valor del edificio (pileta 4%, SUM 2%, cada otro amenity 1%). La baulera ya no es amenity: va con la superficie */
@@ -494,7 +496,7 @@ function factoresC(c){
   const s=sujeto();
   const ubic=c.ubicSel==='Personalizado'?numArg(c.ubicacion):nivF('ubicacion',c.ubicSel,s.ubicacion);
   const amenTiene=o=>o.pileta||o.sum||String(o.amenitiesOtros||'').trim();
-  return{
+  const f={
     ubicacion:ubic,
     /* estado constructivo; las tasaciones viejas tenían un número escrito a mano (se respeta si no se eligió el estado) */
     estado:(c.estadoConst&&s.estadoConst)?nivF('estadoConst',c.estadoConst,s.estadoConst):(c.estadoConst?null:numArg(c.estado)),
@@ -509,6 +511,8 @@ function factoresC(c){
     mercado:numArg(c.ajusteMercado), /* a mano; vacío = sin ajuste */
     amenities:(amenTiene(c)||amenTiene(s))?amenCoef(c)/amenCoef(s):null
   };
+  for(const k in f)f[k]=acot(f[k]); /* ningún factor sale de 0,70–1,30 */
+  return f;
 }
 function calcC(c){
   /* si el comparable tiene cochera con valor, se descuenta del precio antes de sacar el valor/m² */
@@ -518,7 +522,7 @@ function calcC(c){
   const f=factoresC(c);
   /* un comparable superior vale más que la propiedad tasada: su valor/m² se divide por el factor */
   const caract=Object.values(f).reduce((p,v)=>p*(v&&v>0?v:1),1);
-  const hom=pm2*(numArg(c.oferta)||1)/caract;
+  const hom=pm2*(acot(numArg(c.oferta))||1)/caract;
   return{sup,pm2,autoSF,sf,hom,f,cochV};
 }
 
@@ -1436,7 +1440,7 @@ function rSection(comps,tipo,ss){
   const altTxt={'1':'Estándar','1.05':'Alta'};
   const amenS=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
   const fRows=[
-    ['% Negociación',comps.map(c=>c.oferta)],
+    ['% Negociación',comps.map(c=>{const v=acot(numArg(c.oferta));return v==null?'—':v;})],
     ['Ubicación'+ref(S.ubicacion),fx('ubicacion')],
     ['Tipo de edificio'+ref(S.edificio),fx('edificio')],
     ['Antigüedad'+ref(S.antiguedad?S.antiguedad+' años':''),fx('antiguedad')],
