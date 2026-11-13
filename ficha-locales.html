@@ -2080,7 +2080,7 @@ init();
 })();
 </script>
 <script>
-/* cuadros de texto (comentarios, descripción, notas): crecen con lo que se escribe hasta 10 renglones;
+/* cuadros de texto (comentarios, descripción, notas): crecen con lo que se escribe hasta 15 renglones;
    de ahí en más se desliza adentro. Nunca quedan más chicos que su alto mínimo. */
 (function(){
   function autoAlto(el){
@@ -2088,7 +2088,7 @@ init();
     const cs=getComputedStyle(el), fs=parseFloat(cs.fontSize)||12;
     const lh=cs.lineHeight==='normal'?fs*1.2:(parseFloat(cs.lineHeight)||fs*1.2);
     const bordes=(parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0);
-    const max=Math.round(lh*10+(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)+bordes);
+    const max=Math.round(lh*15+(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)+bordes);
     el.style.height='auto';
     const h=el.scrollHeight+bordes;
     el.style.height=Math.min(h,max)+'px';
