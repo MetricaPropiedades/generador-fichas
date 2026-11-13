@@ -452,25 +452,32 @@ function cSup(c){const w=W();let s=(parseFloat(c.cub)||0)+(parseFloat(c.semi)||0
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
-/* IMPACTO DE CADA CARACTERÍSTICA (definido por Métrica, 11/2026).
-   Las opciones van de mejor a peor. Entre la mejor y la peor opción el ajuste total es el % indicado,
-   y los escalones del medio se reparten parejo. Ej.: estado constructivo ±10% con 5 opciones → 2,5% por escalón.
-   Notorio 20%: ubicación, calidad · Medio 10%: tipo de edificio, antigüedad, altura en el edificio, posición,
-   ocupación en planta, estado constructivo, luminosidad · Bajo 3% (sin características por ahora) · Altura interna 1%. Todo factor queda entre 0,70 y 1,30 (RANGO). Ajuste mercado: coeficiente que se escribe a mano en cada comparable. (% negociación se aplica al 100%.) */
+/* COEFICIENTE + INCIDENCIA (definido por Métrica, 11/2026).
+   · Coeficiente: número redondo entre 0,70 y 1,30 que compara el comparable con la tasada
+     (1 = igual; >1 el comparable es mejor; <1 es peor). Sale de cuántos escalones los separan × el paso.
+   · Incidencia: cuánto pesa esa característica en el valor: notorio 20%, medio 10%, bajo 2%, altura interna 1%.
+     % negociación y ajuste mercado van al 100%.
+   · Lo que se aplica: 1 + (coeficiente − 1) × incidencia.  Ej.: ubicación 1,10 con incidencia 20% → aplica 1,02.
+   Las opciones van de mejor a peor. Pasos: 0,10 (5 y 4 opciones), 0,15 (3 opciones), 0,10 (altura interna). */
 const RANGO={min:0.70,max:1.30};
 const acot=v=>v==null?null:Math.min(RANGO.max,Math.max(RANGO.min,v));
+const INC_NOTORIO=0.20, INC_MEDIO=0.10, INC_BAJO=0.02, INC_ALTURA_INT=0.01;
 const AJUSTE={
-  ubicacion:{max:0.20,orden:['Excelente','Muy buena','Buena','Media','Baja']},
-  calidad:{max:0.20,orden:['Excelente','Muy buena','Buena','Media','Baja']},
-  edificio:{max:0.10,orden:['Torre en esquina','Esquina','Torre','Sobre linderos']},
-  antiguedad:{max:0.10,orden:['0-5','5-10','10-20','20-50','50+']},
-  alturaEdificio:{max:0.10,orden:['Alta','Media','Último piso','Baja','Primer piso']}, /* 'Otra' no ajusta */
-  posicionDepto:{max:0.10,orden:['Pasante','Frente','Contrafrente','Lateral']},
-  ocupacion:{max:0.10,orden:['Piso','Semipiso','3 o más por piso']}, /* 'Sin definir' no ajusta */
-  estadoConst:{max:0.10,orden:['Excelente','Muy bueno','Bueno','Medio','Bajo']},
-  luminosidad:{max:0.10,orden:['Muy buena','Estándar','Mala']},
-  alturaInterna:{max:0.01,orden:['1.05','1']} /* Alta, Estándar: solo 2 opciones → 1% */
+  ubicacion:{paso:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']},
+  calidad:{paso:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']},
+  edificio:{paso:0.10,orden:['Torre en esquina','Esquina','Torre','Sobre linderos']},
+  antiguedad:{paso:0.10,orden:['0-5','5-10','10-20','20-50','50+']},
+  alturaEdificio:{paso:0.10,orden:['Alta','Media','Último piso','Baja','Primer piso']}, /* 'Otra' no ajusta */
+  posicionDepto:{paso:0.10,orden:['Pasante','Frente','Contrafrente','Lateral']},
+  ocupacion:{paso:0.15,orden:['Piso','Semipiso','3 o más por piso']}, /* 'Sin definir' no ajusta */
+  estadoConst:{paso:0.10,orden:['Excelente','Muy bueno','Bueno','Medio','Bajo']},
+  luminosidad:{paso:0.15,orden:['Muy buena','Estándar','Mala']},
+  alturaInterna:{paso:0.10,orden:['1.05','1']} /* Alta, Estándar */
 };
+/* incidencia de cada factor de la tabla (clave de factoresC) */
+const INC={ubicacion:INC_NOTORIO,calidad:INC_NOTORIO,edificio:INC_MEDIO,antiguedad:INC_MEDIO,alturaEdif:INC_MEDIO,posicion:INC_MEDIO,
+  ocupacion:INC_MEDIO,estado:INC_MEDIO,luminosidad:INC_MEDIO,altura:INC_ALTURA_INT,mercado:1,amenities:1};
+const aplicado=(k,v)=>v==null?null:1+(v-1)*(INC[k]==null?1:INC[k]);
 /* amenities: cada uno suma al valor del edificio (pileta 4%, SUM 2%, cada otro amenity 1%). La baulera ya no es amenity: va con la superficie */
 function amenCoef(o){
   const otros=String(o.amenitiesOtros||'').split(/[,;·\/]+|\sy\s/).map(s=>s.trim()).filter(Boolean).length;
@@ -489,8 +496,8 @@ function numArg(v){const n=parseFloat(String(v==null?'':v).replace(',','.'));ret
    Si falta el dato en alguno de los dos, no se ajusta (null). */
 /* factor del comparable frente a la tasada: 1 si son iguales; >1 si el comparable es mejor. Si falta alguno, no ajusta. */
 function nivF(clave,comp,tasada){
-  const a=AJUSTE[clave],i=a.orden.indexOf(comp),j=a.orden.indexOf(tasada),n=a.orden.length-1;
-  return(i<0||j<0||n<1)?null:1+(j-i)/n*a.max;
+  const a=AJUSTE[clave],i=a.orden.indexOf(comp),j=a.orden.indexOf(tasada);
+  return(i<0||j<0)?null:Math.round((1+(j-i)*a.paso)*100)/100;
 }
 function factoresC(c){
   const s=sujeto();
@@ -521,7 +528,8 @@ function calcC(c){
   const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
   const f=factoresC(c);
   /* un comparable superior vale más que la propiedad tasada: su valor/m² se divide por el factor */
-  const caract=Object.values(f).reduce((p,v)=>p*(v&&v>0?v:1),1);
+  /* cada coeficiente pesa según su incidencia */
+  const caract=Object.entries(f).reduce((p,[k,v])=>p*(v&&v>0?aplicado(k,v):1),1);
   const hom=pm2*(acot(numArg(c.oferta))||1)/caract;
   return{sup,pm2,autoSF,sf,hom,f,cochV};
 }
@@ -1440,23 +1448,25 @@ function rSection(comps,tipo,ss){
   const ref=(txt)=>txt?`<span style="display:block;font-weight:400;font-size:6.5pt;color:#999">Tasada: ${esc(txt)}</span>`:'';
   const altTxt={'1':'Estándar','1.05':'Alta'};
   const amenS=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
+  const inc=k=>`<span style="font-weight:400;color:#999"> · ${Math.round(INC[k]*100)}%</span>`;
   const fRows=[
     ['% Negociación',comps.map(c=>{const v=acot(numArg(c.oferta));return v==null?'—':v;})],
-    ['Ubicación'+ref(S.ubicacion),fx('ubicacion')],
-    ['Tipo de edificio'+ref(S.edificio),fx('edificio')],
-    ['Antigüedad'+ref(S.antiguedad?S.antiguedad+' años':''),fx('antiguedad')],
-    ['Altura en edificio'+ref(S.alturaEdificio),fx('alturaEdif')],
-    ['Posición edificio'+ref(S.posicionDepto),fx('posicion')],
-    ['Ocupación en planta'+ref(S.ocupacion),fx('ocupacion')],
-    ['Calidad'+ref(S.calidad),fx('calidad')],
-    ['Estado constructivo'+ref(S.estadoConst),fx('estado')],
-    ['Luminosidad'+ref(S.luminosidad),fx('luminosidad')],
-    ['Altura interna'+ref(altTxt[S.alturaInterna]||''),fx('altura')],
+    ['Ubicación'+inc('ubicacion')+ref(S.ubicacion),fx('ubicacion'),'ubicacion'],
+    ['Tipo de edificio'+inc('edificio')+ref(S.edificio),fx('edificio'),'edificio'],
+    ['Antigüedad'+inc('antiguedad')+ref(S.antiguedad?S.antiguedad+' años':''),fx('antiguedad'),'antiguedad'],
+    ['Altura en edificio'+inc('alturaEdif')+ref(S.alturaEdificio),fx('alturaEdif'),'alturaEdif'],
+    ['Posición edificio'+inc('posicion')+ref(S.posicionDepto),fx('posicion'),'posicion'],
+    ['Ocupación en planta'+inc('ocupacion')+ref(S.ocupacion),fx('ocupacion'),'ocupacion'],
+    ['Calidad'+inc('calidad')+ref(S.calidad),fx('calidad'),'calidad'],
+    ['Estado constructivo'+inc('estado')+ref(S.estadoConst),fx('estado'),'estado'],
+    ['Luminosidad'+inc('luminosidad')+ref(S.luminosidad),fx('luminosidad'),'luminosidad'],
+    ['Altura interna'+inc('altura')+ref(altTxt[S.alturaInterna]||''),fx('altura'),'altura'],
     ['Ajuste mercado',fx('mercado')],
     ['Amenities'+ref(amenS||(vals.some(v=>v.f.amenities!=null)?'sin amenities':'')),fx('amenities')],
   ].filter(([,vs])=>vs.some(v=>v!=='—'));
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
-  const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
+  const ap=(k,v)=>{if(!k||INC[k]>=1)return'';const a=aplicado(k,parseFloat(v));return`<span style="display:block;font-weight:400;font-size:6.5pt;color:#888">aplica ${String(Math.round(a*1000)/1000).replace('.',',')}</span>`;};
+  const fRow=([lbl,vs,k])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}${ap(k,v)}</td>`).join('')}</tr>`;
   const tipoLabel=tipo==='ALQUILER'?'Alquiler':'Venta';
 
   return`<div class="d-section comp-section">
