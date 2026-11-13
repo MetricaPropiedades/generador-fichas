@@ -1849,11 +1849,11 @@ function aplicarComp(id,d){
   const c=comparables.find(x=>x.id===id);if(!c)return'';
   Object.assign(c,{address:d.direccion||'',link:d.link||'',currency:d.precio?(d.currency||c.currency):c.currency,price:d.precio||'',
     fuente:d.fuente||c.fuente,fecha:mesAnio(),frente:numTxt(d.frente),pb:numTxt(d.pb||d.cub),ss:numTxt(d.ss),p1:numTxt(d.p1),p2:'',customFloors:[],
-    notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,fotosExtra:(d.fotos||[]).slice(1,4).map(f=>({photo:f,photoOrig:f})),photoLink:''});
+    notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,fotosExtra:(d.fotos||[]).slice(1).map(f=>({photo:f,photoOrig:f})),photoLink:''});
   const pos=posCuadraDe(d.posicion||d.texto);if(pos)c.posicion=pos;
   renderSidebar();renderPreview();
   if(showMap&&c.address)triggerMapGen();
-  return'Listo: datos del comparable'+(c.photo?' y foto':'')+'. Revisá régimen, calidad y los factores.';
+  return'Listo: datos del comparable'+(c.photo?' y '+fotosComp(c).length+' fotos (borrá las que no quieras con la ×)':'')+'. Revisá régimen, calidad y los factores.';
 }
 
 function importarSujetoLink(){

@@ -1756,7 +1756,7 @@ function aplicarComp(id,d){
   const c=comparables.find(x=>x.id===id);if(!c)return'';
   Object.assign(c,{address:d.direccion||'',link:d.link||'',currency:d.precio?(d.currency||c.currency):c.currency,price:d.precio||'',
     fuente:d.fuente||c.fuente,fecha:mesAnio(),cub:numTxt(d.cub||d.pb),semi:numTxt(d.semi),descu:'',terr:'',supExtras:[],
-    notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,fotosExtra:(d.fotos||[]).slice(1,4).map(f=>({photo:f,photoOrig:f}))});
+    notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,fotosExtra:(d.fotos||[]).slice(1).map(f=>({photo:f,photoOrig:f}))});
   const ant=bucketAntig(d.antiguedad);if(ant)c.antiguedad=ant;
   const r=rasgosDeTexto(d.texto);
   c.pileta=r.pileta;c.sum=r.sum;c.baulera=r.baulera;c.amenitiesOtros=r.otros.join(', ');
@@ -1764,7 +1764,7 @@ function aplicarComp(id,d){
   if(r.luminoso)c.luminosidad='Muy buena';
   renderSidebar();renderPreview();
   if(showMap&&c.address)triggerMapGen();
-  return'Listo: datos del comparable'+(c.photo?' y foto':'')+'. Revisá calidad, ubicación y los factores.';
+  return'Listo: datos del comparable'+(c.photo?' y '+fotosComp(c).length+' fotos (borrá las que no quieras con la ×)':'')+'. Revisá calidad, ubicación y los factores.';
 }
 
 function importarSujetoLink(){
