@@ -127,6 +127,10 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 /* datos en columnas parejas, uno al lado del otro en orden: si falta un dato no queda hueco */
 .icard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(30mm,1fr));gap:2.5mm 5mm;margin-bottom:2.5mm;}
 .icard-datum{min-width:0;}
+/* detalle del ajuste (respuesta de cada comparable): solo para el equipo, nunca en el PDF */
+.det-inc,.det-ap{display:none;}
+body.ver-interno .det-inc{display:inline;}
+body.ver-interno .det-ap{display:block;}
 /* fotos del inmueble tasado: 3 por fila, grandes y ordenables */
 #sb-subject-photo{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
 #sb-subject-photo .sp-wrap{width:auto;height:auto;margin:0;aspect-ratio:4/3;cursor:grab;}
@@ -403,6 +407,8 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field"><textarea id="s-fund" rows="6" placeholder="Explicá cómo se llegó al valor: qué comparables pesaron más, ajustes, contexto del mercado..." oninput="renderPreview()"></textarea></div>
 
   <button id="btn-firma" onclick="toggleFirma()" style="margin-top:10px;width:100%;padding:9px;border-radius:4px;border:none;cursor:pointer;font-family:'Barlow',sans-serif;font-size:10pt;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--g);color:#1c1c1c;">✍ Firma ON</button>
+  <button id="btn-detalle" onclick="toggleDetalle()" title="Muestra en la tabla la respuesta de cada comparable (régimen, calidad, posición…). Solo lo ves vos: el PDF sale siempre limpio." style="margin-top:6px;width:100%;padding:9px;border-radius:4px;border:1px solid rgba(255,255,255,.15);cursor:pointer;font-family:'Barlow',sans-serif;font-size:10pt;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:rgba(255,255,255,.06);color:#ddd;">🔍 Ver detalle del ajuste: OFF</button>
+  <div style="font-size:10px;opacity:.5;margin-top:3px;line-height:1.4">Uso interno para chequear: no sale en el PDF.</div>
 
 </div>
 
@@ -1520,16 +1526,21 @@ function rSection(comps,tipo,ss){
     ['% Negociación',comps.map(c=>c.oferta)],
     ['Ubicación',comps.map(c=>c.ubicacion)],
     ['Estado',comps.map(c=>c.estado)],
-    ['Planta',comps.map(c=>c.planta?getPlantaCoef(c).toFixed(2):'—')],
-    ['Frente',comps.map(c=>c.frenteRango?getFrenteAdj(c).toFixed(2):'—')],
-    ['Posición en cuadra',comps.map(c=>c.posicion?getPosicionAdj(c).toFixed(2):'—')],
-    ['Calidad',comps.map(c=>c.calidad?getCalidadAdj(c).toFixed(2):'—')],
-    ['Régimen',comps.map(c=>c.regimen?getRegimenAdj(c).toFixed(2):'—')],
-    ['Altura interna PB',comps.map(c=>c.alturaInterna||'—')],
+    ['Planta',comps.map(c=>c.planta?getPlantaCoef(c).toFixed(2):'—'),'planta'],
+    ['Frente',comps.map(c=>c.frenteRango?getFrenteAdj(c).toFixed(2):'—'),'frente'],
+    ['Posición en cuadra',comps.map(c=>c.posicion?getPosicionAdj(c).toFixed(2):'—'),'posicion'],
+    ['Calidad',comps.map(c=>c.calidad?getCalidadAdj(c).toFixed(2):'—'),'calidad'],
+    ['Régimen',comps.map(c=>c.regimen?getRegimenAdj(c).toFixed(2):'—'),'regimen'],
+    ['Altura interna PB',comps.map(c=>c.alturaInterna||'—'),'altura'],
     ['Ajuste mercado',comps.map(c=>c.ajusteMercado||'—')],
   ];
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
-  const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;
+  /* detalle interno: debajo de cada coeficiente, la respuesta del comparable (solo con "Ver detalle del ajuste") */
+  const TXT={planta:c=>c.planta,frente:c=>c.frenteRango==='custom'?(c.frente?c.frente+' m':''):(c.frenteRango?c.frenteRango+' m':''),
+    posicion:c=>({'esquina':'Esquina','ante-esquina':'Ante-esquina','mitad':'Mitad de cuadra'})[c.posicion],calidad:c=>c.calidad,regimen:c=>c.regimen,
+    altura:c=>({'0.9':'Techo bajo','1':'Techo normal','1.1':'Techo alto'})[c.alturaInterna]};
+  const resp=(k,i)=>{const x=k&&TXT[k]&&TXT[k](comps[i]);return x?`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#999">${esc(x)}</span>`:'';};
+  const fRow=([lbl,vs,k])=>`<tr><td class="lc">${lbl}</td>${vs.map((v,i)=>v==='—'?`<td class="vc neutral">—${resp(k,i)}</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}${resp(k,i)}</td>`).join('')}</tr>`;
   const tipoLabel=tipo==='ALQUILER'?'Alquiler':'Venta';
 
   return`<div class="d-section comp-section">
@@ -2108,6 +2119,17 @@ window.addEventListener('beforeunload',()=>{if(_autoSaveEnabled)autoSave();});
     e.preventDefault();re?window.rehacer():window.deshacer();
   });
 })();
+</script>
+<script>
+/* DETALLE DEL AJUSTE: el equipo puede ver incidencias y lo que se aplica; el cliente (PDF) ve la tabla limpia */
+function botonDetalle(){const on=document.body.classList.contains('ver-interno'),b=document.getElementById('btn-detalle');
+  if(b){b.textContent='🔍 Ver detalle del ajuste: '+(on?'ON':'OFF');b.style.background=on?'var(--g)':'rgba(255,255,255,.06)';b.style.color=on?'#1c1c1c':'#ddd';}}
+function toggleDetalle(){const on=document.body.classList.toggle('ver-interno');try{localStorage.setItem('metrica-ver-detalle',on?'1':'');}catch(e){}botonDetalle();}
+try{if(localStorage.getItem('metrica-ver-detalle')==='1')document.body.classList.add('ver-interno');}catch(e){}
+botonDetalle();
+(function(){const orig=window.exportPDF;
+  window.exportPDF=async function(){const on=document.body.classList.contains('ver-interno');document.body.classList.remove('ver-interno');
+    try{return await orig.apply(this,arguments);}finally{if(on)document.body.classList.add('ver-interno');}};})();
 </script>
 <div id="mob-bar"><button id="mob-edit" class="on" onclick="vistaMovil(false)">✏️ Editar</button><button id="mob-ver" onclick="vistaMovil(true)">👁 Ver tasación</button></div>
 <script>
