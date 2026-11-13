@@ -127,6 +127,17 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 /* datos en columnas parejas, uno al lado del otro en orden: si falta un dato no queda hueco */
 .icard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(30mm,1fr));gap:2.5mm 5mm;margin-bottom:2.5mm;}
 .icard-datum{min-width:0;}
+/* fotos del inmueble tasado: 3 por fila, grandes y ordenables */
+#sb-subject-photo{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+#sb-subject-photo .sp-wrap{width:auto;height:auto;margin:0;aspect-ratio:4/3;cursor:grab;}
+#sb-subject-photo .sp-wrap img{width:100%;height:100%;}
+#sb-subject-photo .sp-wrap.arrastrando{opacity:.35;}
+#sb-subject-photo .sp-wrap.ins-izq::before,#sb-subject-photo .sp-wrap.ins-der::after{content:'';position:absolute;top:-2px;bottom:-2px;width:4px;background:var(--g);border-radius:2px;z-index:3;}
+#sb-subject-photo .sp-wrap.ins-izq::before{left:-5px;}
+#sb-subject-photo .sp-wrap.ins-der::after{right:-5px;}
+#sb-subject-photo .sp-del,#sb-subject-photo .sp-crop{width:22px;height:22px;font-size:13px;}
+.btn-ir-aviso{padding:4px 9px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:14px;font-weight:700;flex-shrink:0;line-height:1;}
+.btn-ir-aviso:hover{background:var(--g);color:#1c1c1c;}
 /* ── fotos de la tasación: todas 4:3. La 1 va grande a la izquierda; las demás abajo de la descripción, 3 por fila ── */
 .d-subj-photo{float:left;width:80mm;height:60mm;margin:0 6mm 3mm 0;border-radius:3px;background:#eee center/cover no-repeat;cursor:pointer;}
 .foto-galeria{clear:both;display:grid;grid-template-columns:repeat(3,1fr);gap:2.5mm;padding-top:3mm;}
@@ -654,17 +665,41 @@ async function loadCompPhoto(input,id){
 }
 
 // ── Sidebar thumbnail renders ──
+/* fotos del inmueble tasado: se ordenan arrastrando o con las flechas; la 1 es la principal */
+let _arrastraFoto=null;
+/* mueve la foto 'de' al lado izquierdo o derecho de la foto 'destino' */
+function moverFotoSujeto(de,destino,lado){
+  let a=lado==='der'?destino+1:destino;
+  if(de<a)a--;
+  if(a===de)return;
+  const [f]=subjectPhotos.splice(de,1);subjectPhotos.splice(a,0,f);
+  renderSubjectPhotoSb();renderPreview();
+}
 function renderSubjectPhotoSb(){
   const sb=document.getElementById('sb-subject-photo');if(!sb)return;
   sb.innerHTML='';
+  const limpiar=()=>sb.querySelectorAll('.ins-izq,.ins-der').forEach(x=>x.classList.remove('ins-izq','ins-der'));
+  const lado=(e,el)=>{const r=el.getBoundingClientRect();return(e.clientX-r.left)<r.width/2?'izq':'der';};
   subjectPhotos.forEach((p,i)=>{
-    const wrap=document.createElement('div');wrap.className='sp-wrap';
-    const img=document.createElement('img');img.src=p.photo;
-    const del=document.createElement('button');del.className='sp-del';del.textContent='×';
+    const wrap=document.createElement('div');wrap.className='sp-wrap';wrap.draggable=true;
+    wrap.title='Arrastrá para cambiar el orden';
+    wrap.ondragstart=e=>{_arrastraFoto=i;wrap.classList.add('arrastrando');e.dataTransfer.effectAllowed='move';};
+    wrap.ondragend=()=>{wrap.classList.remove('arrastrando');limpiar();_arrastraFoto=null;};
+    wrap.ondragover=e=>{
+      e.preventDefault();if(_arrastraFoto===null||_arrastraFoto===i)return;
+      const l=lado(e,wrap);limpiar();wrap.classList.add('ins-'+l);
+    };
+    wrap.ondragleave=e=>{if(!wrap.contains(e.relatedTarget))wrap.classList.remove('ins-izq','ins-der');};
+    wrap.ondrop=e=>{e.preventDefault();const l=lado(e,wrap);limpiar();if(_arrastraFoto!==null&&_arrastraFoto!==i)moverFotoSujeto(_arrastraFoto,i,l);_arrastraFoto=null;};
+    const img=document.createElement('img');img.src=p.photo;img.draggable=false;
+    const num=document.createElement('span');num.className='sp-num'+(i===0?' principal':'');num.textContent=i===0?'1 · Principal':String(i+1);
+    const del=document.createElement('button');del.className='sp-del';del.textContent='×';del.title='Quitar';
     del.onclick=()=>{subjectPhotos.splice(i,1);renderSubjectPhotoSb();renderPreview();};
     const crop=document.createElement('button');crop.className='sp-crop';crop.textContent='✂';crop.title='Recortar';
     crop.onclick=()=>encuadrarSujeto(i);
-    wrap.appendChild(img);wrap.appendChild(del);wrap.appendChild(crop);sb.appendChild(wrap);
+    wrap.append(img,num,del,crop);
+    if(i>0){const st=document.createElement('button');st.className='sp-star';st.textContent='★';st.title='Hacer principal';st.onclick=()=>moverFotoSujeto(i,0,'izq');wrap.append(st);}
+    sb.appendChild(wrap);
   });
 }
 function renderMapPhotoSb(){
@@ -742,6 +777,13 @@ function setC(id,field,value){
   }
   renderPreview();
 }
+/* abre el aviso del comparable en otra pestaña (no hace falta copiar y pegar el link) */
+function abrirAviso(id){
+  const c=comparables.find(x=>x.id===id);let u=((c&&c.link)||'').trim();
+  if(!u){alert('Este comparable no tiene link cargado.');return;}
+  if(!/^https?:\/\//i.test(u))u='https://'+u.replace(/^\/+/,'');
+  window.open(u,'_blank','noopener');
+}
 function toggleBody(id){const b=document.querySelector(`.sb-card[data-id="${id}"] .sb-card-body`);if(b)b.style.display=b.style.display==='none'?'':'none';}
 
 // ══════════════════════════════════════
@@ -777,10 +819,10 @@ function renderSidebar(){
     </div>
   </div>
   <div class="field" style="margin-top:2px">
-    <label style="color:#C8941A;font-size:9px;letter-spacing:.1em">🔗 LINK PUBLICACIÓN</label>
+    <label style="color:#C8941A;font-size:9px;letter-spacing:.1em">🔗 LINK DEL AVISO <small style="font-weight:400;opacity:.6;letter-spacing:0">(interno)</small></label>
     <div style="display:flex;gap:4px;align-items:center">
       <input type="text" value="${esc(c.link||'')}" placeholder="ej: zonaprop.com.ar/..." oninput="setC(${c.id},'link',this.value)" style="font-size:10px;color:#aaa;flex:1;min-width:0">
-      <button onclick="if('${esc(c.link||'')}'){window.open('${esc(c.link||'')}'.startsWith('http')?'${esc(c.link||'')}':'https://'+'${esc(c.link||'')}','_blank')}" ${c.link?'':'disabled'} style="padding:4px 8px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:13px;flex-shrink:0;line-height:1">↗</button>
+      <button type="button" class="btn-ir-aviso" onclick="abrirAviso(${c.id})" title="Abrir el aviso en otra pestaña">↗</button>
     </div>
   </div>
   <div class="field" style="margin-top:2px">
@@ -801,7 +843,7 @@ function renderSidebar(){
     <input class="tipoOp-custom" type="text" value="${esc(c.tipoOpLabel)}" placeholder="Escribi el tipo..." style="margin-top:3px;${c.tipoOp!=='Custom'?'display:none':''}" oninput="setC(${c.id},'tipoOpLabel',this.value)">
   </div>
   <div class="field-row">
-    <div class="field"><label>Fuente</label>
+    <div class="field"><label>Fuente <small style="font-weight:400;opacity:.55">(interno)</small></label>
       <select onchange="setC(${c.id},'fuente',this.value)">
         <option ${c.fuente==='ZonaProp'?'selected':''}>ZonaProp</option>
         <option ${c.fuente==='Argenprop'?'selected':''}>Argenprop</option>
@@ -810,7 +852,7 @@ function renderSidebar(){
         <option ${c.fuente==='Otro'?'selected':''}>Otro</option>
       </select>
     </div>
-    <div class="field"><label>Fecha</label>
+    <div class="field"><label>Fecha <small style="font-weight:400;opacity:.55">(interno)</small></label>
       <input type="text" value="${esc(c.fecha)}" placeholder="mm/aaaa" oninput="setC(${c.id},'fecha',this.value)">
     </div>
   </div>
@@ -1451,8 +1493,6 @@ function rSection(comps,tipo,ss){
       ['Valor',c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—'],
       ['Valor / m²',v.pm2>0?`${c.currency} ${fN(Math.round(v.pm2))}`:'—'],
       c.calidad?['Calidad',esc(c.calidad)]:null,
-      c.fuente?['Fuente',esc(c.fuente)]:null,
-      c.fecha?['Fecha',esc(c.fecha)]:null,
     ].filter(Boolean).map(([l,v2])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${v2}</span></div>`).join('');
     return`<div class="icard">
       ${c.photo?`<div class="icard-photo" data-enc="c:${c.id}:0" title="Clic para elegir qué parte de la foto se ve" style="background-image:url('${c.photo}')"></div>`:`<div class="icard-no-photo">Sin foto</div>`}
@@ -1475,7 +1515,6 @@ function rSection(comps,tipo,ss){
     ['Sup. Considerada',vals.map(v=>v.sup>0?`<strong>${fN(Math.round(v.sup))} m²</strong>`:'—')],
     ['Régimen',comps.map(c=>esc(c.regimen)||'—')],
     ['Calidad',comps.map(c=>esc(c.calidad)||'—')],
-    ['Fuente',comps.map(c=>esc(c.fuente)||'—')],
     ['Valor',comps.map(c=>c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—')],
     ['Valor / m²',vals.map((v,i)=>v.pm2>0?`${comps[i].currency} ${fN(Math.round(v.pm2))}`:'—')],
   ];
