@@ -500,7 +500,7 @@ function calcC(c){
   const f=factoresC(c);
   /* un comparable superior vale más que la propiedad tasada: su valor/m² se divide por el factor */
   const caract=Object.values(f).reduce((p,v)=>p*(v&&v>0?v:1),1);
-  const hom=pm2*(numArg(c.oferta)||1)*(numArg(c.superficie)||1)/caract;
+  const hom=pm2*(numArg(c.oferta)||1)/caract;
   return{sup,pm2,autoSF,sf,hom,f,cochV};
 }
 
@@ -761,7 +761,7 @@ function renderSidebar(){
   document.getElementById('comp-list').innerHTML=comparables.map((c,idx)=>{
     const num=idx+1;
     const{sup,pm2,autoSF}=calcC(c);
-    const calcTxt=sup>0?`Sup. homogeneizada: ${fN(Math.round(sup))} m² · ${c.currency} ${fN(Math.round(pm2))}/m² · FacSup: ${autoSF.toFixed(2)}`:'Sup. homogeneizada: —';
+    const calcTxt=sup>0?`Sup. homogeneizada: ${fN(Math.round(sup))} m² · ${c.currency} ${fN(Math.round(pm2))}/m²`:'Sup. homogeneizada: —';
     return`<div class="sb-card" data-id="${c.id}">
 <div class="sb-card-hd" onclick="toggleBody(${c.id})">
   <div class="cnum">${num}</div>
@@ -813,7 +813,29 @@ function renderSidebar(){
     <div class="field"><label>Valor pedido</label>
       <input type="text" value="${esc(c.price)}" placeholder="ej: 180.000" oninput="setC(${c.id},'price',this.value)">
     </div>
+    <div class="field" style="max-width:96px"><label>% Negociación</label><input type="number" class="oferta-i" value="${c.oferta}" step="0.05" oninput="setC(${c.id},'oferta',this.value)"></div>
   </div>
+  <div class="field"><label>Descripción</label><textarea rows="2" oninput="setC(${c.id},'notes',this.value)">${esc(c.notes)}</textarea></div>
+  <div class="field">
+    <label>Fotos del comparable</label>
+    <label class="file-label">📷 Agregar fotos<input type="file" accept="image/*" multiple onchange="loadCompPhoto(this,${c.id})"></label>
+    <div style="font-size:10px;opacity:.55;margin-top:3px;line-height:1.4">La 1 sale grande al lado de los datos; las demás, abajo de la descripción (3 por fila). ★ = hacer principal.</div>
+    <div class="sb-photos sb-fotos-comp" id="sb-cp-${c.id}"></div>
+  </div>
+  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Superficie del departamento</div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field"><label>Cubierta (m²)</label><input type="number" value="${c.cub}" placeholder="0" oninput="setC(${c.id},'cub',this.value)"></div>
+    <div class="field"><label>Balcón (m²)</label><input type="number" value="${c.semi}" placeholder="0" oninput="setC(${c.id},'semi',this.value)"></div>
+    <div class="field" style="max-width:72px"><label>Coef</label><div class="coef-fijo" title="Es el mismo de la propiedad tasada: se cambia ahí">×<span class="coef-semi-txt">${W().semi.toFixed(2)}</span></div></div>
+  </div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field"><label>Cochera</label><select onchange="setC(${c.id},'cochera',this.value);renderPreview()"><option value="" ${!c.cochera?'selected':''}>—</option>${['Doble','Fija','Móvil'].map(o=>`<option ${c.cochera===o?'selected':''}>${o}</option>`).join('')}</select></div>
+    <div class="field"><label>Valor cochera <small style="font-weight:400;opacity:.55">(opcional)</small></label><input type="text" inputmode="decimal" value="${esc(c.cocheraPrecio||'')}" placeholder="se descuenta del precio" oninput="setC(${c.id},'cocheraPrecio',this.value)"></div>
+  </div>
+  ${(c.supExtras||[]).map((e,i)=>`<div class="field-row" style="align-items:flex-end;gap:4px;margin-bottom:4px"><div class="field" style="flex:2"><label>Personalizable — nombre</label><input type="text" value="${e.nombre||''}" placeholder="ej: Baulera, Jardín..." oninput="setSupExtra(${c.id},${i},'nombre',this.value)"></div><div class="field"><label>m²</label><input type="number" value="${e.m2||''}" placeholder="0" oninput="setSupExtra(${c.id},${i},'m2',this.value)"></div><div class="field"><label>Coef ×</label><input type="number" value="${e.coef||'1.00'}" step="0.05" min="0" max="1" oninput="setSupExtra(${c.id},${i},'coef',this.value)"></div><button onclick="removeSupExtra(${c.id},${i})" style="margin-top:16px;padding:4px 8px;background:#b55;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px;flex-shrink:0">✕</button></div>`).join('')}
+  <button onclick="addSupExtra(${c.id})" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
+  <div class="field-calc">${calcTxt}</div>
+  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Características</div>
   <div class="field"><label>Ubicación</label>
     <select onchange="setUbic(${c.id},this.value)">
       <option value="" ${!c.ubicSel?'selected':''}>—</option>
@@ -901,37 +923,7 @@ function renderSidebar(){
   <div class="field"><label>Otros amenities</label>
     <input type="text" value="${esc(c.amenitiesOtros||'')}" placeholder="ej: Gimnasio, Sauna..." oninput="setC(${c.id},'amenitiesOtros',this.value)">
   </div>
-  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Superficie del departamento</div>
-  <div class="field-row" style="align-items:flex-end">
-    <div class="field"><label>Cubierta (m²)</label><input type="number" value="${c.cub}" placeholder="0" oninput="setC(${c.id},'cub',this.value)"></div>
-    <div class="field"><label>Balcón (m²)</label><input type="number" value="${c.semi}" placeholder="0" oninput="setC(${c.id},'semi',this.value)"></div>
-    <div class="field" style="max-width:72px"><label>Coef</label><div class="coef-fijo" title="Es el mismo de la propiedad tasada: se cambia ahí">×<span class="coef-semi-txt">${W().semi.toFixed(2)}</span></div></div>
-  </div>
-  <div class="field-row" style="align-items:flex-end">
-    <div class="field"><label>Cochera</label><select onchange="setC(${c.id},'cochera',this.value);renderPreview()"><option value="" ${!c.cochera?'selected':''}>—</option>${['Doble','Fija','Móvil'].map(o=>`<option ${c.cochera===o?'selected':''}>${o}</option>`).join('')}</select></div>
-    <div class="field"><label>Valor cochera <small style="font-weight:400;opacity:.55">(opcional)</small></label><input type="text" inputmode="decimal" value="${esc(c.cocheraPrecio||'')}" placeholder="se descuenta del precio" oninput="setC(${c.id},'cocheraPrecio',this.value)"></div>
-  </div>
-  ${(c.supExtras||[]).map((e,i)=>`<div class="field-row" style="align-items:flex-end;gap:4px;margin-bottom:4px"><div class="field" style="flex:2"><label>Personalizable — nombre</label><input type="text" value="${e.nombre||''}" placeholder="ej: Baulera, Jardín..." oninput="setSupExtra(${c.id},${i},'nombre',this.value)"></div><div class="field"><label>m²</label><input type="number" value="${e.m2||''}" placeholder="0" oninput="setSupExtra(${c.id},${i},'m2',this.value)"></div><div class="field"><label>Coef ×</label><input type="number" value="${e.coef||'1.00'}" step="0.05" min="0" max="1" oninput="setSupExtra(${c.id},${i},'coef',this.value)"></div><button onclick="removeSupExtra(${c.id},${i})" style="margin-top:16px;padding:4px 8px;background:#b55;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px;flex-shrink:0">✕</button></div>`).join('')}
-  <button onclick="addSupExtra(${c.id})" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
-  <div class="field-calc">${calcTxt}</div>
-  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Factores de homogeneización</div>
-  <div class="field-row">
-    <div class="field"><label>% Negociación</label><input type="number" class="oferta-i" value="${c.oferta}" step="0.05" oninput="setC(${c.id},'oferta',this.value)"></div>
-  </div>
 ${(String(c.estado||'').trim()&&numArg(c.estado)!==1&&!c.estadoConst)?`  <div class="field"><label>Ajuste de estado (tasación vieja)</label><input type="text" inputmode="decimal" value="${esc(c.estado)}" placeholder="1.00 = igual a la tasada" onkeydown="if(event.key==='Enter'){event.preventDefault();setC(${c.id},'estado',this.value.replace(',','.'));this.blur();}" onchange="setC(${c.id},'estado',this.value.replace(',','.'))"></div>`:''}
-  <div class="field-row">
-    <div class="field"><label>Superficie</label><input type="number" value="${c.superficie}" step="0.05" oninput="setC(${c.id},'superficie',this.value)"></div>
-  </div>
-  <div class="field"><label>Factor Superficie</label>
-    <input type="number" value="${c.sfOverride}" placeholder="auto" step="0.01" oninput="setC(${c.id},'sfOverride',this.value)">
-  </div>
-  <div class="field">
-    <label>Fotos del comparable</label>
-    <label class="file-label">📷 Agregar fotos<input type="file" accept="image/*" multiple onchange="loadCompPhoto(this,${c.id})"></label>
-    <div style="font-size:10px;opacity:.55;margin-top:3px;line-height:1.4">La 1 sale grande al lado de los datos; las demás, abajo de la descripción (3 por fila). ★ = hacer principal.</div>
-    <div class="sb-photos sb-fotos-comp" id="sb-cp-${c.id}"></div>
-  </div>
-  <div class="field"><label>Notas</label><textarea rows="2" oninput="setC(${c.id},'notes',this.value)">${esc(c.notes)}</textarea></div>
 </div>
 </div>`;
   }).join('');
@@ -1419,7 +1411,6 @@ function rSection(comps,tipo,ss){
     ['Luminosidad'+ref(S.luminosidad),fx('luminosidad')],
     ['Altura interna'+ref(altTxt[S.alturaInterna]||''),fx('altura')],
     ['Amenities'+ref(amenS||(vals.some(v=>v.f.amenities!=null)?'sin amenities':'')),fx('amenities')],
-    ['Superficie',comps.map(c=>c.superficie||'1')],
   ].filter(([,vs])=>vs.some(v=>v!=='—'));
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const fRow=([lbl,vs])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}</td>`).join('')}</tr>`;

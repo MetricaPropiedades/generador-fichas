@@ -495,7 +495,7 @@ function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
   const ss=subSup(),autoSF=(sup>0&&ss>0)?Math.pow(sup/ss,0.2):1;
   const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
-  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const calidadAdj=getCalidadAdj(c);const regimenAdj=getRegimenAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*(parseFloat(c.superficie)||1)*planta*frenteAdj*posAdj*calidadAdj*regimenAdj*(parseFloat(c.alturaInterna)||1);
+  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const calidadAdj=getCalidadAdj(c);const regimenAdj=getRegimenAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*planta*frenteAdj*posAdj*calidadAdj*regimenAdj*(parseFloat(c.alturaInterna)||1);
   return{sup,pm2,autoSF,sf,hom,planta};
 }
 
@@ -793,7 +793,7 @@ function renderSidebar(){
   document.getElementById('comp-list').innerHTML=comparables.map((c,idx)=>{
     const num=idx+1;
     const{sup,pm2,autoSF}=calcC(c);
-    const calcTxt=sup>0?`Sup. homogeneizada: ${fN(Math.round(sup))} m² · ${c.currency} ${fN(Math.round(pm2))}/m² · FacSup: ${autoSF.toFixed(2)}`:'Sup. homogeneizada: —';
+    const calcTxt=sup>0?`Sup. homogeneizada: ${fN(Math.round(sup))} m² · ${c.currency} ${fN(Math.round(pm2))}/m²`:'Sup. homogeneizada: —';
     return`<div class="sb-card" data-id="${c.id}">
 <div class="sb-card-hd" onclick="toggleBody(${c.id})">
   <div class="cnum">${num}</div>
@@ -833,15 +833,6 @@ function renderSidebar(){
     </div>
   </div>
   
-  <div class="field"><label>Tipo operación</label>
-    <div class="field-hint" style="margin-bottom:3px">Oferta = precio pedido en portal (×0.9). Real = operación cerrada (×1.0).</div>
-    <div class="tog">
-      <button class="ot ${c.tipoOp==='Oferta'?'on':''}" data-v="Oferta" onclick="setC(${c.id},'tipoOp','Oferta')">Oferta (×0.9)</button>
-      <button class="ot ${c.tipoOp==='Real'?'on':''}" data-v="Real" onclick="setC(${c.id},'tipoOp','Real')">Real (×1.0)</button>
-      <button class="ot ${c.tipoOp==='Custom'?'on':''}" data-v="Custom" onclick="setC(${c.id},'tipoOp','Custom')">Otro</button>
-    </div>
-    <input class="tipoOp-custom" type="text" value="${esc(c.tipoOpLabel)}" placeholder="Escribi el tipo..." style="margin-top:3px;${c.tipoOp!=='Custom'?'display:none':''}" oninput="setC(${c.id},'tipoOpLabel',this.value)">
-  </div>
   <div class="field-row">
     <div class="field"><label>Fuente</label>
       <select onchange="setC(${c.id},'fuente',this.value)">
@@ -856,6 +847,15 @@ function renderSidebar(){
       <input type="text" value="${esc(c.fecha)}" placeholder="mm/aaaa" oninput="setC(${c.id},'fecha',this.value)">
     </div>
   </div>
+  <div class="field"><label>Tipo operación</label>
+    <div class="field-hint" style="margin-bottom:3px">Oferta = precio pedido en portal (×0.9). Real = operación cerrada (×1.0).</div>
+    <div class="tog">
+      <button class="ot ${c.tipoOp==='Oferta'?'on':''}" data-v="Oferta" onclick="setC(${c.id},'tipoOp','Oferta')">Oferta (×0.9)</button>
+      <button class="ot ${c.tipoOp==='Real'?'on':''}" data-v="Real" onclick="setC(${c.id},'tipoOp','Real')">Real (×1.0)</button>
+      <button class="ot ${c.tipoOp==='Custom'?'on':''}" data-v="Custom" onclick="setC(${c.id},'tipoOp','Custom')">Otro</button>
+    </div>
+    <input class="tipoOp-custom" type="text" value="${esc(c.tipoOpLabel)}" placeholder="Escribi el tipo..." style="margin-top:3px;${c.tipoOp!=='Custom'?'display:none':''}" oninput="setC(${c.id},'tipoOpLabel',this.value)">
+  </div>
   <div class="field-row">
     <div class="field" style="max-width:68px"><label>Moneda</label>
       <select onchange="setC(${c.id},'currency',this.value)">
@@ -866,7 +866,30 @@ function renderSidebar(){
     <div class="field"><label>Valor pedido</label>
       <input type="text" value="${esc(c.price)}" placeholder="ej: 180.000" oninput="setC(${c.id},'price',this.value)">
     </div>
+    <div class="field" style="max-width:96px"><label>% Negociación</label><input type="number" class="oferta-i" value="${c.oferta}" step="0.05" oninput="setC(${c.id},'oferta',this.value)"></div>
   </div>
+  <div class="field"><label>Descripción</label><textarea rows="2" oninput="setC(${c.id},'notes',this.value)">${esc(c.notes)}</textarea></div>
+  <div class="field">
+    <label>Fotos del comparable</label>
+    <label class="file-label">📷 Agregar fotos<input type="file" accept="image/*" multiple onchange="loadCompPhoto(this,${c.id})"></label>
+    <div style="font-size:10px;opacity:.55;margin-top:3px;line-height:1.4">La 1 sale grande al lado de los datos; las demás, abajo de la descripción (3 por fila). ★ = hacer principal.</div>
+    <div class="sb-photos sb-fotos-comp" id="sb-cp-${c.id}"></div>
+  </div>
+  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Superficie</div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field" style="max-width:90px"><label>Frente (m)</label><input type="number" value="${c.frente}" placeholder="0.00" step="0.1" oninput="setC(${c.id},'frente',this.value)"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>PB (m²)</label><input type="number" value="${c.pb}" placeholder="0" oninput="setC(${c.id},'pb',this.value)"></div>
+    <div class="field"><label>Subsuelo (m²)</label><input type="number" value="${c.ss}" placeholder="0" oninput="setC(${c.id},'ss',this.value)"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>1er Piso (m²)</label><input type="number" value="${c.p1}" placeholder="0" oninput="setC(${c.id},'p1',this.value)"></div>
+    </div>
+  ${(c.customFloors||[]).map((f,fi)=>'<div class="field-row" style="align-items:flex-end;margin-top:2px">'+' <div class="field"><label style="font-size:8px;opacity:.6">Nombre</label>'+' <input type="text" value="'+esc(f.name||'')+'"  placeholder="ej: Entrepiso" oninput="setFloorName('+c.id+','+fi+',this.value)">'+' </div>'+' <div class="field" style="max-width:70px"><label style="font-size:8px;opacity:.6">m²</label>'+' <input type="number" value="'+(f.m2||'')+'"  placeholder="0" oninput="setFloorM2('+c.id+','+fi+',this.value)">'+' </div>'+' <button onclick="removeFloor('+c.id+','+fi+')" style="padding:2px 7px;border:none;background:rgba(255,80,80,.2);color:#f88;border-radius:3px;cursor:pointer;margin-bottom:1px;font-size:12px">×</button>'+' </div>').join('')}
+  <button onclick="addFloor(${c.id})" style="width:100%;margin-top:2px;padding:3px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.18);border-radius:3px;color:rgba(255,255,255,.4);font-size:10px;cursor:pointer">+ Agregar planta</button>
+  <div class="field-calc">${calcTxt}</div>
+  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Características</div>
   <div class="field-row">
     <div class="field"><label>Régimen</label>
       <select onchange="setC(${c.id},'regimen',this.value)">
@@ -893,9 +916,6 @@ function renderSidebar(){
       <option value="1.1" ${c.alturaInterna==='1.1'?'selected':''}>Techo alto (factor: 1.10)</option>
     </select>
   </div>
-  <div class="field-row" style="align-items:flex-end">
-    <div class="field" style="max-width:90px"><label>Frente (m)</label><input type="number" value="${c.frente}" placeholder="0.00" step="0.1" oninput="setC(${c.id},'frente',this.value)"></div>
-  </div>
   <div class="field"><label>Posición en cuadra</label>
     <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'posicion',this.value);renderPreview()">
       <option value=""${c.posicion===''?' selected':''}>— sin ajuste</option>
@@ -916,37 +936,12 @@ function renderSidebar(){
     </select>
   </div>
   ${c.frenteRango==='custom'?`<div class='field-row'><div class='field'><label style='font-size:8px;opacity:.6'>Metros</label><input type='number' value='${c.frente}' step='0.1' oninput='setC(${c.id},"frente",this.value)'></div><div class='field'><label style='font-size:8px;opacity:.6'>Coef. base</label><input type='number' value='${c.frenteCustomCoef||1}' step='0.05' oninput='setC(${c.id},"frenteCustomCoef",parseFloat(this.value)||1);renderPreview()'></div></div>`:''}
-  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Superficie por planta</div>
-  <div class="field-row">
-    <div class="field"><label>PB (m²)</label><input type="number" value="${c.pb}" placeholder="0" oninput="setC(${c.id},'pb',this.value)"></div>
-    <div class="field"><label>Subsuelo (m²)</label><input type="number" value="${c.ss}" placeholder="0" oninput="setC(${c.id},'ss',this.value)"></div>
-  </div>
-  <div class="field-row">
-    <div class="field"><label>1er Piso (m²)</label><input type="number" value="${c.p1}" placeholder="0" oninput="setC(${c.id},'p1',this.value)"></div>
-    </div>
-  ${(c.customFloors||[]).map((f,fi)=>'<div class="field-row" style="align-items:flex-end;margin-top:2px">'+' <div class="field"><label style="font-size:8px;opacity:.6">Nombre</label>'+' <input type="text" value="'+esc(f.name||'')+'"  placeholder="ej: Entrepiso" oninput="setFloorName('+c.id+','+fi+',this.value)">'+' </div>'+' <div class="field" style="max-width:70px"><label style="font-size:8px;opacity:.6">m²</label>'+' <input type="number" value="'+(f.m2||'')+'"  placeholder="0" oninput="setFloorM2('+c.id+','+fi+',this.value)">'+' </div>'+' <button onclick="removeFloor('+c.id+','+fi+')" style="padding:2px 7px;border:none;background:rgba(255,80,80,.2);color:#f88;border-radius:3px;cursor:pointer;margin-bottom:1px;font-size:12px">×</button>'+' </div>').join('')}
-  <button onclick="addFloor(${c.id})" style="width:100%;margin-top:2px;padding:3px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.18);border-radius:3px;color:rgba(255,255,255,.4);font-size:10px;cursor:pointer">+ Agregar planta</button>
-  <div class="field-calc">${calcTxt}</div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Factores de homogeneización</div>
   <div class="field-row">
-    <div class="field"><label>% Negociación</label><input type="number" class="oferta-i" value="${c.oferta}" step="0.05" oninput="setC(${c.id},'oferta',this.value)"></div>
     <div class="field"><label>Ubicación</label><input type="number" value="${c.ubicacion}" step="0.05" oninput="setC(${c.id},'ubicacion',this.value)"></div>
-  </div>
-  <div class="field"><label>Estado</label><input type="number" value="${c.estado}" step="0.05" oninput="setC(${c.id},'estado',this.value)"></div>
-  <div class="field-row">
-    <div class="field"><label>Superficie</label><input type="number" value="${c.superficie}" step="0.05" oninput="setC(${c.id},'superficie',this.value)"></div>
+    <div class="field"><label>Estado</label><input type="number" value="${c.estado}" step="0.05" oninput="setC(${c.id},'estado',this.value)"></div>
   </div>
   <div class="field"><label>Planta</label><div class="field-row"><div class="field"><label style="cursor:pointer;${c.planta==='Subsuelo'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'Subsuelo',+c.pcs||0.30)">Subsuelo</label><input type="number" value="${c.pcs||0.30}" step="0.05" oninput="setC(${c.id},'pcs',parseFloat(this.value)||0.30);renderPreview()"></div><div class="field"><label style="cursor:pointer;${c.planta==='Entrepiso'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'Entrepiso',+c.pce||0.70)">Entrepiso</label><input type="number" value="${c.pce||0.70}" step="0.05" oninput="setC(${c.id},'pce',parseFloat(this.value)||0.70);renderPreview()"></div></div><div class="field-row"><div class="field"><label style="cursor:pointer;${c.planta==='1er piso'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'1er piso',+c.pc1||0.60)">1er piso</label><input type="number" value="${c.pc1||0.60}" step="0.05" oninput="setC(${c.id},'pc1',parseFloat(this.value)||0.60);renderPreview()"></div><div class="field"><label style="cursor:pointer;${c.planta==='2do piso'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'2do piso',+c.pc2||0.50)">2do piso</label><input type="number" value="${c.pc2||0.50}" step="0.05" oninput="setC(${c.id},'pc2',parseFloat(this.value)||0.50);renderPreview()"></div></div></div>
-  <div class="field"><label>Factor Superficie (vacío = auto ${autoSF.toFixed(2)})</label>
-    <input type="number" value="${c.sfOverride}" placeholder="auto" step="0.01" oninput="setC(${c.id},'sfOverride',this.value)">
-  </div>
-  <div class="field">
-    <label>Fotos del comparable</label>
-    <label class="file-label">📷 Agregar fotos<input type="file" accept="image/*" multiple onchange="loadCompPhoto(this,${c.id})"></label>
-    <div style="font-size:10px;opacity:.55;margin-top:3px;line-height:1.4">La 1 sale grande al lado de los datos; las demás, abajo de la descripción (3 por fila). ★ = hacer principal.</div>
-    <div class="sb-photos sb-fotos-comp" id="sb-cp-${c.id}"></div>
-  </div>
-  <div class="field"><label>Notas</label><textarea rows="2" oninput="setC(${c.id},'notes',this.value)">${esc(c.notes)}</textarea></div>
 </div>
 </div>`;
   }).join('');
@@ -1524,7 +1519,6 @@ function rSection(comps,tipo,ss){
     ['% Negociación',comps.map(c=>c.oferta)],
     ['Ubicación',comps.map(c=>c.ubicacion)],
     ['Estado',comps.map(c=>c.estado)],
-    ['Superficie',comps.map(c=>c.superficie||'1')],
     ['Planta',comps.map(c=>c.planta?getPlantaCoef(c).toFixed(2):'—')],
     ['Frente',comps.map(c=>c.frenteRango?getFrenteAdj(c).toFixed(2):'—')],
     ['Posición en cuadra',comps.map(c=>c.posicion?getPosicionAdj(c).toFixed(2):'—')],
