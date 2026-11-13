@@ -131,6 +131,10 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 /* datos en columnas parejas, uno al lado del otro en orden: si falta un dato no queda hueco */
 .icard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(30mm,1fr));gap:2.5mm 5mm;margin-bottom:2.5mm;}
 .icard-datum{min-width:0;}
+/* detalle del ajuste (incidencia y lo que se aplica): solo para el equipo, nunca en el PDF */
+.det-inc,.det-ap{display:none;}
+body.ver-interno .det-inc{display:inline;}
+body.ver-interno .det-ap{display:block;}
 .btn-ir-aviso{padding:4px 9px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:14px;font-weight:700;flex-shrink:0;line-height:1;}
 .btn-ir-aviso:hover{background:var(--g);color:#1c1c1c;}
 .coef-fijo{padding:6px 8px;border:1px solid rgba(255,255,255,.08);border-radius:4px;font-size:12px;color:rgba(255,255,255,.5);white-space:nowrap;}
@@ -425,6 +429,8 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
   <div class="field"><textarea id="s-fund" rows="6" placeholder="Explicá cómo se llegó al valor: qué comparables pesaron más, ajustes, contexto del mercado..." oninput="renderPreview()"></textarea></div>
 
   <button id="btn-firma" onclick="toggleFirma()" style="margin-top:10px;width:100%;padding:9px;border-radius:4px;border:none;cursor:pointer;font-family:'Barlow',sans-serif;font-size:10pt;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--g);color:#1c1c1c;">✍ Firma ON</button>
+  <button id="btn-detalle" onclick="toggleDetalle()" title="Muestra en la tabla la incidencia de cada característica y lo que realmente se aplica. Solo lo ves vos: el PDF sale siempre limpio." style="margin-top:6px;width:100%;padding:9px;border-radius:4px;border:1px solid rgba(255,255,255,.15);cursor:pointer;font-family:'Barlow',sans-serif;font-size:10pt;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:rgba(255,255,255,.06);color:#ddd;">🔍 Ver detalle del ajuste: OFF</button>
+  <div style="font-size:10px;opacity:.5;margin-top:3px;line-height:1.4">Uso interno para chequear: no sale en el PDF.</div>
 
 </div>
 
@@ -1448,7 +1454,7 @@ function rSection(comps,tipo,ss){
   const ref=(txt)=>txt?`<span style="display:block;font-weight:400;font-size:6.5pt;color:#999">Tasada: ${esc(txt)}</span>`:'';
   const altTxt={'1':'Estándar','1.05':'Alta'};
   const amenS=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
-  const inc=k=>`<span style="font-weight:400;color:#999"> · ${Math.round(INC[k]*100)}%</span>`;
+  const inc=k=>`<span class="det-inc" style="font-weight:400;color:#999"> · ${Math.round(INC[k]*100)}%</span>`;
   const fRows=[
     ['% Negociación',comps.map(c=>{const v=acot(numArg(c.oferta));return v==null?'—':v;})],
     ['Ubicación'+inc('ubicacion')+ref(S.ubicacion),fx('ubicacion'),'ubicacion'],
@@ -1465,7 +1471,7 @@ function rSection(comps,tipo,ss){
     ['Amenities'+ref(amenS||(vals.some(v=>v.f.amenities!=null)?'sin amenities':'')),fx('amenities')],
   ].filter(([,vs])=>vs.some(v=>v!=='—'));
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
-  const ap=(k,v)=>{if(!k||INC[k]>=1)return'';const a=aplicado(k,parseFloat(v));return`<span style="display:block;font-weight:400;font-size:6.5pt;color:#888">aplica ${String(Math.round(a*1000)/1000).replace('.',',')}</span>`;};
+  const ap=(k,v)=>{if(!k||INC[k]>=1)return'';const a=aplicado(k,parseFloat(v));return`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#888">aplica ${String(Math.round(a*1000)/1000).replace('.',',')}</span>`;};
   const fRow=([lbl,vs,k])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>v==='—'?`<td class="vc neutral">—</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}${ap(k,v)}</td>`).join('')}</tr>`;
   const tipoLabel=tipo==='ALQUILER'?'Alquiler':'Venta';
 
@@ -2076,6 +2082,17 @@ conectarAutocompletado(document.getElementById('s-nombre'),()=>triggerMapGen());
     e.preventDefault();re?window.rehacer():window.deshacer();
   });
 })();
+</script>
+<script>
+/* DETALLE DEL AJUSTE: el equipo puede ver incidencias y lo que se aplica; el cliente (PDF) ve la tabla limpia */
+function botonDetalle(){const on=document.body.classList.contains('ver-interno'),b=document.getElementById('btn-detalle');
+  if(b){b.textContent='🔍 Ver detalle del ajuste: '+(on?'ON':'OFF');b.style.background=on?'var(--g)':'rgba(255,255,255,.06)';b.style.color=on?'#1c1c1c':'#ddd';}}
+function toggleDetalle(){const on=document.body.classList.toggle('ver-interno');try{localStorage.setItem('metrica-ver-detalle',on?'1':'');}catch(e){}botonDetalle();}
+try{if(localStorage.getItem('metrica-ver-detalle')==='1')document.body.classList.add('ver-interno');}catch(e){}
+botonDetalle();
+(function(){const orig=window.exportPDF;
+  window.exportPDF=async function(){const on=document.body.classList.contains('ver-interno');document.body.classList.remove('ver-interno');
+    try{return await orig.apply(this,arguments);}finally{if(on)document.body.classList.add('ver-interno');}};})();
 </script>
 <div id="mob-bar"><button id="mob-edit" class="on" onclick="vistaMovil(false)">✏️ Editar</button><button id="mob-ver" onclick="vistaMovil(true)">👁 Ver tasación</button></div>
 <script>
