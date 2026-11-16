@@ -479,8 +479,8 @@ function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace('
 /* COEFICIENTE + INCIDENCIA (igual que el tasador de deptos, nov. 2026).
    · Coeficiente: número redondo entre 0,70 y 1,30 que compara el comparable con la tasada (1 = igual; >1 el comparable es mejor).
      Sale de cuántos escalones los separan × el paso. Las opciones van de mejor a peor.
-   · Incidencia: cuánto pesa cada atributo. PROPUESTA (confirmar con el tasador): ubicación y posición en cuadra 20%;
-     frente, régimen, calidad y estado 10%; altura interna 2%. % negociación y ajuste mercado van al 100%.
+   · Incidencia (definida por Métrica): ubicación 20%; posición en cuadra, régimen, calidad, estado y altura interna 10%;
+     frente 10%. % negociación y ajuste mercado van al 100%.
    · Lo que se aplica: 1 + (coeficiente − 1) × incidencia. Un comparable mejor vale más: su valor/m² se divide por eso. */
 const RANGO={min:0.70,max:1.30};
 const acot=v=>v==null?null:Math.min(RANGO.max,Math.max(RANGO.min,v));
@@ -499,7 +499,7 @@ const AJUSTE={
   estado:{paso:0.10,orden:CAL_OPC},
   altura:{paso:0.10,orden:['Triple altura','Doble altura','Alta','Estándar']}
 };
-const INC={ubicacion:INC_NOTORIO,posicion:INC_NOTORIO,frente:INC_MEDIO,regimen:INC_MEDIO,calidad:INC_MEDIO,estado:INC_MEDIO,altura:INC_BAJO,mercado:1};
+const INC={ubicacion:INC_NOTORIO,posicion:INC_MEDIO,frente:INC_MEDIO,regimen:INC_MEDIO,calidad:INC_MEDIO,estado:INC_MEDIO,altura:INC_MEDIO,mercado:1};
 const aplicado=(k,v)=>v==null?null:1+(v-1)*(INC[k]==null?1:INC[k]);
 function nivF(clave,comp,tasada){
   const a=AJUSTE[clave],i=a.orden.indexOf(comp),j=a.orden.indexOf(tasada);
