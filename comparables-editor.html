@@ -127,6 +127,7 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 /* datos en columnas parejas, uno al lado del otro en orden: si falta un dato no queda hueco */
 .icard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(30mm,1fr));gap:2.5mm 5mm;margin-bottom:2.5mm;}
 .icard-datum{min-width:0;}
+.coef-fijo{padding:6px 8px;border:1px solid rgba(255,255,255,.08);border-radius:4px;font-size:12px;color:rgba(255,255,255,.5);white-space:nowrap;}
 /* detalle del ajuste (respuesta de cada comparable): solo para el equipo, nunca en el PDF */
 .det-inc,.det-ap{display:none;}
 body.ver-interno .det-inc{display:inline;}
@@ -378,25 +379,41 @@ body.ver-interno .det-ap{display:block;}
   <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:14px;"></div>
 
   <h2>Superficie Tasado</h2>
-  <div class="field-row">
-    <div class="field" style="max-width:100px"><label>Frente (m)</label><input type="number" id="s-frente" placeholder="0.00" step="0.1" oninput="renderPreview()"></div>
-  </div>
-  <div class="field-row">
-    <div class="field"><label>PB (m²)</label><input type="number" id="s-pb" placeholder="0" oninput="renderPreview()"></div>
+  <div class="field"><label>Frente</label><select id="s-frente" onchange="renderPreview()"><option value="">—</option><option value="0-4">0 a 4 m</option><option value="4-8.5">4,01 a 8,5 m</option><option value="8.5-12">8,51 a 12 m</option><option value="12-20">12,01 a 20 m</option><option value="20+">Más de 20 m</option></select></div>
+  <div class="field-row"><div class="field"><label>PB (m²)</label><input type="number" id="s-pb" placeholder="0" oninput="renderPreview()"></div></div>
+  <div class="field-row" style="align-items:flex-end">
     <div class="field"><label>Subsuelo (m²)</label><input type="number" id="s-ss" placeholder="0" oninput="renderPreview()"></div>
+    <div class="field" style="max-width:72px"><label title="Coeficiente de homogeneización (subsuelo); vale también para los comparables">Coef ×</label><input type="number" id="w-ss" value="0.30" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
   </div>
-  <div class="field-row">
+  <div class="field-row" style="align-items:flex-end">
     <div class="field"><label>1er Piso (m²)</label><input type="number" id="s-p1" placeholder="0" oninput="renderPreview()"></div>
+    <div class="field" style="max-width:72px"><label title="Coeficiente de homogeneización (1er piso); vale también para los comparables">Coef ×</label><input type="number" id="w-p1" value="0.50" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
+  </div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field"><label>Entrepiso (m²)</label><input type="number" id="s-ent" placeholder="0" oninput="renderPreview()"></div>
+    <div class="field" style="max-width:72px"><label title="Coeficiente de homogeneización (entrepiso); vale también para los comparables">Coef ×</label><input type="number" id="w-ent" value="0.70" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
+  </div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field"><label>Patio (m²)</label><input type="number" id="s-pat" placeholder="0" oninput="renderPreview()"></div>
+    <div class="field" style="max-width:72px"><label title="Coeficiente de homogeneización (patio); vale también para los comparables">Coef ×</label><input type="number" id="w-pat" value="0.70" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
   </div>
   <div class="field-calc" id="s-calc">Superficie homogeneizada: —</div>
   <div id="s-extras-list"></div>
   <button onclick="addSubjectExtra()" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
 
-  <h2>Coeficientes de Homogeneización</h2>
-  <div class="field-hint">Factor de reducción por planta respecto a PB. Subsuelo: 0.50 = vale la mitad. 1er Piso: 0.60 = vale el 60%.</div>
+  <h2>Atributos de la Propiedad Tasada</h2>
+  <div class="field-hint">Con estos datos se compara cada comparable contra la propiedad tasada: si es igual el factor es 1.00, si el comparable es mejor el factor es mayor a 1.00 y si es peor, menor.</div>
   <div class="field-row">
-    <div class="field"><label>Subsuelo ×</label><input type="number" id="w-ss" value="0.50" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
-    <div class="field"><label>1er Piso ×</label><input type="number" id="w-p1" value="0.60" step="0.05" min="0" max="1" oninput="renderPreview()"></div>
+    <div class="field"><label>Ubicación</label><select id="s-ubic" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy buena">Muy buena</option><option value="Buena">Buena</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
+    <div class="field"><label>Posición en cuadra</label><select id="s-posicion" onchange="renderPreview()"><option value="">—</option><option value="esquina">Esquina</option><option value="ante-esquina">Ante-esquina</option><option value="mitad">Mitad de cuadra</option></select></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>Régimen</label><select id="s-regimen" onchange="renderPreview()"><option value="">—</option><option value="Terreno propio">Terreno propio</option><option value="P. Horizontal">P. Horizontal</option></select></div>
+    <div class="field"><label>Calidad constructiva</label><select id="s-calidad" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy buena">Muy buena</option><option value="Buena">Buena</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>Estado constructivo</label><select id="s-estado" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy buena">Muy buena</option><option value="Buena">Buena</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
+    <div class="field"><label>Altura interna</label><select id="s-altura" onchange="renderPreview()"><option value="">—</option><option value="Triple altura">Triple altura</option><option value="Doble altura">Doble altura</option><option value="Alta">Alta</option><option value="Estándar">Estándar</option></select></div>
   </div>
 
   <h2>Comparables</h2>
@@ -428,13 +445,13 @@ let mapPhoto=null, mapPhotoOrig=null;
 let showMap=false, geoCoords={subject:null,comparables:[]}, capturedMapImg=null, geoCache={};
 let leafletMap=null;
 
-function W(){return{ss:parseFloat(document.getElementById('w-ss').value)||0.5,p1:parseFloat(document.getElementById('w-p1').value)||0.6};}
+function W(){const n=(id,d)=>{const v=parseFloat((document.getElementById(id)||{}).value);return isNaN(v)?d:v;};return{ss:n('w-ss',0.30),p1:n('w-p1',0.50),ent:n('w-ent',0.70),pat:n('w-pat',0.70)};}
 function addFloor(id){setC(id,'customFloors',[...(comparables.find(c=>c.id===id)?.customFloors||[]),{name:'',m2:''}]);renderSidebar();renderPreview();}
 function removeFloor(id,fi){const c=comparables.find(x=>x.id===id);if(c){c.customFloors.splice(fi,1);renderSidebar();renderPreview();}}
 function setFloorName(id,fi,val){const c=comparables.find(x=>x.id===id);if(c&&c.customFloors[fi])c.customFloors[fi].name=val;}
 function setFloorM2(id,fi,val){const c=comparables.find(x=>x.id===id);if(c&&c.customFloors[fi]){c.customFloors[fi].m2=val;renderPreview();}}
 
-function subSup(){const w=W();return(parseFloat(document.getElementById('s-pb').value)||0)+(parseFloat(document.getElementById('s-ss').value)||0)*w.ss+(parseFloat(document.getElementById('s-p1').value)||0)*w.p1+(subjectExtras||[]).reduce((s,e)=>s+(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1),0);}
+function subSup(){const w=W();return(parseFloat(document.getElementById('s-pb').value)||0)+(parseFloat(document.getElementById('s-ss').value)||0)*w.ss+(parseFloat(document.getElementById('s-p1').value)||0)*w.p1+(parseFloat(vL('s-ent'))||0)*w.ent+(parseFloat(vL('s-pat'))||0)*w.pat+(subjectExtras||[]).reduce((s,e)=>s+(parseFloat(e.m2)||0)*(parseFloat(e.coef)||1),0);}
 function numDec(v){return String(v==null?'':v).replace(',','.').trim();}
 /* personalizados de la propiedad tasada: se aplican con Enter o al salir del campo */
 function extraKey(ev,i,campo){
@@ -455,54 +472,60 @@ function renderSubjectExtrasSb(){
 function addSubjectExtra(){subjectExtras.push({nombre:'',m2:'',coef:'1.00'});renderSubjectExtrasSb();renderPreview();}
 function removeSubjectExtra(i){subjectExtras.splice(i,1);renderSubjectExtrasSb();renderPreview();}
 function setSubjectExtra(i,campo,valor){if(!subjectExtras[i])return;subjectExtras[i][campo]=valor;renderPreview();}
-function cSup(c){const w=W();return(parseFloat(c.pb)||0)+(parseFloat(c.ss)||0)*w.ss+(parseFloat(c.p1)||0)*w.p1+(c.customFloors||[]).reduce((s,f)=>s+(parseFloat(f.m2)||0)*w.p1,0);}
+function cSup(c){const w=W();return(parseFloat(c.pb)||0)+(parseFloat(c.ss)||0)*w.ss+(parseFloat(c.p1)||0)*w.p1+(parseFloat(c.ent)||0)*w.ent+(parseFloat(c.pat)||0)*w.pat+(c.customFloors||[]).reduce((s,f)=>s+(parseFloat(f.m2)||0)*w.p1,0);}
 
 function parseArg(s){return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
 
-const CALIDAD_COEF={'Muy buena':1.00,'Buena':0.90,'Media':0.75,'Baja':0.60};
-const REGIMEN_COEF={'Terreno propio':1.15,'P. Horizontal':1.00};
-function getCalidadAdj(c){
-  if(!c.calidad)return 1;
-  const cc=CALIDAD_COEF[c.calidad]||1.00;
-  return 1.00/cc;
+/* COEFICIENTE + INCIDENCIA (igual que el tasador de deptos, nov. 2026).
+   · Coeficiente: número redondo entre 0,70 y 1,30 que compara el comparable con la tasada (1 = igual; >1 el comparable es mejor).
+     Sale de cuántos escalones los separan × el paso. Las opciones van de mejor a peor.
+   · Incidencia: cuánto pesa cada atributo. PROPUESTA (confirmar con el tasador): ubicación y posición en cuadra 20%;
+     frente, régimen, calidad y estado 10%; altura interna 2%. % negociación y ajuste mercado van al 100%.
+   · Lo que se aplica: 1 + (coeficiente − 1) × incidencia. Un comparable mejor vale más: su valor/m² se divide por eso. */
+const RANGO={min:0.70,max:1.30};
+const acot=v=>v==null?null:Math.min(RANGO.max,Math.max(RANGO.min,v));
+const FRENTE_OPC=[["0-4", "0 a 4 m"], ["4-8.5", "4,01 a 8,5 m"], ["8.5-12", "8,51 a 12 m"], ["12-20", "12,01 a 20 m"], ["20+", "Más de 20 m"]];
+const frenteTxt=v=>(FRENTE_OPC.find(o=>o[0]===v)||[])[1]||'';
+function rangoFrente(m){m=parseFloat(String(m==null?'':m).replace(',','.'));if(!(m>0))return'';return m<=4?'0-4':m<=8.5?'4-8.5':m<=12?'8.5-12':m<=20?'12-20':'20+';}
+const POS_TXT={'esquina':'Esquina','ante-esquina':'Ante-esquina','mitad':'Mitad de cuadra'};
+const CAL_OPC=['Excelente','Muy buena','Buena','Media','Baja'];
+const INC_NOTORIO=0.20, INC_MEDIO=0.10, INC_BAJO=0.02;
+const AJUSTE={
+  ubicacion:{paso:0.10,orden:CAL_OPC},
+  posicion:{paso:0.15,orden:['esquina','ante-esquina','mitad']},
+  frente:{paso:0.10,orden:['20+','12-20','8.5-12','4-8.5','0-4']},
+  regimen:{paso:0.10,orden:['Terreno propio','P. Horizontal']},
+  calidad:{paso:0.10,orden:CAL_OPC},
+  estado:{paso:0.10,orden:CAL_OPC},
+  altura:{paso:0.10,orden:['Triple altura','Doble altura','Alta','Estándar']}
+};
+const INC={ubicacion:INC_NOTORIO,posicion:INC_NOTORIO,frente:INC_MEDIO,regimen:INC_MEDIO,calidad:INC_MEDIO,estado:INC_MEDIO,altura:INC_BAJO,mercado:1};
+const aplicado=(k,v)=>v==null?null:1+(v-1)*(INC[k]==null?1:INC[k]);
+function nivF(clave,comp,tasada){
+  const a=AJUSTE[clave],i=a.orden.indexOf(comp),j=a.orden.indexOf(tasada);
+  return(i<0||j<0)?null:Math.round((1+(j-i)*a.paso)*100)/100;
 }
-function getRegimenAdj(c){
-  if(!c.regimen)return 1;
-  const cc=REGIMEN_COEF[c.regimen]||1.00;
-  return 1.00/cc;
-}
-const POSICION_COEF={'esquina':1.25,'ante-esquina':1.10,'mitad':1.00};
-function getPosicionAdj(c){
-  if(!c.posicion)return 1;
-  const cc=POSICION_COEF[c.posicion]||1.00;
-  return 1.00/cc;
-}
-const FRENTE_BASE={'0-4':0.65,'4-8.5':0.85,'8.5-12':1.00,'12-20':1.15,'20+':1.30};
-function getFrenteBase(rango,customCoef){
-  if(rango==='custom')return parseFloat(customCoef)||1;
-  return FRENTE_BASE[rango]||null;
-}
-function getFrenteAdj(c){
-  if(!c.frenteRango)return 1;
-  const sm=parseFloat(document.getElementById('s-frente')?.value)||0;
-  let sb;
-  if(sm>0){if(sm<=4)sb=0.65;else if(sm<=8.5)sb=0.85;else if(sm<=12)sb=1.00;else if(sm<=20)sb=1.15;else sb=1.30;}
-  else sb=1.00;
-  const cb=getFrenteBase(c.frenteRango,c.frenteCustomCoef);
-  if(!cb)return 1;
-  return sb/cb;
-}
-const PLANTA_COEF={'Subsuelo':0.30,'Entrepiso':0.70,'1er piso':0.60,'2do piso':0.50};
-function getPlantaCoef(c){
-  const map={Subsuelo:+c.pcs||0.30,Entrepiso:+c.pce||0.70,'1er piso':+c.pc1||0.60,'2do piso':+c.pc2||0.50};
-  return c.planta&&map[c.planta]!=null?map[c.planta]:1;
+function numArgL(v){const n=parseFloat(String(v==null?'':v).replace(',','.'));return isNaN(n)?null:n;}
+function vL(id){const e=document.getElementById(id);return e?e.value:'';}
+const CAR_IDS={ubicacion:'s-ubic',posicion:'s-posicion',frente:'s-frente',regimen:'s-regimen',calidad:'s-calidad',estado:'s-estado',altura:'s-altura'};
+/* atributos de la propiedad tasada (mismas claves que el cálculo) */
+function sujetoL(){const o={};for(const k in CAR_IDS)o[k]=vL(CAR_IDS[k]);return o;}
+function ponerCaractL(k){for(const key in CAR_IDS){const e=document.getElementById(CAR_IDS[key]);if(e)e.value=(k&&k[key])||'';}}
+function factoresC(c){
+  const s=sujetoL();
+  const f={ubicacion:nivF('ubicacion',c.ubicSel,s.ubicacion),posicion:nivF('posicion',c.posicion,s.posicion),
+    frente:nivF('frente',c.frenteRango,s.frente),regimen:nivF('regimen',c.regimen,s.regimen),calidad:nivF('calidad',c.calidad,s.calidad),
+    estado:nivF('estado',c.estadoSel,s.estado),altura:nivF('altura',c.alturaSel,s.altura),mercado:numArgL(c.ajusteMercado)};
+  for(const k in f)f[k]=acot(f[k]); /* ningún factor sale de 0,70–1,30 */
+  return f;
 }
 function calcC(c){
   const sup=cSup(c),price=parseArg(c.price),pm2=sup>0?price/sup:0;
   const ss=subSup(),autoSF=(sup>0&&ss>0)?Math.pow(sup/ss,0.2):1;
-  const sf=(c.sfOverride!==''&&c.sfOverride!=null)?(parseFloat(c.sfOverride)||1):autoSF;
-  const planta=getPlantaCoef(c);const frenteAdj=getFrenteAdj(c);const posAdj=getPosicionAdj(c);const calidadAdj=getCalidadAdj(c);const regimenAdj=getRegimenAdj(c);const hom=pm2*(parseFloat(c.oferta)||1)*(parseFloat(c.ubicacion)||1)*(parseFloat(c.estado)||1)*planta*frenteAdj*posAdj*calidadAdj*regimenAdj*(parseFloat(c.alturaInterna)||1)*(parseFloat(c.ajusteMercado)||1);
-  return{sup,pm2,autoSF,sf,hom,planta};
+  const f=factoresC(c);
+  const caract=Object.entries(f).reduce((p,[k,v])=>p*(v&&v>0?aplicado(k,v):1),1);
+  const hom=pm2*(acot(numArgL(c.oferta))||1)/caract;
+  return{sup,pm2,autoSF,sf:autoSF,hom,f};
 }
 
 // ══════════════════════════════════════
@@ -764,7 +787,7 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',pcs:0.30,pce:0.70,pc1:0.60,pc2:0.50,frenteRango:'',frenteCustomCoef:'',posicion:'',alturaInterna:'',customFloors:[],notes:'',photo:null,photoOrig:null,photoLink:''});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',regimen:'',calidad:'',frente:'',pb:'',ss:'',p1:'',p2:'',oferta:'0.9',ubicacion:'1',tipologia:'1',estado:'1',superficie:'1',sfOverride:'',planta:'',pcs:0.30,pce:0.70,pc1:0.60,pc2:0.50,frenteRango:'',frenteCustomCoef:'',posicion:'',alturaInterna:'',ubicSel:'',estadoSel:'',alturaSel:'',ent:'',pat:'',customFloors:[],notes:'',photo:null,photoOrig:null,photoLink:''});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -798,7 +821,7 @@ function toggleBody(id){const b=document.querySelector(`.sb-card[data-id="${id}"
 function renderSidebar(){
   document.getElementById('comp-list').innerHTML=comparables.map((c,idx)=>{
     const num=idx+1;
-    const{sup,pm2,autoSF}=calcC(c);
+    const{sup,pm2}=calcC(c);
     const calcTxt=sup>0?`Sup. homogeneizada: ${fN(Math.round(sup))} m² · ${c.currency} ${fN(Math.round(pm2))}/m²`:'Sup. homogeneizada: —';
     return`<div class="sb-card" data-id="${c.id}">
 <div class="sb-card-hd" onclick="toggleBody(${c.id})">
@@ -882,72 +905,82 @@ function renderSidebar(){
     <div class="sb-photos sb-fotos-comp" id="sb-cp-${c.id}"></div>
   </div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Superficie</div>
+  <div class="field"><label>Frente</label><select onchange="setC(${c.id},'frenteRango',this.value)"><option value="" ${!c.frenteRango?'selected':''}>—</option><option value="0-4" ${c.frenteRango==='0-4'?'selected':''}>0 a 4 m</option><option value="4-8.5" ${c.frenteRango==='4-8.5'?'selected':''}>4,01 a 8,5 m</option><option value="8.5-12" ${c.frenteRango==='8.5-12'?'selected':''}>8,51 a 12 m</option><option value="12-20" ${c.frenteRango==='12-20'?'selected':''}>12,01 a 20 m</option><option value="20+" ${c.frenteRango==='20+'?'selected':''}>Más de 20 m</option></select></div>
+  <div class="field-row"><div class="field"><label>PB (m²)</label><input type="number" value="${c.pb||''}" placeholder="0" oninput="setC(${c.id},'pb',this.value)"></div></div>
   <div class="field-row" style="align-items:flex-end">
-    <div class="field" style="max-width:90px"><label>Frente (m)</label><input type="number" value="${c.frente}" placeholder="0.00" step="0.1" oninput="setC(${c.id},'frente',this.value)"></div>
+    <div class="field"><label>Subsuelo (m²)</label><input type="number" value="${c.ss||''}" placeholder="0" oninput="setC(${c.id},'ss',this.value)"></div>
+    <div class="field" style="max-width:72px"><label>Coef</label><div class="coef-fijo" title="Es el mismo de la propiedad tasada: se cambia ahí">×<span class="coef-ss-txt">${W().ss.toFixed(2)}</span></div></div>
   </div>
-  <div class="field-row">
-    <div class="field"><label>PB (m²)</label><input type="number" value="${c.pb}" placeholder="0" oninput="setC(${c.id},'pb',this.value)"></div>
-    <div class="field"><label>Subsuelo (m²)</label><input type="number" value="${c.ss}" placeholder="0" oninput="setC(${c.id},'ss',this.value)"></div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field"><label>1er Piso (m²)</label><input type="number" value="${c.p1||''}" placeholder="0" oninput="setC(${c.id},'p1',this.value)"></div>
+    <div class="field" style="max-width:72px"><label>Coef</label><div class="coef-fijo" title="Es el mismo de la propiedad tasada: se cambia ahí">×<span class="coef-p1-txt">${W().p1.toFixed(2)}</span></div></div>
   </div>
-  <div class="field-row">
-    <div class="field"><label>1er Piso (m²)</label><input type="number" value="${c.p1}" placeholder="0" oninput="setC(${c.id},'p1',this.value)"></div>
-    </div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field"><label>Entrepiso (m²)</label><input type="number" value="${c.ent||''}" placeholder="0" oninput="setC(${c.id},'ent',this.value)"></div>
+    <div class="field" style="max-width:72px"><label>Coef</label><div class="coef-fijo" title="Es el mismo de la propiedad tasada: se cambia ahí">×<span class="coef-ent-txt">${W().ent.toFixed(2)}</span></div></div>
+  </div>
+  <div class="field-row" style="align-items:flex-end">
+    <div class="field"><label>Patio (m²)</label><input type="number" value="${c.pat||''}" placeholder="0" oninput="setC(${c.id},'pat',this.value)"></div>
+    <div class="field" style="max-width:72px"><label>Coef</label><div class="coef-fijo" title="Es el mismo de la propiedad tasada: se cambia ahí">×<span class="coef-pat-txt">${W().pat.toFixed(2)}</span></div></div>
+  </div>
   ${(c.customFloors||[]).map((f,fi)=>'<div class="field-row" style="align-items:flex-end;margin-top:2px">'+' <div class="field"><label style="font-size:8px;opacity:.6">Nombre</label>'+' <input type="text" value="'+esc(f.name||'')+'"  placeholder="ej: Entrepiso" oninput="setFloorName('+c.id+','+fi+',this.value)">'+' </div>'+' <div class="field" style="max-width:70px"><label style="font-size:8px;opacity:.6">m²</label>'+' <input type="number" value="'+(f.m2||'')+'"  placeholder="0" oninput="setFloorM2('+c.id+','+fi+',this.value)">'+' </div>'+' <button onclick="removeFloor('+c.id+','+fi+')" style="padding:2px 7px;border:none;background:rgba(255,80,80,.2);color:#f88;border-radius:3px;cursor:pointer;margin-bottom:1px;font-size:12px">×</button>'+' </div>').join('')}
   <button onclick="addFloor(${c.id})" style="width:100%;margin-top:2px;padding:3px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.18);border-radius:3px;color:rgba(255,255,255,.4);font-size:10px;cursor:pointer">+ Agregar planta</button>
   <div class="field-calc">${calcTxt}</div>
-  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Características</div>
-  <div class="field-row">
-    <div class="field"><label>Régimen</label>
-      <select onchange="setC(${c.id},'regimen',this.value)">
-        <option value="" ${!c.regimen?'selected':''}>—</option>
-        <option value="Terreno propio" ${c.regimen==='Terreno propio'?'selected':''}>Terreno propio (factor: 0.87)</option>
-        <option value="P. Horizontal" ${c.regimen==='P. Horizontal'?'selected':''}>P. Horizontal (factor: 1.00)</option>
-      </select>
-    </div>
-    <div class="field"><label>Calidad</label>
-      <select onchange="setC(${c.id},'calidad',this.value)">
-        <option value="" ${!c.calidad?'selected':''}>—</option>
-        <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena (factor: 1.00)</option>
-        <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena (factor: 1.11)</option>
-        <option value="Media" ${c.calidad==='Media'?'selected':''}>Media (factor: 1.33)</option>
-        <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja (factor: 1.67)</option>
-      </select>
-    </div>
-  </div>
-  <div class="field"><label>Altura interna salón PB</label>
-    <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'alturaInterna',this.value);renderPreview()">
-      <option value="" ${!c.alturaInterna?'selected':''}>— sin ajuste</option>
-      <option value="0.9" ${c.alturaInterna==='0.9'?'selected':''}>Techo bajo (factor: 0.90)</option>
-      <option value="1" ${c.alturaInterna==='1'?'selected':''}>Techo normal (factor: 1.00)</option>
-      <option value="1.1" ${c.alturaInterna==='1.1'?'selected':''}>Techo alto (factor: 1.10)</option>
+  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Atributos</div>
+  <div class="field"><label>Ubicación</label>
+    <select onchange="setC(${c.id},'ubicSel',this.value)">
+      <option value="" ${!c.ubicSel?'selected':''}>—</option>
+      <option value="Excelente" ${c.ubicSel==='Excelente'?'selected':''}>Excelente</option>
+      <option value="Muy buena" ${c.ubicSel==='Muy buena'?'selected':''}>Muy buena</option>
+      <option value="Buena" ${c.ubicSel==='Buena'?'selected':''}>Buena</option>
+      <option value="Media" ${c.ubicSel==='Media'?'selected':''}>Media</option>
+      <option value="Baja" ${c.ubicSel==='Baja'?'selected':''}>Baja</option>
     </select>
   </div>
   <div class="field"><label>Posición en cuadra</label>
-    <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'posicion',this.value);renderPreview()">
-      <option value=""${c.posicion===''?' selected':''}>— sin ajuste</option>
-      <option value="esquina"${c.posicion==='esquina'?' selected':''}>Esquina (factor: 0.80)</option>
-      <option value="ante-esquina"${c.posicion==='ante-esquina'?' selected':''}>Ante-esquina (factor: 0.91)</option>
-      <option value="mitad"${c.posicion==='mitad'?' selected':''}>Mitad de cuadra (factor: 1.00)</option>
+    <select onchange="setC(${c.id},'posicion',this.value)">
+      <option value="" ${!c.posicion?'selected':''}>—</option>
+      <option value="esquina" ${c.posicion==='esquina'?'selected':''}>Esquina</option>
+      <option value="ante-esquina" ${c.posicion==='ante-esquina'?'selected':''}>Ante-esquina</option>
+      <option value="mitad" ${c.posicion==='mitad'?'selected':''}>Mitad de cuadra</option>
     </select>
   </div>
-  <div class="field"><label>Rango de frente</label>
-    <select style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit" onchange="setC(${c.id},'frenteRango',this.value);renderSidebar();renderPreview()">
-      <option value=""${c.frenteRango===''?' selected':''}>— sin ajuste</option>
-      <option value="0-4"${c.frenteRango==='0-4'?' selected':''}>0 – 4m (coef base 0.65)</option>
-      <option value="4-8.5"${c.frenteRango==='4-8.5'?' selected':''}>4 – 8.5m (coef base 0.85)</option>
-      <option value="8.5-12"${c.frenteRango==='8.5-12'?' selected':''}>8.5 – 12m (coef base 1.00)</option>
-      <option value="12-20"${c.frenteRango==='12-20'?' selected':''}>12 – 20m (coef base 1.15)</option>
-      <option value="20+"${c.frenteRango==='20+'?' selected':''}>20m+ (coef base 1.30)</option>
-      <option value="custom"${c.frenteRango==='custom'?' selected':''}>Personalizado</option>
+  <div class="field"><label>Régimen</label>
+    <select onchange="setC(${c.id},'regimen',this.value)">
+      <option value="" ${!c.regimen?'selected':''}>—</option>
+      <option value="Terreno propio" ${c.regimen==='Terreno propio'?'selected':''}>Terreno propio</option>
+      <option value="P. Horizontal" ${c.regimen==='P. Horizontal'?'selected':''}>P. Horizontal</option>
     </select>
   </div>
-  ${c.frenteRango==='custom'?`<div class='field-row'><div class='field'><label style='font-size:8px;opacity:.6'>Metros</label><input type='number' value='${c.frente}' step='0.1' oninput='setC(${c.id},"frente",this.value)'></div><div class='field'><label style='font-size:8px;opacity:.6'>Coef. base</label><input type='number' value='${c.frenteCustomCoef||1}' step='0.05' oninput='setC(${c.id},"frenteCustomCoef",parseFloat(this.value)||1);renderPreview()'></div></div>`:''}
-  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Factores de homogeneización</div>
-  <div class="field-row">
-    <div class="field"><label>Ubicación</label><input type="number" value="${c.ubicacion}" step="0.05" oninput="setC(${c.id},'ubicacion',this.value)"></div>
-    <div class="field"><label>Estado</label><input type="number" value="${c.estado}" step="0.05" oninput="setC(${c.id},'estado',this.value)"></div>
+  <div class="field"><label>Calidad constructiva</label>
+    <select onchange="setC(${c.id},'calidad',this.value)">
+      <option value="" ${!c.calidad?'selected':''}>—</option>
+      <option value="Excelente" ${c.calidad==='Excelente'?'selected':''}>Excelente</option>
+      <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena</option>
+      <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena</option>
+      <option value="Media" ${c.calidad==='Media'?'selected':''}>Media</option>
+      <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja</option>
+    </select>
   </div>
-  <div class="field"><label>Planta</label><div class="field-row"><div class="field"><label style="cursor:pointer;${c.planta==='Subsuelo'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'Subsuelo',+c.pcs||0.30)">Subsuelo</label><input type="number" value="${c.pcs||0.30}" step="0.05" oninput="setC(${c.id},'pcs',parseFloat(this.value)||0.30);renderPreview()"></div><div class="field"><label style="cursor:pointer;${c.planta==='Entrepiso'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'Entrepiso',+c.pce||0.70)">Entrepiso</label><input type="number" value="${c.pce||0.70}" step="0.05" oninput="setC(${c.id},'pce',parseFloat(this.value)||0.70);renderPreview()"></div></div><div class="field-row"><div class="field"><label style="cursor:pointer;${c.planta==='1er piso'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'1er piso',+c.pc1||0.60)">1er piso</label><input type="number" value="${c.pc1||0.60}" step="0.05" oninput="setC(${c.id},'pc1',parseFloat(this.value)||0.60);renderPreview()"></div><div class="field"><label style="cursor:pointer;${c.planta==='2do piso'?'color:#C8941A':''}" onclick="setPlantaPreset(${c.id},'2do piso',+c.pc2||0.50)">2do piso</label><input type="number" value="${c.pc2||0.50}" step="0.05" oninput="setC(${c.id},'pc2',parseFloat(this.value)||0.50);renderPreview()"></div></div></div>
+  <div class="field"><label>Estado constructivo</label>
+    <select onchange="setC(${c.id},'estadoSel',this.value)">
+      <option value="" ${!c.estadoSel?'selected':''}>—</option>
+      <option value="Excelente" ${c.estadoSel==='Excelente'?'selected':''}>Excelente</option>
+      <option value="Muy buena" ${c.estadoSel==='Muy buena'?'selected':''}>Muy buena</option>
+      <option value="Buena" ${c.estadoSel==='Buena'?'selected':''}>Buena</option>
+      <option value="Media" ${c.estadoSel==='Media'?'selected':''}>Media</option>
+      <option value="Baja" ${c.estadoSel==='Baja'?'selected':''}>Baja</option>
+    </select>
+  </div>
+  <div class="field"><label>Altura interna</label>
+    <select onchange="setC(${c.id},'alturaSel',this.value)">
+      <option value="" ${!c.alturaSel?'selected':''}>—</option>
+      <option value="Triple altura" ${c.alturaSel==='Triple altura'?'selected':''}>Triple altura</option>
+      <option value="Doble altura" ${c.alturaSel==='Doble altura'?'selected':''}>Doble altura</option>
+      <option value="Alta" ${c.alturaSel==='Alta'?'selected':''}>Alta</option>
+      <option value="Estándar" ${c.alturaSel==='Estándar'?'selected':''}>Estándar</option>
+    </select>
+  </div>
   <div class="field"><label>Ajuste mercado <small style="font-weight:400;opacity:.55">(coeficiente manual)</small></label><input type="text" inputmode="decimal" value="${esc(c.ajusteMercado||'')}" placeholder="1.00 = sin ajuste" oninput="setC(${c.id},'ajusteMercado',this.value.replace(',','.'))"></div>
 </div>
 </div>`;
@@ -961,6 +994,7 @@ function renderSidebar(){
 // ══════════════════════════════════════
 function renderPreview(){
   const ss=subSup();
+  ['ss','p1','ent','pat'].forEach(k=>document.querySelectorAll('.coef-'+k+'-txt').forEach(e=>e.textContent=W()[k].toFixed(2)));
   document.getElementById('s-calc').textContent=ss>0?`Superficie homogeneizada: ${fN(Math.round(ss))} m²`:'Superficie homogeneizada: —';
   const nombre=document.getElementById('s-nombre').value.trim();
   const fecha=document.getElementById('s-fecha').value.trim();
@@ -975,7 +1009,7 @@ function renderPreview(){
   const vtas=comparables.filter(c=>c.tipo==='Venta');
   document.getElementById('doc').innerHTML=
     rHeader(nombre,fecha)+
-    rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,parseFloat(document.getElementById('s-frente').value)||0)+
+    rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,vL('s-frente'))+
     ((showMap||mapPhoto)?rMap():'')+
     (()=>{const activeTipo=document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'ALQUILER':'VENTA';const activeComps=activeTipo==='ALQUILER'?alqs:vtas;return activeComps.length?rSection(activeComps,activeTipo,ss):rEmpty();})()+
     rFooter(analista);
@@ -1436,11 +1470,17 @@ function rFotoPrincipalSujeto(){
 function rSubjectPhotos(){return galeriaFotos(subjectPhotos.slice(1),i=>'s:'+(i+1));}
 function rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,frente){
   const metaItems=[];
-  if(frente>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(frente)} m</strong><span>Frente</span></div>`);
+  if(frente)metaItems.push(`<div class="d-meta-item"><strong>${frenteTxt(frente)}</strong><span>Frente</span></div>`);
   if(ss>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(Math.round(ss))} m²</strong><span>Sup. Total</span></div>`);
   if(pb>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(pb)} m²</strong><span>Planta Baja</span></div>`);
   if(sv>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(sv)} m²</strong><span>Subsuelo ×${w.ss}</span></div>`);
   if(p1>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(p1)} m²</strong><span>1er Piso ×${w.p1}</span></div>`);
+  const ent=parseFloat(vL('s-ent'))||0,pat=parseFloat(vL('s-pat'))||0;
+  if(ent>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(ent)} m²</strong><span>Entrepiso ×${w.ent}</span></div>`);
+  if(pat>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(pat)} m²</strong><span>Patio ×${w.pat}</span></div>`);
+  const S=sujetoL();
+  const chars=[['Ubicación',S.ubicacion],['Posición en cuadra',POS_TXT[S.posicion]||''],['Régimen',S.regimen],['Calidad constructiva',S.calidad],
+    ['Estado constructivo',S.estado],['Altura interna',S.altura]].filter(([,v])=>v).map(([l,v])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${esc(v)}</span></div>`).join('');
   (subjectExtras||[]).forEach(e=>{if(parseFloat(e.m2)>0)metaItems.push(`<div class="d-meta-item"><strong>${fN(parseFloat(e.m2))} m²</strong><span>${esc(e.nombre||'Personalizado')} ×${esc(e.coef||'1.00')}</span></div>`);});
   
   // analista is internal only — not rendered in ficha
@@ -1449,6 +1489,7 @@ function rSubject(nombre,fecha,analista,desc,pb,sv,p1,w,ss,frente){
     <div class="d-over">Propiedad Tasada</div>
     <div class="d-addr">${esc(nombre)||'Dirección no especificada'}</div>
     ${metaItems.length?`<div class="d-meta">${metaItems.join('')}</div>`:''}
+    ${chars?`<div class="icard-grid" style="margin-top:3mm">${chars}</div>`:''}
     ${desc?`<div class="d-desc-txt">${esc(desc)}</div>`:''}
     ${rSubjectPhotos()}
   </div>`;
@@ -1490,7 +1531,7 @@ function rSection(comps,tipo,ss){
       c.regimen?`<span class="icard-chip">${esc(c.regimen)}</span>`:null,
     ].filter(Boolean).join('');
     const data=[
-      c.frente?['Frente',`${parseFloat(c.frente)} m`]:null,
+      c.frenteRango?['Frente',frenteTxt(c.frenteRango)]:null,
       ['Sup. Total',v.sup>0?`${fN(Math.round(v.sup))} m²`:'—'],
       ['Valor',c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—'],
       ['Valor / m²',v.pm2>0?`${c.currency} ${fN(Math.round(v.pm2))}`:'—'],
@@ -1522,25 +1563,27 @@ function rSection(comps,tipo,ss){
     ['Valor',comps.map(c=>c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—')],
     ['Valor / m²',vals.map((v,i)=>v.pm2>0?`${comps[i].currency} ${fN(Math.round(v.pm2))}`:'—')],
   ];
+  const S=sujetoL(), fx=(k)=>vals.map(v=>v.f[k]==null?'—':v.f[k]);
+  const ref=(txt)=>txt?`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#999">Tasada: ${esc(txt)}</span>`:'';
+  const inc=k=>`<span class="det-inc" style="font-weight:400;color:#999"> · ${Math.round(INC[k]*100)}%</span>`;
   const fRows=[
-    ['% Negociación',comps.map(c=>c.oferta)],
-    ['Ubicación',comps.map(c=>c.ubicacion)],
-    ['Estado',comps.map(c=>c.estado)],
-    ['Planta',comps.map(c=>c.planta?getPlantaCoef(c).toFixed(2):'—'),'planta'],
-    ['Frente',comps.map(c=>c.frenteRango?getFrenteAdj(c).toFixed(2):'—'),'frente'],
-    ['Posición en cuadra',comps.map(c=>c.posicion?getPosicionAdj(c).toFixed(2):'—'),'posicion'],
-    ['Calidad',comps.map(c=>c.calidad?getCalidadAdj(c).toFixed(2):'—'),'calidad'],
-    ['Régimen',comps.map(c=>c.regimen?getRegimenAdj(c).toFixed(2):'—'),'regimen'],
-    ['Altura interna PB',comps.map(c=>c.alturaInterna||'—'),'altura'],
-    ['Ajuste mercado',comps.map(c=>c.ajusteMercado||'—')],
-  ];
+    ['% Negociación',comps.map(c=>{const v=acot(numArgL(c.oferta));return v==null?'—':v;})],
+    ['Ubicación'+inc('ubicacion')+ref(S.ubicacion),fx('ubicacion'),'ubicacion'],
+    ['Posición en cuadra'+inc('posicion')+ref(POS_TXT[S.posicion]||''),fx('posicion'),'posicion'],
+    ['Frente'+inc('frente')+ref(frenteTxt(S.frente)),fx('frente'),'frente'],
+    ['Régimen'+inc('regimen')+ref(S.regimen),fx('regimen'),'regimen'],
+    ['Calidad'+inc('calidad')+ref(S.calidad),fx('calidad'),'calidad'],
+    ['Estado constructivo'+inc('estado')+ref(S.estado),fx('estado'),'estado'],
+    ['Altura interna'+inc('altura')+ref(S.altura),fx('altura'),'altura'],
+    ['Ajuste mercado',fx('mercado')],
+  ].filter(([,vs])=>vs.some(v=>v!=='—'));
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
-  /* detalle interno: debajo de cada coeficiente, la respuesta del comparable (solo con "Ver detalle del ajuste") */
-  const TXT={planta:c=>c.planta,frente:c=>c.frenteRango==='custom'?(c.frente?c.frente+' m':''):(c.frenteRango?c.frenteRango+' m':''),
-    posicion:c=>({'esquina':'Esquina','ante-esquina':'Ante-esquina','mitad':'Mitad de cuadra'})[c.posicion],calidad:c=>c.calidad,regimen:c=>c.regimen,
-    altura:c=>({'0.9':'Techo bajo','1':'Techo normal','1.1':'Techo alto'})[c.alturaInterna]};
+  /* detalle interno (botón "Ver detalle del ajuste"): arriba lo que se aplica, abajo la respuesta del comparable */
+  const TXT={ubicacion:c=>c.ubicSel,posicion:c=>POS_TXT[c.posicion],frente:c=>frenteTxt(c.frenteRango),regimen:c=>c.regimen,
+    calidad:c=>c.calidad,estado:c=>c.estadoSel,altura:c=>c.alturaSel};
   const resp=(k,i)=>{const x=k&&TXT[k]&&TXT[k](comps[i]);return x?`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#999">${esc(x)}</span>`:'';};
-  const fRow=([lbl,vs,k])=>`<tr><td class="lc">${lbl}</td>${vs.map((v,i)=>v==='—'?`<td class="vc neutral">—${resp(k,i)}</td>`:`<td class="vc ${fcls(v)}">${parseFloat(v).toFixed(2)}${resp(k,i)}</td>`).join('')}</tr>`;
+  const ap=(k,v)=>{if(!k||INC[k]>=1)return'';const a=aplicado(k,parseFloat(v));return`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#888">aplica ${String(Math.round(a*1000)/1000).replace('.',',')}</span>`;};
+  const fRow=([lbl,vs,k])=>`<tr><td class="lc">${lbl}</td>${vs.map((v,i)=>v==='—'?`<td class="vc neutral">—${resp(k,i)}</td>`:`<td class="vc ${fcls(v)}">${ap(k,v)}${parseFloat(v).toFixed(2)}${resp(k,i)}</td>`).join('')}</tr>`;
   const tipoLabel=tipo==='ALQUILER'?'Alquiler':'Venta';
 
   return`<div class="d-section comp-section">
@@ -1634,9 +1677,9 @@ function autoSave(){
 function closeBanner(){document.getElementById('recovery-banner').style.display='none';}
 function discardDraft(){
   localStorage.removeItem(DRAFT_KEY);
-  ['s-nombre','s-fecha','s-analista','s-desc','s-fund','s-pb','s-ss','s-p1'].forEach(id=>{document.getElementById(id).value='';});
+  ['s-nombre','s-fecha','s-analista','s-desc','s-fund','s-frente','s-pb','s-ss','s-p1','s-ent','s-pat'].forEach(id=>{document.getElementById(id).value='';});ponerCaractL({});
   setTipoInm('Local',true);
-  document.getElementById('w-ss').value='0.50';document.getElementById('w-p1').value='0.60';
+  document.getElementById('w-ss').value='0.30';document.getElementById('w-p1').value='0.50';document.getElementById('w-ent').value='0.70';document.getElementById('w-pat').value='0.70';
   subjectPhotos=[];mapPhoto=null;mapPhotoOrig=null;subjectExtras=[];renderSubjectExtrasSb();
   renderSubjectPhotoSb();renderMapPhotoSb();
   comparables=[];nextId=1;renderSidebar();renderPreview();closeBanner();
@@ -1906,10 +1949,10 @@ function posCuadraDe(p){
   return'';
 }
 function aplicarSujeto(d){
-  ['s-nombre','s-desc','s-frente','s-pb','s-ss','s-p1'].forEach(id=>{document.getElementById(id).value='';});
+  ['s-nombre','s-desc','s-frente','s-pb','s-ss','s-p1','s-ent','s-pat'].forEach(id=>{document.getElementById(id).value='';});
   subjectExtras=[];renderSubjectExtrasSb();
   const set=(id,v)=>{if(v!=null&&String(v).trim()!=='')document.getElementById(id).value=v;};
-  set('s-nombre',d.direccion);set('s-desc',d.desc);set('s-frente',numTxt(d.frente));
+  set('s-nombre',d.direccion);set('s-desc',d.desc);set('s-frente',rangoFrente(numTxt(d.frente)));
   set('s-pb',numTxt(d.pb||d.cub));set('s-ss',numTxt(d.ss));set('s-p1',numTxt(d.p1));
   subjectPhotos=d.fotos.map(f=>({photo:f,photoOrig:f}));
   renderSubjectPhotoSb();renderPreview();
@@ -1919,7 +1962,7 @@ function aplicarSujeto(d){
 function aplicarComp(id,d){
   const c=comparables.find(x=>x.id===id);if(!c)return'';
   Object.assign(c,{address:d.direccion||'',link:d.link||'',currency:d.precio?(d.currency||c.currency):c.currency,price:d.precio||'',
-    fuente:d.fuente||c.fuente,fecha:mesAnio(),frente:numTxt(d.frente),pb:numTxt(d.pb||d.cub),ss:numTxt(d.ss),p1:numTxt(d.p1),p2:'',customFloors:[],
+    fuente:d.fuente||c.fuente,fecha:mesAnio(),frente:numTxt(d.frente),frenteRango:rangoFrente(numTxt(d.frente)),pb:numTxt(d.pb||d.cub),ss:numTxt(d.ss),p1:numTxt(d.p1),p2:'',customFloors:[],
     notes:d.desc||'',photo:d.fotos[0]||null,photoOrig:d.fotos[0]||null,fotosExtra:(d.fotos||[]).slice(1).map(f=>({photo:f,photoOrig:f})),photoLink:''});
   const pos=posCuadraDe(d.posicion||d.texto);if(pos)c.posicion=pos;
   renderSidebar();renderPreview();
@@ -1998,7 +2041,7 @@ async function abrirTasacionPDF(file){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function getState(){
-  return{version:3,tipoInm,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,fund:document.getElementById('s-fund').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,subjectExtras:[...(subjectExtras||[])],photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:document.getElementById('w-ss').value,p1:document.getElementById('w-p1').value,},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
+  return{version:3,tipoInm,subject:{nombre:document.getElementById('s-nombre').value,fecha:document.getElementById('s-fecha').value,analista:document.getElementById('s-analista').value,desc:document.getElementById('s-desc').value,fund:document.getElementById('s-fund').value,frente:document.getElementById('s-frente').value,pb:document.getElementById('s-pb').value,ss:document.getElementById('s-ss').value,p1:document.getElementById('s-p1').value,ent:vL('s-ent'),pat:vL('s-pat'),caract:sujetoL(),subjectExtras:[...(subjectExtras||[])],photos:subjectPhotos.map(p=>({photo:p.photo,photoOrig:p.photoOrig})),mapPhoto,mapPhotoOrig},weights:{ss:vL('w-ss'),p1:vL('w-p1'),ent:vL('w-ent'),pat:vL('w-pat')},comparables:comparables.map(c=>({...c})),map:{showMap,geoCoords,capturedMapImg}};
 }
 function applyState(state){
   if(!state){return;} // apply any version
@@ -2008,7 +2051,10 @@ function applyState(state){
   document.getElementById('s-fecha').value=s.fecha||'';
   document.getElementById('s-analista').value=s.analista||'';
   document.getElementById('s-desc').value=s.desc||'';document.getElementById('s-fund').value=s.fund||'';
-  document.getElementById('s-frente').value=s.frente||'';
+  ponerCaractL(s.caract||{});
+  /* tasaciones viejas: el frente era en metros; ahora es un rango */
+  document.getElementById('s-frente').value=/^[\d.,]+$/.test(String(s.frente||''))?rangoFrente(s.frente):(s.frente||'');
+  document.getElementById('s-ent').value=s.ent||'';document.getElementById('s-pat').value=s.pat||'';
   document.getElementById('s-pb').value=s.pb||'';
   document.getElementById('s-ss').value=s.ss||'';
   document.getElementById('s-p1').value=s.p1||'';
@@ -2017,10 +2063,18 @@ function applyState(state){
   if(!subjectPhotos.length&&s.photo){subjectPhotos=[{photo:s.photo,photoOrig:s.photoOrig||s.photo}];}
   mapPhoto=s.mapPhoto||null;mapPhotoOrig=s.mapPhotoOrig||null;
   const w=state.weights||{};
-  document.getElementById('w-ss').value=w.ss||'0.50';
-  document.getElementById('w-p1').value=w.p1||'0.60';
+  document.getElementById('w-ss').value=w.ss||'0.30';
+  document.getElementById('w-p1').value=w.p1||'0.50';
+  document.getElementById('w-ent').value=w.ent||'0.70';
+  document.getElementById('w-pat').value=w.pat||'0.70';
   
-  comparables=(state.comparables||[]).map(c=>({...c}));
+  comparables=(state.comparables||[]).map(c=>{
+    const x={...c};
+    /* comparables viejos: frente en metros o rango personalizado -> rango; altura en número -> opción */
+    if(!x.frenteRango||x.frenteRango==='custom')x.frenteRango=rangoFrente(x.frente);
+    if(!x.alturaSel&&x.alturaInterna)x.alturaSel=String(x.alturaInterna)==='1.1'?'Alta':'Estándar';
+    return x;
+  });
   nextId=comparables.length?Math.max(...comparables.map(c=>c.id))+1:1;
   // Restaurar toggle Alquiler/Venta desde el tipo de los comparables (evita mismatch al recargar)
   const t=(comparables.length&&comparables[0].tipo)||'Alquiler';
