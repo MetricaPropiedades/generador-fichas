@@ -876,98 +876,110 @@ function renderSidebar(){
   <button onclick="addSupExtra(${c.id})" style="margin-bottom:6px;padding:5px 12px;background:rgba(200,148,26,.15);color:var(--g);border:1px solid var(--g);border-radius:4px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em">+ PERSONALIZADO</button>
   <div class="field-calc">${calcTxt}</div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Características</div>
-  <div class="field"><label>Ubicación</label>
-    <select onchange="setUbic(${c.id},this.value)">
-      <option value="" ${!c.ubicSel?'selected':''}>—</option>
-      ${['Excelente','Muy buena','Buena','Media','Baja'].map(o=>`<option ${c.ubicSel===o?'selected':''}>${o}</option>`).join('')}
-      <option value="Personalizado" ${c.ubicSel==='Personalizado'?'selected':''}>Personalizado…</option>
-    </select>
-    <input type="text" inputmode="decimal" class="ubic-custom" value="${esc(c.ubicSel==='Personalizado'?c.ubicacion:'')}" placeholder="ej: 1.05 y Enter" style="margin-top:3px;${c.ubicSel==='Personalizado'?'':'display:none'}" onkeydown="if(event.key==='Enter'){event.preventDefault();setC(${c.id},'ubicacion',this.value.replace(',','.'));this.blur();}" onchange="setC(${c.id},'ubicacion',this.value.replace(',','.'))">
+  <div class="field-row">
+    <div class="field"><label>Ubicación</label>
+      <select onchange="setUbic(${c.id},this.value)">
+        <option value="" ${!c.ubicSel?'selected':''}>—</option>
+        ${['Excelente','Muy buena','Buena','Media','Baja'].map(o=>`<option ${c.ubicSel===o?'selected':''}>${o}</option>`).join('')}
+        <option value="Personalizado" ${c.ubicSel==='Personalizado'?'selected':''}>Personalizado…</option>
+      </select>
+      <input type="text" inputmode="decimal" class="ubic-custom" value="${esc(c.ubicSel==='Personalizado'?c.ubicacion:'')}" placeholder="ej: 1.05 y Enter" style="margin-top:3px;${c.ubicSel==='Personalizado'?'':'display:none'}" onkeydown="if(event.key==='Enter'){event.preventDefault();setC(${c.id},'ubicacion',this.value.replace(',','.'));this.blur();}" onchange="setC(${c.id},'ubicacion',this.value.replace(',','.'))">
+    </div>
+    <div class="field"><label>Tipo de edificio</label>
+      <select onchange="setC(${c.id},'edificio',this.value);renderPreview()">
+        <option value="" ${!c.edificio?'selected':''}>—</option>
+        <option value="Torre en esquina" ${c.edificio==='Torre en esquina'?'selected':''}>Torre en esquina</option>
+        <option value="Esquina" ${c.edificio==='Esquina'?'selected':''}>Esquina</option>
+        <option value="Torre" ${c.edificio==='Torre'?'selected':''}>Torre</option>
+        <option value="Sobre linderos" ${c.edificio==='Sobre linderos'?'selected':''}>Sobre linderos</option>
+      </select>
+    </div>
   </div>
-  <div class="field"><label>Tipo de edificio</label>
-    <select onchange="setC(${c.id},'edificio',this.value);renderPreview()">
-      <option value="" ${!c.edificio?'selected':''}>—</option>
-      <option value="Torre en esquina" ${c.edificio==='Torre en esquina'?'selected':''}>Torre en esquina</option>
-      <option value="Esquina" ${c.edificio==='Esquina'?'selected':''}>Esquina</option>
-      <option value="Torre" ${c.edificio==='Torre'?'selected':''}>Torre</option>
-      <option value="Sobre linderos" ${c.edificio==='Sobre linderos'?'selected':''}>Sobre linderos</option>
-    </select>
+  <div class="field-row">
+    <div class="field"><label>Antigüedad</label>
+      <select onchange="setC(${c.id},'antiguedad',this.value);renderPreview()">
+        <option value="" ${!c.antiguedad?'selected':''}>—</option>
+        <option value="0-5" ${c.antiguedad==='0-5'?'selected':''}>0–5 años</option>
+        <option value="5-10" ${c.antiguedad==='5-10'?'selected':''}>5–10 años</option>
+        <option value="10-20" ${c.antiguedad==='10-20'?'selected':''}>10–20 años</option>
+        <option value="20-50" ${c.antiguedad==='20-50'?'selected':''}>20–50 años</option>
+        <option value="50+" ${c.antiguedad==='50+'?'selected':''}>50+ años</option>
+      </select>
+    </div>
+    <div class="field"><label>Altura en el edificio</label>
+      <select onchange="setC(${c.id},'alturaEdificio',this.value);renderPreview()">
+        <option value="" ${!c.alturaEdificio?'selected':''}>—</option>
+        <option value="Alta" ${c.alturaEdificio==='Alta'?'selected':''}>Alta</option>
+        <option value="Media" ${c.alturaEdificio==='Media'?'selected':''}>Media</option>
+        <option value="Último piso" ${c.alturaEdificio==='Último piso'?'selected':''}>Último piso</option>
+        <option value="Baja" ${c.alturaEdificio==='Baja'?'selected':''}>Baja</option>
+        <option value="Primer piso" ${c.alturaEdificio==='Primer piso'?'selected':''}>Primer piso</option>
+        <option value="Otra" ${c.alturaEdificio==='Otra'?'selected':''}>Otra</option>
+      </select>
+    </div>
   </div>
-  <div class="field"><label>Antigüedad</label>
-    <select onchange="setC(${c.id},'antiguedad',this.value);renderPreview()">
-      <option value="" ${!c.antiguedad?'selected':''}>—</option>
-      <option value="0-5" ${c.antiguedad==='0-5'?'selected':''}>0–5 años</option>
-      <option value="5-10" ${c.antiguedad==='5-10'?'selected':''}>5–10 años</option>
-      <option value="10-20" ${c.antiguedad==='10-20'?'selected':''}>10–20 años</option>
-      <option value="20-50" ${c.antiguedad==='20-50'?'selected':''}>20–50 años</option>
-      <option value="50+" ${c.antiguedad==='50+'?'selected':''}>50+ años</option>
-    </select>
+  <div class="field-row">
+    <div class="field"><label>Posición en el edificio</label>
+      <select onchange="setC(${c.id},'posicionDepto',this.value);renderPreview()">
+        <option value="" ${!c.posicionDepto?'selected':''}>—</option>
+        <option value="Pasante" ${c.posicionDepto==='Pasante'?'selected':''}>Pasante</option>
+        <option value="Frente" ${c.posicionDepto==='Frente'?'selected':''}>Frente</option>
+        <option value="Contrafrente" ${c.posicionDepto==='Contrafrente'?'selected':''}>Contrafrente</option>
+        <option value="Lateral" ${c.posicionDepto==='Lateral'?'selected':''}>Lateral</option>
+      </select>
+    </div>
+    <div class="field"><label>Ocupación en planta</label>
+      <select onchange="setC(${c.id},'ocupacion',this.value);renderPreview()">
+        <option value="" ${!c.ocupacion?'selected':''}>—</option>
+        <option value="Piso" ${c.ocupacion==='Piso'?'selected':''}>Piso</option>
+        <option value="Semipiso" ${c.ocupacion==='Semipiso'?'selected':''}>Semipiso</option>
+        <option value="3 o más por piso" ${c.ocupacion==='3 o más por piso'?'selected':''}>3 o más por piso</option>
+        <option value="Sin definir" ${c.ocupacion==='Sin definir'?'selected':''}>Sin definir</option>
+      </select>
+    </div>
   </div>
-  <div class="field"><label>Altura en el edificio</label>
-    <select onchange="setC(${c.id},'alturaEdificio',this.value);renderPreview()">
-      <option value="" ${!c.alturaEdificio?'selected':''}>—</option>
-      <option value="Alta" ${c.alturaEdificio==='Alta'?'selected':''}>Alta</option>
-      <option value="Media" ${c.alturaEdificio==='Media'?'selected':''}>Media</option>
-      <option value="Último piso" ${c.alturaEdificio==='Último piso'?'selected':''}>Último piso</option>
-      <option value="Baja" ${c.alturaEdificio==='Baja'?'selected':''}>Baja</option>
-      <option value="Primer piso" ${c.alturaEdificio==='Primer piso'?'selected':''}>Primer piso</option>
-      <option value="Otra" ${c.alturaEdificio==='Otra'?'selected':''}>Otra</option>
-    </select>
+  <div class="field-row">
+    <div class="field"><label>Calidad constructiva</label>
+      <select onchange="setC(${c.id},'calidad',this.value);renderPreview()">
+        <option value="" ${!c.calidad?'selected':''}>—</option>
+        <option value="Excelente" ${c.calidad==='Excelente'?'selected':''}>Excelente</option>
+        <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena</option>
+        <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena</option>
+        <option value="Media" ${c.calidad==='Media'?'selected':''}>Media</option>
+        <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja</option>
+      </select>
+    </div>
+    <div class="field"><label>Estado constructivo</label>
+      <select onchange="setC(${c.id},'estadoConst',this.value);renderPreview()">
+        <option value="" ${!c.estadoConst?'selected':''}>—</option>
+        <option value="Excelente" ${c.estadoConst==='Excelente'?'selected':''}>Excelente</option>
+        <option value="Muy bueno" ${c.estadoConst==='Muy bueno'?'selected':''}>Muy bueno</option>
+        <option value="Bueno" ${c.estadoConst==='Bueno'?'selected':''}>Bueno</option>
+        <option value="Medio" ${c.estadoConst==='Medio'?'selected':''}>Medio</option>
+        <option value="Bajo" ${c.estadoConst==='Bajo'?'selected':''}>Bajo</option>
+      </select>
+    </div>
   </div>
-  <div class="field"><label>Posición en el edificio</label>
-    <select onchange="setC(${c.id},'posicionDepto',this.value);renderPreview()">
-      <option value="" ${!c.posicionDepto?'selected':''}>—</option>
-      <option value="Pasante" ${c.posicionDepto==='Pasante'?'selected':''}>Pasante</option>
-      <option value="Frente" ${c.posicionDepto==='Frente'?'selected':''}>Frente</option>
-      <option value="Contrafrente" ${c.posicionDepto==='Contrafrente'?'selected':''}>Contrafrente</option>
-      <option value="Lateral" ${c.posicionDepto==='Lateral'?'selected':''}>Lateral</option>
-    </select>
+  <div class="field-row">
+    <div class="field"><label>Luminosidad</label>
+      <select onchange="setC(${c.id},'luminosidad',this.value);renderPreview()">
+        <option value="" ${!c.luminosidad?'selected':''}>—</option>
+        <option value="Muy buena" ${c.luminosidad==='Muy buena'?'selected':''}>Muy buena</option>
+        <option value="Estándar" ${c.luminosidad==='Estándar'?'selected':''}>Estándar</option>
+        <option value="Mala" ${c.luminosidad==='Mala'?'selected':''}>Mala</option>
+      </select>
+    </div>
+    <div class="field"><label>Altura interna</label>
+      <select onchange="setC(${c.id},'alturaInterna',this.value);renderPreview()">
+        <option value="" ${!c.alturaInterna?'selected':''}>—</option>
+        <option value="1" ${c.alturaInterna==='1'?'selected':''}>Estándar</option>
+        <option value="1.05" ${c.alturaInterna==='1.05'?'selected':''}>Alta</option>
+      </select>
+    </div>
   </div>
-  <div class="field"><label>Ocupación en planta</label>
-    <select onchange="setC(${c.id},'ocupacion',this.value);renderPreview()">
-      <option value="" ${!c.ocupacion?'selected':''}>—</option>
-      <option value="Piso" ${c.ocupacion==='Piso'?'selected':''}>Piso</option>
-      <option value="Semipiso" ${c.ocupacion==='Semipiso'?'selected':''}>Semipiso</option>
-      <option value="3 o más por piso" ${c.ocupacion==='3 o más por piso'?'selected':''}>3 o más por piso</option>
-      <option value="Sin definir" ${c.ocupacion==='Sin definir'?'selected':''}>Sin definir</option>
-    </select>
+  <div class="field-row">
+    <div class="field"><label>Ajuste mercado <small style="font-weight:400;opacity:.55">(coeficiente manual)</small></label><input type="text" inputmode="decimal" value="${esc(c.ajusteMercado||'')}" placeholder="1.00 = sin ajuste" oninput="setC(${c.id},'ajusteMercado',this.value.replace(',','.'))"></div>
   </div>
-  <div class="field"><label>Calidad constructiva</label>
-    <select onchange="setC(${c.id},'calidad',this.value);renderPreview()">
-      <option value="" ${!c.calidad?'selected':''}>—</option>
-      <option value="Excelente" ${c.calidad==='Excelente'?'selected':''}>Excelente</option>
-      <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena</option>
-      <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena</option>
-      <option value="Media" ${c.calidad==='Media'?'selected':''}>Media</option>
-      <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja</option>
-    </select>
-  </div>
-  <div class="field"><label>Estado constructivo</label>
-    <select onchange="setC(${c.id},'estadoConst',this.value);renderPreview()">
-      <option value="" ${!c.estadoConst?'selected':''}>—</option>
-      <option value="Excelente" ${c.estadoConst==='Excelente'?'selected':''}>Excelente</option>
-      <option value="Muy bueno" ${c.estadoConst==='Muy bueno'?'selected':''}>Muy bueno</option>
-      <option value="Bueno" ${c.estadoConst==='Bueno'?'selected':''}>Bueno</option>
-      <option value="Medio" ${c.estadoConst==='Medio'?'selected':''}>Medio</option>
-      <option value="Bajo" ${c.estadoConst==='Bajo'?'selected':''}>Bajo</option>
-    </select>
-  </div>
-  <div class="field"><label>Luminosidad</label>
-    <select onchange="setC(${c.id},'luminosidad',this.value);renderPreview()">
-      <option value="" ${!c.luminosidad?'selected':''}>—</option>
-      <option value="Muy buena" ${c.luminosidad==='Muy buena'?'selected':''}>Muy buena</option>
-      <option value="Estándar" ${c.luminosidad==='Estándar'?'selected':''}>Estándar</option>
-      <option value="Mala" ${c.luminosidad==='Mala'?'selected':''}>Mala</option>
-    </select>
-  </div>
-  <div class="field"><label>Altura interna</label>
-    <select onchange="setC(${c.id},'alturaInterna',this.value);renderPreview()">
-      <option value="" ${!c.alturaInterna?'selected':''}>—</option>
-      <option value="1" ${c.alturaInterna==='1'?'selected':''}>Estándar</option>
-      <option value="1.05" ${c.alturaInterna==='1.05'?'selected':''}>Alta</option>
-    </select>
-  </div>
-  <div class="field"><label>Ajuste mercado <small style="font-weight:400;opacity:.55">(coeficiente manual)</small></label><input type="text" inputmode="decimal" value="${esc(c.ajusteMercado||'')}" placeholder="1.00 = sin ajuste" oninput="setC(${c.id},'ajusteMercado',this.value.replace(',','.'))"></div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Amenities</div>
   <div class="field-row" style="align-items:center;gap:12px">
     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#e8e8e8;cursor:pointer"><input type="checkbox" ${c.pileta?'checked':''} onchange="setC(${c.id},'pileta',this.checked)"> Pileta</label>
