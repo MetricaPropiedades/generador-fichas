@@ -1727,21 +1727,34 @@ async function textoDelPdf(bytes,avisar){
   await cargarScript(LIB_PDFJS);await cargarScript(LIB_OCR);
   pdfjsLib.GlobalWorkerOptions.workerSrc=LIB_PDFJS_WORKER;
   const doc=await pdfjsLib.getDocument({data:bytes}).promise;
-  const worker=await Tesseract.createWorker('spa');
+  let worker=null;
   let texto='';
   try{
     for(let i=1;i<=doc.numPages;i++){
       avisar('<span class="rueda"></span>Leyendo el texto del PDF (página '+i+' de '+doc.numPages+')…');
-      const page=await doc.getPage(i), vp=page.getViewport({scale:2.5});
+      const page=await doc.getPage(i);
+      /* si la página ya trae el texto (ficha hecha con la app, impresa desde Chrome, etc.) se usa ese: es exacto */
+      const tc=await page.getTextContent();
+      /* los pedazos pegados en la página van juntos (si no, "1500" queda "15 00" y "35.000" queda "35. 000") */
+      let propio='',prev=null;
+      for(const it of tc.items){
+        if(prev&&!prev.hasEOL){const gap=it.transform[4]-(prev.transform[4]+(prev.width||0));propio+=(gap>1.5||Math.abs(it.transform[5]-prev.transform[5])>2)?' ':'';}
+        propio+=it.str+(it.hasEOL?'\n':'');prev=it;
+      }
+      if(propio.replace(/\s/g,'').length>150){texto+=propio+'\n';continue;}
+      if(!worker)worker=await Tesseract.createWorker('spa');
+      const vp=page.getViewport({scale:2.5});
       const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
       await page.render({canvasContext:c.getContext('2d'),viewport:vp,intent:'print'}).promise;
       texto+=(await worker.recognize(c)).data.text+'\n';
     }
-  }finally{await worker.terminate();}
+  }finally{if(worker)await worker.terminate();}
   return texto;
 }
 /* Formato de ficha de Tokko: "Etiqueta: valor", título con la dirección, "Argentina | Capital Federal | Barrio". */
 function datosDeTextoPdf(t){
+  /* títulos con las letras separadas ("D E S C R I P C I Ó N", "A L Q U I L E R") se juntan */
+  t=t.replace(/(?:^|(?<=\s))(?:[A-ZÁÉÍÓÚÑÜ] ){3,}[A-ZÁÉÍÓÚÑÜ](?=\s|$)/g,m=>m.replace(/ /g,''));
   const d={}, limpio=t.replace(/[ \t]+/g,' ');
   const lineas=limpio.split('\n').map(s=>s.trim()).filter(Boolean);
   const valor=et=>{
@@ -1750,14 +1763,31 @@ function datosDeTextoPdf(t){
     return (corte>=0?m[1].slice(0,corte):m[1]).trim();
   };
   const iRef=lineas.findIndex(s=>/\|\s*(departamento|local|oficina|casa|ph|terreno|lote|galp|dep[oó]sito|cochera|edificio|fondo)/i.test(s));
-  if(iRef>=0&&lineas[iRef+1]){
-    let dir=lineas[iRef+1].replace(/\s+al\s+(?=\d)/i,' ');
-    const lugar=(lineas[iRef+2]||'').split('|').map(s=>s.trim()).filter(Boolean);
+  /* el OCR a veces mete renglones basura (".") entre "| Local" y la dirección: se saltean */
+  const conLetras=s=>(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g)||[]).length>=3;
+  let iDir=iRef>=0?iRef+1:-1;
+  while(iDir>=0&&iDir<lineas.length&&!conLetras(lineas[iDir]))iDir++;
+  if(iRef<0){const iArg=lineas.findIndex(s=>/^argentina\s*[|lI!]/i.test(s));if(iArg>0){iDir=iArg-1;while(iDir>0&&!conLetras(lineas[iDir]))iDir--;}}
+  if(iDir>=0&&lineas[iDir]&&!/^argentina\s*[|lI!]/i.test(lineas[iDir])){
+    let dir=lineas[iDir].replace(/\s+al\s+(?=\d)/i,' ');
+    const lugar=(lineas[iDir+1]||'').split(/\s[|lI!]\s/).map(s=>s.trim()).filter(Boolean);
     if(lugar.length>1){
       const barrio=lugar[lugar.length-1], prov=lugar[lugar.length-2]||'';
       dir+=', '+(/capital federal|caba|ciudad aut/i.test(prov)?barrio+', CABA':barrio);
     }
     d.direccion=dir;
+  }
+  /* otros formatos (ej. la ficha de la app): calle y altura en los primeros renglones, y debajo "Barrio, CABA" */
+  if(!d.direccion){
+    const calle=/^(?:av(?:enida|\.)?\s+)?[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ.'° ]{2,60}?\s\d{1,5}\b/i;
+    const nada=/@|\+\d|mat\.|matr[ií]cula|cucicba|cmcpsi|usd|u\$s|\$|m²|m2|tel[eé]?f|whats|p[aá]gina/i;
+    const i=lineas.slice(0,12).findIndex(s=>calle.test(s)&&!nada.test(s)&&s.length<80);
+    if(i>=0){
+      let dir=lineas[i].replace(/\s+al\s+(?=\d)/i,' ');
+      const sig=lineas[i+1]||'';
+      if(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ .]{3,40},\s*[A-Za-zÁÉÍÓÚÜÑáéíóúüñ .]{2,40}$/.test(sig))dir+=', '+sig;
+      d.direccion=dir;
+    }
   }
   const cab=limpio.split(/\n(?:OPERACI[OÓ]N|INFORMACI[OÓ]N GENERAL|SUPERFICIES)/i)[0];
   const pr=cab.match(/(USD|U\$S|\$)\s*(\d{1,3}(?:[.,]\d{3})+|\d{4,})/i);
@@ -1768,11 +1798,15 @@ function datosDeTextoPdf(t){
   d.terr=numTxt(valor('Superficie del terreno')||valor('Terreno'));
   d.frente=numTxt(valor('Frente'));
   d.antiguedad=valor('Antig[uü]edad');
+  /* fichas con el dato arriba de la etiqueta: "1078 m²" / "CUBIERTA", "A estrenar" / "ANTIGÜEDAD" */
+  const arriba=et=>{const m=limpio.match(new RegExp('\\n\\s*([^\\n]{1,30})\\n\\s*'+et+'\\s*(?:\\n|$)','i'));return m?m[1].trim():'';};
+  if(!d.cub)d.cub=numTxt(arriba('CUBIERTA')||arriba('SUPERFICIE\\s*\\n\\s*TOTAL'));
+  if(!d.antiguedad)d.antiguedad=arriba('ANTIG[UÜ]EDAD');
   const plantas=numTxt(valor('Plantas'));
   const disp=valor('Disposici[oó]n');
   const esTexto=s=>{const ok=(s.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/g)||[]).length;return ok/s.length>=0.6&&/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{4,}/.test(s);};
   const todas=t.split('\n').map(s=>s.trim());
-  const iDesc=todas.findIndex(s=>/^DESCRIPCI[OÓ]N$/i.test(s));
+  const iDesc=todas.findIndex(s=>/^DESCRIPCI[OÓ0]N\b/i.test(s)&&s.length<20);
   if(iDesc>=0){
     const desc=[];
     for(const s of todas.slice(iDesc+1)){
@@ -1781,6 +1815,30 @@ function datosDeTextoPdf(t){
       desc.push(s.replace(/(\d)\s?m\?/g,'$1 m²'));
     }
     d.desc=desc.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  /* ficha de la app: la descripción va entre el teléfono del agente y "FICHA DE ALQUILER/VENTA" */
+  if(!d.desc){
+    const iAg=todas.findIndex(s=>/^AGENTE\s*A\s*CARGO\b/i.test(s));
+    if(iAg>=0){
+      const iTel=todas.findIndex((s,k)=>k>iAg&&/^\+?\d[\d\s-]{7,}$/.test(s));
+      const iFin=todas.findIndex((s,k)=>k>iTel&&/^FICHA\s*DE/i.test(s));
+      if(iTel>0)d.desc=todas.slice(iTel+1,iFin>0?iFin:undefined).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+    }
+  }
+  /* sin título "Descripción" (el OCR no lee los títulos en color): el bloque de oraciones más largo */
+  if(!d.desc){
+    const oracion=s=>{if(!s||/:\s*\S/.test(s)||/^nota importante/i.test(s)||!esTexto(s))return false;
+      const pal=s.split(/\s+/).filter(w=>/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(w));
+      return pal.length>=2&&(/[.!?]$/.test(s)||pal.filter(w=>/^[a-záéíóúüñ]/.test(w)).length/pal.length>=0.4);};
+    let mejor=[],run=[];
+    for(const s of todas){
+      if(oracion(s))run.push(s);
+      else if(!s&&run.length)run.push('');
+      else{if(run.join(' ').length>mejor.join(' ').length)mejor=run;run=[];}
+    }
+    if(run.join(' ').length>mejor.join(' ').length)mejor=run;
+    const txt=mejor.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+    if(txt.length>=80)d.desc=txt;
   }
   if(d.cub&&(/todo\s+(desarrollado\s+)?en\s+planta\s+baja/i.test(t)||plantas==='1'))d.pb=d.cub;
   d.texto=limpio+(disp?'\nDisposición: '+disp:'');
