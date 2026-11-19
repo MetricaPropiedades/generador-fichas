@@ -390,26 +390,30 @@ body.ver-interno .det-ap{display:block;}
       <select id="s-edificio" onchange="renderPreview()"><option value="">—</option><option value="Torre en esquina">Torre en esquina</option><option value="Esquina">Esquina</option><option value="Torre">Torre</option><option value="Sobre linderos">Sobre linderos</option></select></div>
   </div>
   <div class="field-row">
+    <div class="field"><label>Calidad del edificio</label>
+      <select id="s-calidad-edif" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy buena">Muy buena</option><option value="Buena">Buena</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
     <div class="field"><label>Antigüedad</label>
       <select id="s-antiguedad" onchange="renderPreview()"><option value="">—</option><option value="0-5">0–5 años</option><option value="5-10">5–10 años</option><option value="10-20">10–20 años</option><option value="20-50">20–50 años</option><option value="50+">50+ años</option></select></div>
+  </div>
+  <div class="field-row">
     <div class="field"><label>Altura en el edificio</label>
       <select id="s-altura-edif" onchange="renderPreview()"><option value="">—</option><option value="Alta">Alta</option><option value="Media">Media</option><option value="Último piso">Último piso</option><option value="Baja">Baja</option><option value="Primer piso">Primer piso</option><option value="Otra">Otra</option></select></div>
-  </div>
-  <div class="field-row">
     <div class="field"><label>Posición en el edificio</label>
       <select id="s-posicion" onchange="renderPreview()"><option value="">—</option><option value="Pasante">Pasante</option><option value="Frente">Frente</option><option value="Contrafrente">Contrafrente</option><option value="Lateral">Lateral</option></select></div>
+  </div>
+  <div class="field-row">
     <div class="field"><label>Ocupación en planta</label>
       <select id="s-ocupacion" onchange="renderPreview()"><option value="">—</option><option value="Piso">Piso</option><option value="Semipiso">Semipiso</option><option value="3 o más por piso">3 o más por piso</option><option value="Sin definir">Sin definir</option></select></div>
+    <div class="field"><label>Calidad del depto.</label>
+      <select id="s-calidad" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy buena">Muy buena</option><option value="Buena">Buena</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
   </div>
   <div class="field-row">
-    <div class="field"><label>Calidad constructiva</label>
-      <select id="s-calidad" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy buena">Muy buena</option><option value="Buena">Buena</option><option value="Media">Media</option><option value="Baja">Baja</option></select></div>
     <div class="field"><label>Estado constructivo</label>
       <select id="s-estado" onchange="renderPreview()"><option value="">—</option><option value="Excelente">Excelente</option><option value="Muy bueno">Muy bueno</option><option value="Bueno">Bueno</option><option value="Medio">Medio</option><option value="Bajo">Bajo</option></select></div>
-  </div>
-  <div class="field-row">
     <div class="field"><label>Luminosidad</label>
       <select id="s-luminosidad" onchange="renderPreview()"><option value="">—</option><option value="Muy buena">Muy buena</option><option value="Estándar">Estándar</option><option value="Mala">Mala</option></select></div>
+  </div>
+  <div class="field-row">
     <div class="field"><label>Altura interna</label>
       <select id="s-altura" onchange="renderPreview()"><option value="">—</option><option value="1">Estándar</option><option value="1.05">Alta</option></select></div>
   </div>
@@ -470,7 +474,8 @@ const acot=v=>v==null?null:Math.min(RANGO.max,Math.max(RANGO.min,v));
 const INC_NOTORIO=0.20, INC_MEDIO=0.10, INC_BAJO=0.02, INC_ALTURA_INT=0.01;
 const AJUSTE={
   ubicacion:{paso:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']},
-  calidad:{paso:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']},
+  calidadEdif:{paso:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']}, /* calidad del edificio */
+  calidad:{paso:0.10,orden:['Excelente','Muy buena','Buena','Media','Baja']},     /* calidad del depto. */
   edificio:{paso:0.10,orden:['Torre en esquina','Esquina','Torre','Sobre linderos']},
   antiguedad:{paso:0.10,orden:['0-5','5-10','10-20','20-50','50+']},
   alturaEdificio:{paso:0.10,orden:['Alta','Media','Último piso','Baja','Primer piso']}, /* 'Otra' no ajusta */
@@ -481,7 +486,7 @@ const AJUSTE={
   alturaInterna:{paso:0.10,orden:['1.05','1']} /* Alta, Estándar */
 };
 /* incidencia de cada factor de la tabla (clave de factoresC) */
-const INC={ubicacion:INC_NOTORIO,calidad:INC_NOTORIO,edificio:INC_MEDIO,antiguedad:INC_MEDIO,alturaEdif:INC_MEDIO,posicion:INC_MEDIO,
+const INC={ubicacion:INC_NOTORIO,calidadEdif:INC_NOTORIO,calidad:INC_MEDIO,edificio:INC_MEDIO,antiguedad:INC_MEDIO,alturaEdif:INC_MEDIO,posicion:INC_MEDIO,
   ocupacion:INC_MEDIO,estado:INC_MEDIO,luminosidad:INC_MEDIO,altura:INC_ALTURA_INT,mercado:1,amenities:1};
 const aplicado=(k,v)=>v==null?null:1+(v-1)*(INC[k]==null?1:INC[k]);
 /* amenities: cada uno suma al valor del edificio (pileta 4%, SUM 2%, cada otro amenity 1%). La baulera ya no es amenity: va con la superficie */
@@ -492,7 +497,7 @@ function amenCoef(o){
 function vS(id){const e=document.getElementById(id);return e?(e.type==='checkbox'?e.checked:e.value):'';}
 /* características de la propiedad tasada, con las mismas claves que los comparables */
 function sujeto(){
-  return{ubicacion:vS('s-ubicacion'),calidad:vS('s-calidad'),posicionDepto:vS('s-posicion'),luminosidad:vS('s-luminosidad'),
+  return{ubicacion:vS('s-ubicacion'),calidadEdif:vS('s-calidad-edif'),calidad:vS('s-calidad'),posicionDepto:vS('s-posicion'),luminosidad:vS('s-luminosidad'),
     edificio:vS('s-edificio'),antiguedad:vS('s-antiguedad'),alturaInterna:vS('s-altura'),
     ocupacion:vS('s-ocupacion'),alturaEdificio:vS('s-altura-edif'),estadoConst:vS('s-estado'),cochera:vS('s-cochera'),cocheraPrecio:vS('s-cochera-precio'),
     pileta:vS('s-pileta'),sum:vS('s-sum'),amenitiesOtros:vS('s-amen-otros')};
@@ -515,6 +520,7 @@ function factoresC(c){
     estado:(c.estadoConst&&s.estadoConst)?nivF('estadoConst',c.estadoConst,s.estadoConst):(c.estadoConst?null:numArg(c.estado)),
     ocupacion:nivF('ocupacion',c.ocupacion,s.ocupacion),
     alturaEdif:nivF('alturaEdificio',c.alturaEdificio,s.alturaEdificio),
+    calidadEdif:nivF('calidadEdif',c.calidadEdif,s.calidadEdif),
     calidad:nivF('calidad',c.calidad,s.calidad),
     posicion:nivF('posicionDepto',c.posicionDepto,s.posicionDepto),
     luminosidad:nivF('luminosidad',c.luminosidad,s.luminosidad),
@@ -731,7 +737,7 @@ function setSubjectTipo(t){
 }
 // ══════════════════════════════════════
 function addComparable(){
-  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',calidad:'',cub:'',semi:'',descu:'',terr:'',oferta:'0.9',ubicSel:'',ubicacion:'1',estado:'1',superficie:'1',sfOverride:'',posicionDepto:'',luminosidad:'',edificio:'',antiguedad:'',alturaInterna:'',ocupacion:'',alturaEdificio:'',estadoConst:'',cochera:'',cocheraPrecio:'',pileta:false,sum:false,amenitiesOtros:'',baulera:false,notes:'',photo:null,photoOrig:null,supExtras:[]});
+  comparables.push({id:nextId++,address:'',link:'',tipo:(document.getElementById('st-alq')&&document.getElementById('st-alq').classList.contains('on')?'Alquiler':'Venta'),tipoOp:'Oferta',tipoOpLabel:'',currency:'ARS',price:'',fuente:'ZonaProp',fecha:'',calidad:'',cub:'',semi:'',descu:'',terr:'',oferta:'0.9',ubicSel:'',ubicacion:'1',estado:'1',superficie:'1',sfOverride:'',posicionDepto:'',luminosidad:'',edificio:'',antiguedad:'',alturaInterna:'',ocupacion:'',alturaEdificio:'',calidadEdif:'',estadoConst:'',cochera:'',cocheraPrecio:'',pileta:false,sum:false,amenitiesOtros:'',baulera:false,notes:'',photo:null,photoOrig:null,supExtras:[]});
   renderSidebar();renderPreview();
 }
 function removeComp(id){comparables=comparables.filter(c=>c.id!==id);renderSidebar();renderPreview();}
@@ -878,106 +884,116 @@ function renderSidebar(){
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Características</div>
   <div class="field-row">
     <div class="field"><label>Ubicación</label>
-      <select onchange="setUbic(${c.id},this.value)">
-        <option value="" ${!c.ubicSel?'selected':''}>—</option>
-        ${['Excelente','Muy buena','Buena','Media','Baja'].map(o=>`<option ${c.ubicSel===o?'selected':''}>${o}</option>`).join('')}
-        <option value="Personalizado" ${c.ubicSel==='Personalizado'?'selected':''}>Personalizado…</option>
-      </select>
-      <input type="text" inputmode="decimal" class="ubic-custom" value="${esc(c.ubicSel==='Personalizado'?c.ubicacion:'')}" placeholder="ej: 1.05 y Enter" style="margin-top:3px;${c.ubicSel==='Personalizado'?'':'display:none'}" onkeydown="if(event.key==='Enter'){event.preventDefault();setC(${c.id},'ubicacion',this.value.replace(',','.'));this.blur();}" onchange="setC(${c.id},'ubicacion',this.value.replace(',','.'))">
+    <select onchange="setUbic(${c.id},this.value)">
+    <option value="" ${!c.ubicSel?'selected':''}>—</option>
+    ${['Excelente','Muy buena','Buena','Media','Baja'].map(o=>`<option ${c.ubicSel===o?'selected':''}>${o}</option>`).join('')}
+    <option value="Personalizado" ${c.ubicSel==='Personalizado'?'selected':''}>Personalizado…</option>
+    </select>
+    <input type="text" inputmode="decimal" class="ubic-custom" value="${esc(c.ubicSel==='Personalizado'?c.ubicacion:'')}" placeholder="ej: 1.05 y Enter" style="margin-top:3px;${c.ubicSel==='Personalizado'?'':'display:none'}" onkeydown="if(event.key==='Enter'){event.preventDefault();setC(${c.id},'ubicacion',this.value.replace(',','.'));this.blur();}" onchange="setC(${c.id},'ubicacion',this.value.replace(',','.'))">
     </div>
     <div class="field"><label>Tipo de edificio</label>
-      <select onchange="setC(${c.id},'edificio',this.value);renderPreview()">
-        <option value="" ${!c.edificio?'selected':''}>—</option>
-        <option value="Torre en esquina" ${c.edificio==='Torre en esquina'?'selected':''}>Torre en esquina</option>
-        <option value="Esquina" ${c.edificio==='Esquina'?'selected':''}>Esquina</option>
-        <option value="Torre" ${c.edificio==='Torre'?'selected':''}>Torre</option>
-        <option value="Sobre linderos" ${c.edificio==='Sobre linderos'?'selected':''}>Sobre linderos</option>
-      </select>
+    <select onchange="setC(${c.id},'edificio',this.value);renderPreview()">
+    <option value="" ${!c.edificio?'selected':''}>—</option>
+    <option value="Torre en esquina" ${c.edificio==='Torre en esquina'?'selected':''}>Torre en esquina</option>
+    <option value="Esquina" ${c.edificio==='Esquina'?'selected':''}>Esquina</option>
+    <option value="Torre" ${c.edificio==='Torre'?'selected':''}>Torre</option>
+    <option value="Sobre linderos" ${c.edificio==='Sobre linderos'?'selected':''}>Sobre linderos</option>
+    </select>
     </div>
   </div>
   <div class="field-row">
+    <div class="field"><label>Calidad del edificio</label>
+    <select onchange="setC(${c.id},'calidadEdif',this.value);renderPreview()">
+    <option value="" ${!c.calidadEdif?'selected':''}>—</option>
+    <option value="Excelente" ${c.calidadEdif==='Excelente'?'selected':''}>Excelente</option>
+    <option value="Muy buena" ${c.calidadEdif==='Muy buena'?'selected':''}>Muy buena</option>
+    <option value="Buena" ${c.calidadEdif==='Buena'?'selected':''}>Buena</option>
+    <option value="Media" ${c.calidadEdif==='Media'?'selected':''}>Media</option>
+    <option value="Baja" ${c.calidadEdif==='Baja'?'selected':''}>Baja</option>
+    </select>
+    </div>
     <div class="field"><label>Antigüedad</label>
-      <select onchange="setC(${c.id},'antiguedad',this.value);renderPreview()">
-        <option value="" ${!c.antiguedad?'selected':''}>—</option>
-        <option value="0-5" ${c.antiguedad==='0-5'?'selected':''}>0–5 años</option>
-        <option value="5-10" ${c.antiguedad==='5-10'?'selected':''}>5–10 años</option>
-        <option value="10-20" ${c.antiguedad==='10-20'?'selected':''}>10–20 años</option>
-        <option value="20-50" ${c.antiguedad==='20-50'?'selected':''}>20–50 años</option>
-        <option value="50+" ${c.antiguedad==='50+'?'selected':''}>50+ años</option>
-      </select>
+    <select onchange="setC(${c.id},'antiguedad',this.value);renderPreview()">
+    <option value="" ${!c.antiguedad?'selected':''}>—</option>
+    <option value="0-5" ${c.antiguedad==='0-5'?'selected':''}>0–5 años</option>
+    <option value="5-10" ${c.antiguedad==='5-10'?'selected':''}>5–10 años</option>
+    <option value="10-20" ${c.antiguedad==='10-20'?'selected':''}>10–20 años</option>
+    <option value="20-50" ${c.antiguedad==='20-50'?'selected':''}>20–50 años</option>
+    <option value="50+" ${c.antiguedad==='50+'?'selected':''}>50+ años</option>
+    </select>
     </div>
+  </div>
+  <div class="field-row">
     <div class="field"><label>Altura en el edificio</label>
-      <select onchange="setC(${c.id},'alturaEdificio',this.value);renderPreview()">
-        <option value="" ${!c.alturaEdificio?'selected':''}>—</option>
-        <option value="Alta" ${c.alturaEdificio==='Alta'?'selected':''}>Alta</option>
-        <option value="Media" ${c.alturaEdificio==='Media'?'selected':''}>Media</option>
-        <option value="Último piso" ${c.alturaEdificio==='Último piso'?'selected':''}>Último piso</option>
-        <option value="Baja" ${c.alturaEdificio==='Baja'?'selected':''}>Baja</option>
-        <option value="Primer piso" ${c.alturaEdificio==='Primer piso'?'selected':''}>Primer piso</option>
-        <option value="Otra" ${c.alturaEdificio==='Otra'?'selected':''}>Otra</option>
-      </select>
+    <select onchange="setC(${c.id},'alturaEdificio',this.value);renderPreview()">
+    <option value="" ${!c.alturaEdificio?'selected':''}>—</option>
+    <option value="Alta" ${c.alturaEdificio==='Alta'?'selected':''}>Alta</option>
+    <option value="Media" ${c.alturaEdificio==='Media'?'selected':''}>Media</option>
+    <option value="Último piso" ${c.alturaEdificio==='Último piso'?'selected':''}>Último piso</option>
+    <option value="Baja" ${c.alturaEdificio==='Baja'?'selected':''}>Baja</option>
+    <option value="Primer piso" ${c.alturaEdificio==='Primer piso'?'selected':''}>Primer piso</option>
+    <option value="Otra" ${c.alturaEdificio==='Otra'?'selected':''}>Otra</option>
+    </select>
     </div>
-  </div>
-  <div class="field-row">
     <div class="field"><label>Posición en el edificio</label>
-      <select onchange="setC(${c.id},'posicionDepto',this.value);renderPreview()">
-        <option value="" ${!c.posicionDepto?'selected':''}>—</option>
-        <option value="Pasante" ${c.posicionDepto==='Pasante'?'selected':''}>Pasante</option>
-        <option value="Frente" ${c.posicionDepto==='Frente'?'selected':''}>Frente</option>
-        <option value="Contrafrente" ${c.posicionDepto==='Contrafrente'?'selected':''}>Contrafrente</option>
-        <option value="Lateral" ${c.posicionDepto==='Lateral'?'selected':''}>Lateral</option>
-      </select>
+    <select onchange="setC(${c.id},'posicionDepto',this.value);renderPreview()">
+    <option value="" ${!c.posicionDepto?'selected':''}>—</option>
+    <option value="Pasante" ${c.posicionDepto==='Pasante'?'selected':''}>Pasante</option>
+    <option value="Frente" ${c.posicionDepto==='Frente'?'selected':''}>Frente</option>
+    <option value="Contrafrente" ${c.posicionDepto==='Contrafrente'?'selected':''}>Contrafrente</option>
+    <option value="Lateral" ${c.posicionDepto==='Lateral'?'selected':''}>Lateral</option>
+    </select>
     </div>
+  </div>
+  <div class="field-row">
     <div class="field"><label>Ocupación en planta</label>
-      <select onchange="setC(${c.id},'ocupacion',this.value);renderPreview()">
-        <option value="" ${!c.ocupacion?'selected':''}>—</option>
-        <option value="Piso" ${c.ocupacion==='Piso'?'selected':''}>Piso</option>
-        <option value="Semipiso" ${c.ocupacion==='Semipiso'?'selected':''}>Semipiso</option>
-        <option value="3 o más por piso" ${c.ocupacion==='3 o más por piso'?'selected':''}>3 o más por piso</option>
-        <option value="Sin definir" ${c.ocupacion==='Sin definir'?'selected':''}>Sin definir</option>
-      </select>
+    <select onchange="setC(${c.id},'ocupacion',this.value);renderPreview()">
+    <option value="" ${!c.ocupacion?'selected':''}>—</option>
+    <option value="Piso" ${c.ocupacion==='Piso'?'selected':''}>Piso</option>
+    <option value="Semipiso" ${c.ocupacion==='Semipiso'?'selected':''}>Semipiso</option>
+    <option value="3 o más por piso" ${c.ocupacion==='3 o más por piso'?'selected':''}>3 o más por piso</option>
+    <option value="Sin definir" ${c.ocupacion==='Sin definir'?'selected':''}>Sin definir</option>
+    </select>
+    </div>
+    <div class="field"><label>Calidad del depto.</label>
+    <select onchange="setC(${c.id},'calidad',this.value);renderPreview()">
+    <option value="" ${!c.calidad?'selected':''}>—</option>
+    <option value="Excelente" ${c.calidad==='Excelente'?'selected':''}>Excelente</option>
+    <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena</option>
+    <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena</option>
+    <option value="Media" ${c.calidad==='Media'?'selected':''}>Media</option>
+    <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja</option>
+    </select>
     </div>
   </div>
   <div class="field-row">
-    <div class="field"><label>Calidad constructiva</label>
-      <select onchange="setC(${c.id},'calidad',this.value);renderPreview()">
-        <option value="" ${!c.calidad?'selected':''}>—</option>
-        <option value="Excelente" ${c.calidad==='Excelente'?'selected':''}>Excelente</option>
-        <option value="Muy buena" ${c.calidad==='Muy buena'?'selected':''}>Muy buena</option>
-        <option value="Buena" ${c.calidad==='Buena'?'selected':''}>Buena</option>
-        <option value="Media" ${c.calidad==='Media'?'selected':''}>Media</option>
-        <option value="Baja" ${c.calidad==='Baja'?'selected':''}>Baja</option>
-      </select>
-    </div>
     <div class="field"><label>Estado constructivo</label>
-      <select onchange="setC(${c.id},'estadoConst',this.value);renderPreview()">
-        <option value="" ${!c.estadoConst?'selected':''}>—</option>
-        <option value="Excelente" ${c.estadoConst==='Excelente'?'selected':''}>Excelente</option>
-        <option value="Muy bueno" ${c.estadoConst==='Muy bueno'?'selected':''}>Muy bueno</option>
-        <option value="Bueno" ${c.estadoConst==='Bueno'?'selected':''}>Bueno</option>
-        <option value="Medio" ${c.estadoConst==='Medio'?'selected':''}>Medio</option>
-        <option value="Bajo" ${c.estadoConst==='Bajo'?'selected':''}>Bajo</option>
-      </select>
+    <select onchange="setC(${c.id},'estadoConst',this.value);renderPreview()">
+    <option value="" ${!c.estadoConst?'selected':''}>—</option>
+    <option value="Excelente" ${c.estadoConst==='Excelente'?'selected':''}>Excelente</option>
+    <option value="Muy bueno" ${c.estadoConst==='Muy bueno'?'selected':''}>Muy bueno</option>
+    <option value="Bueno" ${c.estadoConst==='Bueno'?'selected':''}>Bueno</option>
+    <option value="Medio" ${c.estadoConst==='Medio'?'selected':''}>Medio</option>
+    <option value="Bajo" ${c.estadoConst==='Bajo'?'selected':''}>Bajo</option>
+    </select>
     </div>
-  </div>
-  <div class="field-row">
     <div class="field"><label>Luminosidad</label>
-      <select onchange="setC(${c.id},'luminosidad',this.value);renderPreview()">
-        <option value="" ${!c.luminosidad?'selected':''}>—</option>
-        <option value="Muy buena" ${c.luminosidad==='Muy buena'?'selected':''}>Muy buena</option>
-        <option value="Estándar" ${c.luminosidad==='Estándar'?'selected':''}>Estándar</option>
-        <option value="Mala" ${c.luminosidad==='Mala'?'selected':''}>Mala</option>
-      </select>
-    </div>
-    <div class="field"><label>Altura interna</label>
-      <select onchange="setC(${c.id},'alturaInterna',this.value);renderPreview()">
-        <option value="" ${!c.alturaInterna?'selected':''}>—</option>
-        <option value="1" ${c.alturaInterna==='1'?'selected':''}>Estándar</option>
-        <option value="1.05" ${c.alturaInterna==='1.05'?'selected':''}>Alta</option>
-      </select>
+    <select onchange="setC(${c.id},'luminosidad',this.value);renderPreview()">
+    <option value="" ${!c.luminosidad?'selected':''}>—</option>
+    <option value="Muy buena" ${c.luminosidad==='Muy buena'?'selected':''}>Muy buena</option>
+    <option value="Estándar" ${c.luminosidad==='Estándar'?'selected':''}>Estándar</option>
+    <option value="Mala" ${c.luminosidad==='Mala'?'selected':''}>Mala</option>
+    </select>
     </div>
   </div>
   <div class="field-row">
+    <div class="field"><label>Altura interna</label>
+    <select onchange="setC(${c.id},'alturaInterna',this.value);renderPreview()">
+    <option value="" ${!c.alturaInterna?'selected':''}>—</option>
+    <option value="1" ${c.alturaInterna==='1'?'selected':''}>Estándar</option>
+    <option value="1.05" ${c.alturaInterna==='1.05'?'selected':''}>Alta</option>
+    </select>
+    </div>
     <div class="field"><label>Ajuste mercado <small style="font-weight:400;opacity:.55">(coeficiente manual)</small></label><input type="text" inputmode="decimal" value="${esc(c.ajusteMercado||'')}" placeholder="1.00 = sin ajuste" oninput="setC(${c.id},'ajusteMercado',this.value.replace(',','.'))"></div>
   </div>
   <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Amenities</div>
@@ -1378,8 +1394,8 @@ function rSubject(nombre,fecha,analista,desc,cub,semi,descu,terr,w,ss,subExtras)
   
   const S=sujeto();
   const amen=[S.pileta?'Pileta':null,S.sum?'SUM':null,S.amenitiesOtros||null].filter(Boolean).join(', ');
-  const chars=[['Ubicación',S.ubicacion],['Tipo de edificio',S.edificio],['Antigüedad',S.antiguedad?S.antiguedad+' años':''],['Altura en el edificio',S.alturaEdificio],['Posición',S.posicionDepto],
-    ['Ocupación en planta',S.ocupacion==='Sin definir'?'':S.ocupacion],['Calidad constructiva',S.calidad],['Estado constructivo',S.estadoConst],['Luminosidad',S.luminosidad],
+  const chars=[['Ubicación',S.ubicacion],['Tipo de edificio',S.edificio],['Calidad del edificio',S.calidadEdif],['Antigüedad',S.antiguedad?S.antiguedad+' años':''],['Altura en el edificio',S.alturaEdificio],['Posición',S.posicionDepto],
+    ['Ocupación en planta',S.ocupacion==='Sin definir'?'':S.ocupacion],['Calidad del depto.',S.calidad],['Estado constructivo',S.estadoConst],['Luminosidad',S.luminosidad],
     ['Altura interna',{'1':'Estándar','1.05':'Alta'}[S.alturaInterna]||''],['Cochera',S.cochera||(parseArg(S.cocheraPrecio)?'Sí':'')],['Amenities',amen]]
     .filter(([,v])=>v).map(([l,v])=>`<div class="icard-datum"><span class="lbl">${l}</span><span class="val">${esc(v)}</span></div>`).join('');
   // analista is internal only — not rendered in ficha
@@ -1432,7 +1448,7 @@ function rSection(comps,tipo,ss){
       ['Sup. Total',v.sup>0?`${fN(Math.round(v.sup))} m²`:'—'],
       ['Valor',c.price?`${c.currency} ${fN(parseArg(c.price))}`:'—'],
       ['Valor / m²',v.pm2>0?`${c.currency} ${fN(Math.round(v.pm2))}`:'—'],
-      c.calidad?['Calidad',esc(c.calidad)]:null,
+      c.calidad?['Calidad del depto.',esc(c.calidad)]:null,
       (c.cochera||v.cochV)?['Cochera',esc(c.cochera||'Sí')+(v.cochV?` · ${c.currency} ${fN(v.cochV)}`:'')]:null,
       amenChips?['Amenities',esc(amenChips)]:null,
       c.fuente?['Fuente',esc(c.fuente)]:null,
@@ -1455,7 +1471,7 @@ function rSection(comps,tipo,ss){
   const iRows=[
     ['Nombre / Dirección',comps.map(c=>`<strong>${esc(c.address)||'—'}</strong>`)],
     ['Sup. Total',vals.map(v=>v.sup>0?`<strong>${fN(Math.round(v.sup))} m²</strong>`:'—')],
-    ['Calidad',comps.map(c=>esc(c.calidad)||'—')],
+    ['Calidad del depto.',comps.map(c=>esc(c.calidad)||'—')],
     ...(comps.some((c,i)=>c.cochera||vals[i].cochV)?[['Cochera',comps.map((c,i)=>(c.cochera||vals[i].cochV)?esc(c.cochera||'Sí')+(vals[i].cochV?` · ${c.currency} ${fN(vals[i].cochV)}`:''):'—')]]:[]),
     ['Amenities',comps.map(c=>[c.pileta?'Pileta':null,c.sum?'SUM':null,c.amenitiesOtros||null].filter(Boolean).join(', ')||'—')],
     ['Fuente',comps.map(c=>esc(c.fuente)||'—')],
@@ -1471,11 +1487,12 @@ function rSection(comps,tipo,ss){
     ['% Negociación',comps.map(c=>{const v=acot(numArg(c.oferta));return v==null?'—':v;})],
     ['Ubicación'+inc('ubicacion')+ref(S.ubicacion),fx('ubicacion'),'ubicacion'],
     ['Tipo de edificio'+inc('edificio')+ref(S.edificio),fx('edificio'),'edificio'],
+    ['Calidad del edificio'+inc('calidadEdif')+ref(S.calidadEdif),fx('calidadEdif'),'calidadEdif'],
     ['Antigüedad'+inc('antiguedad')+ref(S.antiguedad?S.antiguedad+' años':''),fx('antiguedad'),'antiguedad'],
     ['Altura en edificio'+inc('alturaEdif')+ref(S.alturaEdificio),fx('alturaEdif'),'alturaEdif'],
     ['Posición edificio'+inc('posicion')+ref(S.posicionDepto),fx('posicion'),'posicion'],
     ['Ocupación en planta'+inc('ocupacion')+ref(S.ocupacion),fx('ocupacion'),'ocupacion'],
-    ['Calidad'+inc('calidad')+ref(S.calidad),fx('calidad'),'calidad'],
+    ['Calidad del depto.'+inc('calidad')+ref(S.calidad),fx('calidad'),'calidad'],
     ['Estado constructivo'+inc('estado')+ref(S.estadoConst),fx('estado'),'estado'],
     ['Luminosidad'+inc('luminosidad')+ref(S.luminosidad),fx('luminosidad'),'luminosidad'],
     ['Altura interna'+inc('altura')+ref(altTxt[S.alturaInterna]||''),fx('altura'),'altura'],
@@ -1485,7 +1502,7 @@ function rSection(comps,tipo,ss){
   const iRow=([lbl,vs,cls])=>`<tr><td class="lc">${lbl}</td>${vs.map(v=>`<td class="vc ${cls||''}">${v}</td>`).join('')}</tr>`;
   const ap=(k,v)=>{if(!k||INC[k]>=1)return'';const a=aplicado(k,parseFloat(v));return`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#888">aplica ${String(Math.round(a*1000)/1000).replace('.',',')}</span>`;};
   /* detalle interno de cada celda: arriba lo que se aplica, abajo la respuesta del comparable (ej.: "Muy buena") */
-  const TXT={ubicacion:c=>c.ubicSel,edificio:c=>c.edificio,antiguedad:c=>c.antiguedad?c.antiguedad+' años':'',alturaEdif:c=>c.alturaEdificio,
+  const TXT={ubicacion:c=>c.ubicSel,edificio:c=>c.edificio,calidadEdif:c=>c.calidadEdif,antiguedad:c=>c.antiguedad?c.antiguedad+' años':'',alturaEdif:c=>c.alturaEdificio,
     posicion:c=>c.posicionDepto,ocupacion:c=>c.ocupacion,calidad:c=>c.calidad,estado:c=>c.estadoConst,luminosidad:c=>c.luminosidad,altura:c=>altTxt[c.alturaInterna]};
   const resp=(k,i)=>{const x=TXT[k]&&TXT[k](comps[i]);return x?`<span class="det-ap" style="font-weight:400;font-size:6.5pt;color:#999">${esc(x)}</span>`:'';};
   const fRow=([lbl,vs,k])=>`<tr><td class="lc">${lbl}</td>${vs.map((v,i)=>v==='—'?`<td class="vc neutral">—${resp(k,i)}</td>`:`<td class="vc ${fcls(v)}">${ap(k,v)}${parseFloat(v).toFixed(2)}${resp(k,i)}</td>`).join('')}</tr>`;
@@ -1955,7 +1972,7 @@ async function abrirTasacionPDF(file){
 // SAVE / LOAD JSON
 // ══════════════════════════════════════
 function ponerCaractSujeto(k){
-  const m={'s-ubicacion':'ubicacion','s-calidad':'calidad','s-posicion':'posicionDepto','s-luminosidad':'luminosidad','s-edificio':'edificio',
+  const m={'s-ubicacion':'ubicacion','s-calidad-edif':'calidadEdif','s-calidad':'calidad','s-posicion':'posicionDepto','s-luminosidad':'luminosidad','s-edificio':'edificio',
     's-antiguedad':'antiguedad','s-altura':'alturaInterna','s-amen-otros':'amenitiesOtros',
     's-ocupacion':'ocupacion','s-altura-edif':'alturaEdificio','s-estado':'estadoConst','s-cochera':'cochera','s-cochera-precio':'cocheraPrecio'};
   Object.entries(m).forEach(([id,key])=>{const e=document.getElementById(id);if(e)e.value=k[key]||'';});
