@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<!-- Código QR «lona1»: este es el link fijo que está impreso en la lona. A dónde lleva se cambia en qr/destinos.json -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Métrica Propiedades</title>
+<style>
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#3E4348;color:#fff;font:600 18px/1.4 system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box}
+a{color:#D19C1D}
+</style>
+</head>
+<body>
+<p>Abriendo la propiedad…</p>
+<p><a id="ir" href="https://www.metricapropiedades.com/">Si no se abre sola, tocá acá</a></p>
+<script>
+(function(){
+  var ID='lona1',CASA='https://www.metricapropiedades.com/';
+  fetch('../destinos.json?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(d){var u=(d[ID]&&d[ID].link)||CASA;document.getElementById('ir').href=u;location.replace(u);})
+    .catch(function(){location.replace(CASA);});
+})();
+</script>
+</body>
+</html>
