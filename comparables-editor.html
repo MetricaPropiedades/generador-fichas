@@ -80,6 +80,9 @@ body{font-family:'Barlow',sans-serif;background:#4a4a4a;display:flex;height:100v
 .btn-g:hover{background:#daa820;}
 .btn-o{background:rgba(255,255,255,.06);color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.11);}
 .btn-o:hover{background:rgba(255,255,255,.1);}
+.mapa-acc{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;}
+.mapa-acc .btn.on{background:var(--g);color:#1c1c1c;border-color:var(--g);}
+.mapa-acc .btn:disabled{opacity:.35;cursor:default;}
 .btn-add{background:rgba(200,148,26,.09);color:var(--g);border:1.5px dashed rgba(200,148,26,.35);width:100%;padding:9px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;}
 .btn-add:hover{background:rgba(200,148,26,.17);}
 
@@ -376,6 +379,10 @@ body.ver-interno .det-ap{display:block;}
 
   <h2>Mapa</h2>
   <div class="field-hint">Se arma solo con las direcciones del tasado y de los comparables, y se actualiza cada vez que cambiás una.</div>
+  <div class="mapa-acc">
+    <button type="button" class="btn btn-o" id="btn-mover-ind" onclick="moverIndicadores()" disabled>✥ Mover indicadores</button>
+    <button type="button" class="btn btn-o" id="btn-reset-ind" onclick="volverIndicadores()" disabled title="Vuelve los indicadores a donde estaban antes de moverlos">↺ Volver al original</button>
+  </div>
   <div id="map-status" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px;min-height:14px;"></div>
 
   <h2>Superficie Tasado</h2>
@@ -1381,10 +1388,11 @@ function initMapFromCache(){
     attribution:'© <a href="https://www.thunderforest.com">Thunderforest</a> © <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
     maxZoom:19,crossOrigin:true
   }).addTo(leafletMap);
-  const bounds=[];
+  const bounds=[];_marcadoresMapa=[];
   if(geoCoords.subject){
     const{lat,lon}=geoCoords.subject;
-    L.marker([lat,lon],{icon:mkRedIcon()}).addTo(leafletMap).bindPopup('<b>Tasado</b><br>'+(document.getElementById('s-nombre').value||''));
+    const mk=L.marker([lat,lon],{icon:mkRedIcon(),draggable:true}).addTo(leafletMap).bindPopup('<b>Tasado</b><br>'+(document.getElementById('s-nombre').value||''));
+    const ref={mk,tipo:'s'};mk.on('dragend',()=>soltarIndicador(ref));_marcadoresMapa.push(ref);
     bounds.push([lat,lon]);
   }
   let markerNum=0;
@@ -1392,12 +1400,75 @@ function initMapFromCache(){
     if(!item||!item.coord)return;
     markerNum++;
     const{lat,lon}=item.coord;
-    L.marker([lat,lon],{icon:mkBlueIcon(markerNum)}).addTo(leafletMap).bindPopup('<b>Comp.'+markerNum+'</b><br>'+(item.addr||''));
+    const mk=L.marker([lat,lon],{icon:mkBlueIcon(markerNum),draggable:true}).addTo(leafletMap).bindPopup('<b>Comp.'+markerNum+'</b><br>'+(item.addr||''));
+    const ref={mk,tipo:'c',item};mk.on('dragend',()=>soltarIndicador(ref));_marcadoresMapa.push(ref);
     bounds.push([lat,lon]);
   });
   if(bounds.length===0)leafletMap.setView([-34.603722,-58.381592],13);
   else if(bounds.length===1)leafletMap.setView(bounds[0],14);
   else leafletMap.fitBounds(bounds,{padding:[40,40],maxZoom:15});
+  /* el arrastre existe recién cuando el mapa tiene vista: solo queda activo mientras se están moviendo */
+  _marcadoresMapa.forEach(r=>{const d=r.mk.dragging;if(d){if(_moviendoMapa)d.enable();else d.disable();}});
+  pintarBotonesMapa();
+}
+
+/* ── Mover indicadores a mano ──
+   «Mover indicadores» deja arrastrar la tasada y los comparables en el mapa. Lo que se mueve queda fijo para esa
+   dirección (aunque el mapa se rehaga). Si una dirección no se encontró, aparece en el medio del mapa para
+   llevarla al lugar; si no se mueve, al tocar «Listo» se saca. «Volver al original» deshace todo lo movido. */
+let _moviendoMapa=false,_marcadoresMapa=[];const _provisorios=new Set();
+const claveDir=s=>String(s||'').trim().toLowerCase();
+function avisoMapa(t){const st=document.getElementById('map-status');if(st)st.textContent=t||'';}
+function pintarBotonesMapa(){
+  const b1=document.getElementById('btn-mover-ind'),b2=document.getElementById('btn-reset-ind');if(!b1||!b2)return;
+  b1.disabled=!(showMap&&!mapPhoto);b1.classList.toggle('on',_moviendoMapa);
+  b1.textContent=_moviendoMapa?'✓ Listo':'✥ Mover indicadores';
+  b2.disabled=!(geoCoords.movidos&&Object.keys(geoCoords.movidos).length);
+}
+function sujetoDir(){return (document.getElementById('s-nombre').value||'').trim();}
+function moverIndicadores(){
+  if(!showMap||!leafletMap||mapPhoto){avisoMapa('Primero tiene que estar el mapa: cargá una dirección.');return;}
+  if(_moviendoMapa){terminarMover();return;}
+  _moviendoMapa=true;
+  const c=leafletMap.getCenter();let k=0,nuevos=false;
+  const lugar=()=>{k++;return{lat:c.lat+0.0006*k,lon:c.lng+0.0006*k};};
+  if(sujetoDir()&&!geoCoords.subject){geoCoords.subject=lugar();_provisorios.add('s');nuevos=true;}
+  (geoCoords.comparables||[]).forEach(it=>{if(it&&String(it.addr||'').trim()&&!it.coord){it.coord=lugar();_provisorios.add('c'+it.id);nuevos=true;}});
+  if(nuevos)initMapFromCache();else _marcadoresMapa.forEach(r=>r.mk.dragging&&r.mk.dragging.enable());
+  pintarBotonesMapa();
+  avisoMapa('Arrastrá los indicadores hasta el lugar correcto y tocá «Listo».'+(nuevos?' Los que no se encontraron están en el medio del mapa.':''));
+}
+function terminarMover(){
+  _moviendoMapa=false;
+  if(_provisorios.size){   /* los que se pusieron en el medio y no se movieron, se sacan */
+    if(_provisorios.has('s'))geoCoords.subject=null;
+    (geoCoords.comparables||[]).forEach(it=>{if(it&&_provisorios.has('c'+it.id))it.coord=null;});
+    _provisorios.clear();initMapFromCache();
+  }else _marcadoresMapa.forEach(r=>r.mk.dragging&&r.mk.dragging.disable());
+  pintarBotonesMapa();avisoMapa('Listo: los indicadores quedaron fijos.');
+}
+function soltarIndicador(ref){
+  const p=ref.mk.getLatLng(),coord={lat:p.lat,lon:p.lng};
+  const prov=ref.tipo==='s'?'s':'c'+ref.item.id,key=claveDir(ref.tipo==='s'?sujetoDir():ref.item.addr);
+  geoCoords.movidos=geoCoords.movidos||{};
+  if(key&&!geoCoords.movidos[key])geoCoords.movidos[key]={antes:_provisorios.has(prov)?null:(ref.tipo==='s'?geoCoords.subject:ref.item.coord),elegido:geoElegidos[key]||null};
+  _provisorios.delete(prov);
+  if(ref.tipo==='s')geoCoords.subject=coord;else ref.item.coord=coord;
+  if(key){geoElegidos[key]=coord;try{localStorage.setItem('metrica-geo-elegidos',JSON.stringify(geoElegidos));}catch(e){}}
+  capturedMapImg=null;autoSave();pintarBotonesMapa();
+}
+function volverIndicadores(){
+  const mv=geoCoords.movidos||{},sKey=claveDir(sujetoDir());
+  Object.keys(mv).forEach(key=>{
+    const v=mv[key];
+    if(v.elegido)geoElegidos[key]=v.elegido;else delete geoElegidos[key];
+    if(key===sKey)geoCoords.subject=v.antes;
+    (geoCoords.comparables||[]).forEach(it=>{if(it&&claveDir(it.addr)===key)it.coord=v.antes;});
+  });
+  try{localStorage.setItem('metrica-geo-elegidos',JSON.stringify(geoElegidos));}catch(e){}
+  geoCoords.movidos={};_moviendoMapa=false;_provisorios.clear();
+  capturedMapImg=null;initMapFromCache();autoSave();pintarBotonesMapa();
+  avisoMapa('Los indicadores volvieron a su ubicación original.');
 }
 
 /* MAPA AUTOMÁTICO: cada vez que cambia una dirección (del tasado o de un comparable) el mapa se rehace solo,
@@ -1417,12 +1488,13 @@ async function triggerMapGen(){
     const subjectAddr=(document.getElementById('s-nombre').value||'').trim();
     if(!subjectAddr&&!comparables.some(c=>c.address&&c.address.trim())){
       _mapaClave=clave;
-      if(showMap){showMap=false;geoCoords={subject:null,comparables:[]};capturedMapImg=null;renderPreview();}
+      if(showMap){showMap=false;geoCoords={subject:null,comparables:[],movidos:geoCoords.movidos||{}};capturedMapImg=null;renderPreview();}
+      _moviendoMapa=false;pintarBotonesMapa();
       if(st)st.textContent='';
       return;
     }
     if(st)st.textContent='Buscando ubicaciones…';
-    const nuevo={subject:subjectAddr?await ubicar(subjectAddr):null,comparables:[]};
+    const nuevo={subject:subjectAddr?await ubicar(subjectAddr):null,comparables:[],movidos:geoCoords.movidos||{}};
     for(const c of comparables){
       const a=(c.address||'').trim();
       nuevo.comparables.push({id:c.id,addr:c.address||'',coord:a?await ubicar(a):null});
