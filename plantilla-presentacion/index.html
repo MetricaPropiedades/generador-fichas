@@ -520,6 +520,7 @@ html.hoja{overflow:hidden}
     <label for="ep-q">Buscar dirección</label>
     <div class="row"><input type="text" id="ep-q" placeholder="Ej.: Av. Cabildo 2000, CABA"><button type="button" id="ep-go">Buscar</button></div>
     <p class="help">Arrastrá el pin mostaza hasta la ubicación exacta. El zoom y el encuadre del mapa quedan como los dejes acá.</p>
+    <p style="margin-top:8px"><button type="button" id="ep-reset" title="Vuelve el pin a la ubicación que encontró el buscador">↺ Volver al original</button></p>
     <label>Puntos de referencia</label>
     <div id="ep-pois"></div>
     <button type="button" class="gold" id="ep-add">+ Agregar punto</button>
@@ -1068,7 +1069,7 @@ function drawMap(){
   (u.puntos||[]).forEach(p=>L.marker([p.lat,p.lon],{icon:poiIcon(p.nombre),interactive:false}).addTo(MAP));
   L.marker([u.lat,u.lon],{icon:pinIcon(),interactive:false,zIndexOffset:1000}).addTo(MAP);MAPS.push(MAP)});
 }
-let EM=null,EMpin=null,EMpois=[];
+let EM=null,EMpin=null,EMpois=[],EMinicio=null;
 function openMapEditor(){
   const u=P.ficha.mapa;if(!u.puntos)u.puntos=[];$("#ep").classList.add("open");
   if(EM)EM.remove();
@@ -1076,6 +1077,7 @@ function openMapEditor(){
   EM=L.map("ep-map",{zoomSnap:.1}).setView(c,u.zoom||(u.lat?16:12));
   L.tileLayer(TILES,{attribution:ATTR,maxZoom:19}).addTo(EM);
   if(!u.lat){u.lat=c[0];u.lon=c[1]}
+  EMinicio={lat:u.lat,lon:u.lon};
   EMpin=L.marker([u.lat,u.lon],{icon:pinIcon(),draggable:true,zIndexOffset:1000}).addTo(EM);
   EMpin.on("dragend",()=>{const g=EMpin.getLatLng();u.lat=+g.lat.toFixed(6);u.lon=+g.lng.toFixed(6)});
   EMpois=[];u.puntos.forEach((p,i)=>addPoiMarker(i));
@@ -1128,7 +1130,10 @@ async function geocodeEsquinas(q){
 async function geocode(q){const e=await geocodeEsquinas(q);if(e)return e;for(const v of variantesDireccion(q)){const g=await geocode1(v);if(g)return g}return null}
 $("#ep-add").addEventListener("click",()=>{const c=EM.getCenter();P.ficha.mapa.puntos.push({nombre:"Nuevo punto",lat:+c.lat.toFixed(6),lon:+c.lng.toFixed(6)});addPoiMarker(P.ficha.mapa.puntos.length-1);renderPoiList()});
 $("#ep-go").addEventListener("click",async()=>{const q=$("#ep-q").value.trim();if(!q)return;
-  try{const g=await geocode(q);if(g){EM.setView([g.lat,g.lon],17);EMpin.setLatLng([g.lat,g.lon]);P.ficha.mapa.lat=+g.lat.toFixed(6);P.ficha.mapa.lon=+g.lon.toFixed(6)}else alert("No encontré esa dirección. Probá con calle, altura y localidad.")}catch(e){alert("No pude buscar la dirección. Revisá la conexión a internet.")}});
+  try{const g=await geocode(q);if(g){EM.setView([g.lat,g.lon],17);EMpin.setLatLng([g.lat,g.lon]);P.ficha.mapa.lat=+g.lat.toFixed(6);P.ficha.mapa.lon=+g.lon.toFixed(6);P.ficha.mapa.auto={lat:P.ficha.mapa.lat,lon:P.ficha.mapa.lon}}else alert("No encontré esa dirección. Probá con calle, altura y localidad.")}catch(e){alert("No pude buscar la dirección. Revisá la conexión a internet.")}});
+/* «Volver al original»: el pin vuelve a donde lo puso el buscador (o a donde estaba al abrir el mapa) */
+$("#ep-reset").addEventListener("click",()=>{const u=P.ficha.mapa,o=u.auto||EMinicio;if(!o||!EMpin)return;
+  u.lat=o.lat;u.lon=o.lon;EMpin.setLatLng([o.lat,o.lon]);EM.panTo([o.lat,o.lon])});
 $("#ep-ok").addEventListener("click",()=>{$("#ep").classList.remove("open");render()});
 
 /* ---------- importar aviso ---------- */
@@ -1195,6 +1200,7 @@ async function importarAviso(url){
     const lat=+d.lat,lng=+(d.lng??d.lon);
     if(d.lat&&enArgentina({lat,lon:lng})){f.mapa.lat=+lat.toFixed(6);f.mapa.lon=+lng.toFixed(6)}
     else try{const g=await geocode(d.address||f.titulo);if(g){f.mapa.lat=+g.lat.toFixed(6);f.mapa.lon=+g.lon.toFixed(6)}}catch(e){}
+    if(f.mapa.lat)f.mapa.auto={lat:f.mapa.lat,lon:f.mapa.lon};
     P.portada.direccion=f.titulo;P.portada.localidad=partes[1]||P.portada.localidad;
     portadaDesde(tipoPropiedad(d.titulo),partes[1]||"",f.stats);f.kicker="Ficha de "+op.toLowerCase()+" · "+tipoPropiedad(d.titulo);
     if(f.fotos[0]){P.portada.foto=f.fotos[0];P.cierre.foto=f.fotos[0]}
