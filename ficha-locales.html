@@ -265,6 +265,10 @@ body{font-family:'Inter',sans-serif;background:#111;display:flex;height:100vh;ov
 .btn-guardadas .bg-flecha{margin-left:auto;font-size:22px;color:var(--gold);line-height:1;}
 .fila-op{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:end;}
 .fila-op .btn-sec{width:100%;padding:5px 7px;}
+.mapa-acc{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:-2px 0 10px;}
+.mapa-acc .btn-sec{width:100%;padding:6px 7px;}
+.mapa-acc .btn-sec.on{background:var(--gold,#C8941A);border-color:var(--gold,#C8941A);color:#1c1c1c;}
+.mapa-acc .btn-sec:disabled{opacity:.35;cursor:default;}
 .save-status.mal{color:#e88;font-weight:600;}
 .tabs-inm{display:flex;gap:0;margin:-2px 0 10px;border-bottom:1px solid rgba(255,255,255,.1);}
 .tabs-inm button{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.45);font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:7px 4px 8px;cursor:pointer;margin-bottom:-1px;}
@@ -768,6 +772,7 @@ function renderSidebar(){
           '</div></div>'+
           '<div class="field"><label>Mapa</label><button class="btn-sec" onclick="triggerMapGen()">🗺 '+(showMap?'Actualizar mapa':'Agregar mapa')+'</button></div>'+
         '</div>'+
+        (showMap?botonesIndicador(l):'')+
         (tipoInmueble==='depto'?camposDepto(l):tipoInmueble==='deposito'?camposDeposito(l):(
         '<div class="field"><label>Disponibilidad</label>'+
           '<input type="text" value="'+esc(l.disponibilidad)+'" placeholder="Ej: Inmediata" data-id="'+l.id+'" data-f="disponibilidad" oninput="sLev(this)">'+
@@ -1272,9 +1277,9 @@ async function buscarEsquina(address){
   const m=(partes[0]||'').trim().match(/^(.+?)\s+(?:y|e|&|esq\.?|esquina)\s+(.+)$/i);
   if(!m||/\d{3,}/.test(partes[0]))return null;   /* "Cabildo 2302" es altura, no esquina */
   const loc=normLocalidad(partes.slice(1).join(',')||'Buenos Aires');
-  const forma=async calle=>{
+  const forma=async calle=>{   /* dedupe 0: una avenida viene cortada en muchos tramos y sin esto llegaba uno solo (Aconquija y Chile daba a 1,4 km) */
     const q=normCalle(calle)+', '+loc+', Argentina';
-    const r=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q,format:'json',limit:'10',countrycodes:'ar',polygon_geojson:'1'}),{headers:{'Accept-Language':'es'}});
+    const r=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q,format:'json',limit:'50',dedupe:'0',countrycodes:'ar',polygon_geojson:'1'}),{headers:{'Accept-Language':'es'}});
     const out=[];
     for(const x of await r.json()){
       const g=x.geojson||{};
@@ -1457,11 +1462,14 @@ function initMapFromCache(){
   if(leafletMap){leafletMap.remove();leafletMap=null;}
   leafletMap=L.map('leaflet-map',{zoomControl:true,attributionControl:true});
   L.tileLayer('https://{s}.tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey=799db6d6ca3343839a985264e7476796',{attribution:'© <a href="https://www.thunderforest.com">Thunderforest</a> © <a href="https://www.openstreetmap.org">OpenStreetMap</a>',maxZoom:19,crossOrigin:true}).addTo(leafletMap);
+  _marcadores={};
   const bounds=[];let n=0;
   geoCoords.locals.forEach(item=>{
     if(!item?.coord)return;
     n++;const{lat,lon}=item.coord;
-    L.marker([lat,lon],{icon:mkBlueIcon(n)}).addTo(leafletMap).bindPopup('<b>'+NOMBRES[tipoInmueble].uno+' '+n+'</b><br>'+(item.addr||''));
+    const mk=L.marker([lat,lon],{icon:mkBlueIcon(n),draggable:true}).addTo(leafletMap).bindPopup('<b>'+NOMBRES[tipoInmueble].uno+' '+n+'</b><br>'+(item.addr||''));
+    mk.on('dragend',()=>soltarIndicador(item,mk));
+    _marcadores[item.id]=mk;
     bounds.push([lat,lon]);
   });
   if(geoCoords.savedView){
@@ -1473,9 +1481,57 @@ function initMapFromCache(){
   }else{
     leafletMap.fitBounds(bounds,{padding:[20,20]});
   }
+  /* el arrastre existe recién cuando el mapa ya tiene vista: solo queda activo en el que se está moviendo */
+  Object.keys(_marcadores).forEach(id=>{const d=_marcadores[id].dragging;if(d){if(_moviendo[id])d.enable();else d.disable();}});
   leafletMap.on('moveend zoomend',function(){
     geoCoords.savedView={lat:leafletMap.getCenter().lat,lng:leafletMap.getCenter().lng,zoom:leafletMap.getZoom()};
   });
+}
+
+/* ── Mover el indicador a mano ──
+   «Mover indicador» deja arrastrar el número de ese inmueble en el mapa; el lugar elegido queda fijo para esa
+   dirección (también al tocar «Actualizar mapa»). «Volver al original» lo deja como estaba antes de moverlo. */
+let _moviendo={},_marcadores={};
+function mapaAviso(txt){const st=document.getElementById('map-status');if(st)st.textContent=txt||'';}
+function botonesIndicador(l){
+  const item=(geoCoords.locals||[]).find(x=>x.id===l.id),mov=!!_moviendo[l.id];
+  return '<div class="mapa-acc">'+
+    '<button class="btn-sec'+(mov?' on':'')+'" onclick="moverIndicador('+l.id+')">'+(mov?'✓ Listo':'✥ Mover indicador')+'</button>'+
+    '<button class="btn-sec" onclick="resetIndicador('+l.id+')"'+(item&&item.manual?'':' disabled')+' title="Vuelve el indicador a donde estaba antes de moverlo">↺ Volver al original</button>'+
+  '</div>';
+}
+function moverIndicador(id){
+  if(!showMap||!leafletMap){mapaAviso('Primero agregá el mapa.');return;}
+  if(_moviendo[id]){_moviendo[id]=false;const m=_marcadores[id];if(m)m.dragging.disable();renderSidebar();mapaAviso('Listo: el indicador quedó fijo ahí.');return;}
+  const l=locals.find(x=>x.id===id);if(!l)return;
+  let item=geoCoords.locals.find(x=>x.id===id);
+  if(!item){item={id,addr:l.address||'',coord:null};geoCoords.locals.push(item);}
+  _moviendo[id]=true;
+  if(!item.coord){   /* no se encontró la dirección: aparece en el medio del mapa para llevarlo al lugar */
+    const c=leafletMap.getCenter();item.coord={lat:c.lat,lon:c.lng};
+    geoCoords.savedView={lat:c.lat,lng:c.lng,zoom:leafletMap.getZoom()};initMapFromCache();
+  }else{const m=_marcadores[id];if(m)m.dragging.enable();}
+  renderSidebar();
+  mapaAviso('Arrastrá el indicador hasta el lugar correcto y tocá «Listo».');
+}
+function soltarIndicador(item,mk){
+  const p=mk.getLatLng(),key=String(item.addr||'').trim().toLowerCase();
+  if(!item.manual){item.coordAuto=item.coord?{...item.coord}:null;item.elegidoAntes=key&&geoElegidos[key]?{...geoElegidos[key]}:null;}
+  item.coord={lat:p.lat,lon:p.lng};item.manual=true;
+  if(key)guardarElegido(item.addr,item.coord);
+  capturedMapImg=null;autoSave();renderSidebar();
+}
+async function resetIndicador(id){
+  const item=(geoCoords.locals||[]).find(x=>x.id===id);if(!item||!item.manual)return;
+  const key=String(item.addr||'').trim().toLowerCase();
+  if(key){if(item.elegidoAntes)geoElegidos[key]=item.elegidoAntes;else delete geoElegidos[key];
+    try{localStorage.setItem('metrica-geo-elegidos',JSON.stringify(geoElegidos));}catch(e){}}
+  _moviendo[id]=false;
+  let coord=item.coordAuto||null;
+  if(!coord&&key){mapaAviso('Buscando la ubicación original...');delete geoCache[key];coord=await nominatim(item.addr);}
+  item.coord=coord;item.manual=false;delete item.coordAuto;delete item.elegidoAntes;
+  capturedMapImg=null;initMapFromCache();autoSave();renderSidebar();
+  mapaAviso(coord?'El indicador volvió a su ubicación original.':'Sin ubicación: la dirección no se encontró.');
 }
 
 async function triggerMapGen(){
@@ -1487,14 +1543,16 @@ async function triggerMapGen(){
   const st=document.getElementById('map-status');
   if(st)st.textContent='Buscando ubicaciones...';
   renderPreview();await delay(80);
+  const previos=geoCoords.locals;_moviendo={};
   geoCoords.locals=[];let found=0;
   for(let i=0;i<locals.length;i++){
     const l=locals[i];
     if(i>0)await delay(400);
     if(l.address&&l.address.trim()){
       if(st)st.textContent='Buscando local '+(i+1)+'...';
-      const coord=await nominatim(l.address);
-      geoCoords.locals.push({id:l.id,addr:l.address,coord});
+      const antes=(previos||[]).find(x=>x.id===l.id&&x.manual&&x.addr===l.address);
+      const coord=antes?antes.coord:await nominatim(l.address);
+      geoCoords.locals.push(antes?{...antes}:{id:l.id,addr:l.address,coord});
       if(coord)found++;
     }else geoCoords.locals.push({id:l.id,addr:'',coord:null});
   }

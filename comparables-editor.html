@@ -1164,9 +1164,9 @@ async function buscarEsquina(address){
   const m=(partes[0]||'').trim().match(/^(.+?)\s+(?:y|e|esq\.?|esquina)\s+(.+)$/i);
   if(!m||/\d{3,}/.test(partes[0]))return null;   /* "Cabildo 2302" es altura, no esquina */
   const loc=normLocalidad(partes.slice(1).join(',')||'Buenos Aires');
-  const forma=async calle=>{
+  const forma=async calle=>{   /* dedupe 0: una avenida viene cortada en muchos tramos y sin esto llegaba uno solo (Aconquija y Chile daba a 1,4 km) */
     const q=normCalle(calle)+', '+loc+', Argentina';
-    const r=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q,format:'json',limit:'10',countrycodes:'ar',polygon_geojson:'1'}),{headers:{'Accept-Language':'es'}});
+    const r=await fetch('https://nominatim.openstreetmap.org/search?'+new URLSearchParams({q,format:'json',limit:'50',dedupe:'0',countrycodes:'ar',polygon_geojson:'1'}),{headers:{'Accept-Language':'es'}});
     const out=[];
     for(const x of await r.json()){
       const g=x.geojson||{};
