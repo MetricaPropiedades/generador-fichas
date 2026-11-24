@@ -2004,7 +2004,7 @@ document.getElementById('gd-filtros').addEventListener('click',ev=>{
 });
 function pintarGuardadas(){
   const q=claveDir(document.getElementById('gd-busca').value);
-  const fs=_guardadas.filter(f=>(!_gdFiltro||f.tipo===_gdFiltro)&&(!q||claveDir(f.titulo).includes(q)));
+  const fs=_guardadas.filter(f=>['local','depto','deposito'].includes(f.tipo)&&(!_gdFiltro||f.tipo===_gdFiltro)&&(!q||claveDir(f.titulo).includes(q)));
   const lista=document.getElementById('gd-lista');
   if(!fs.length){lista.innerHTML='<div class="gd-vacio">'+(_guardadas.length?'No hay fichas con esa búsqueda.':'Todavía no hay fichas guardadas.<br>Se guardan solas cada vez que alguien descarga un PDF.')+'</div>';return;}
   const tipos={local:'Local',depto:'Depto',deposito:'Depósito',fondo:'Fondo',tasacion:'Tasación'};

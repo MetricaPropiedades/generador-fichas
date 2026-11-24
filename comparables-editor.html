@@ -2097,6 +2097,8 @@ async function exportPDF(){
     const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([salida],{type:'application/pdf'})),download:titulo+'.pdf'});
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    /* copia automática al Drive del equipo (misma dirección = reemplaza la anterior) */
+    if(nombre)Guardadas.subir(salida,{tipo:'tasacion',operacion:tipoInm,id:'tasacion|'+(tipoInm).toLowerCase()+'|'+Guardadas.claveDir(nombre),titulo:nombre,nombre:titulo+'.pdf'});
   }catch(e){alert('No se pudo generar el PDF: '+(e.message||e));}
   capturedMapImg=null;renderPreview();
 }
@@ -2350,6 +2352,12 @@ botonDetalle();
     finally{window.html2canvas=h2c;d.style.zoom=z;if(oculto)document.body.classList.remove('ver-doc');}
   };
 })();
+</script>
+<script src="guardadas.js"></script>
+<script>
+Guardadas.iniciar({tipos:{tasacion:'Tasación'},titulo:'Tasaciones',
+  ponerBotonDespuesDe:document.querySelector('label[title^="Abrí un PDF hecho con este tasador"]').closest('.btn-row'),
+  abrir:blob=>abrirTasacionPDF(blob)});
 </script>
 </body>
 </html>

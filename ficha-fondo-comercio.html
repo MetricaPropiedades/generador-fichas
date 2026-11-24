@@ -10,7 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<title>Editor de Ficha — Métrica</title>
+<title>Ficha de Fondo de Comercio — Métrica Propiedades</title>
 <style>
 /* ── LAYOUT ── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -988,7 +988,10 @@ async function exportPDF() {
     await document.fonts.ready;
     await new Promise(r => setTimeout(r, 300));
     const nombre = document.getElementById('f-nombre').value.trim();
-    const titulo = (nombre ? `Comercio - ${nombre}` : 'Ficha - Métrica Propiedades').replace(/[\\/:*?"<>|]+/g, ' ').trim();
+    const ubic = document.getElementById('f-ubicacion').value.trim();
+    /* el archivo dice de qué es la ficha y dónde queda, igual que el generador de fichas */
+    const titulo = ['Ficha de Fondo de Comercio', ubic, nombre].filter(Boolean).join(' - ')
+      .replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90);
     const docEl = document.querySelector('.doc');
     /* resolución alta, sin pasar el límite de tamaño de imagen del navegador en fichas muy largas */
     const escala = Math.min(4, 14000 / Math.max(docEl.scrollHeight, 1));
@@ -1010,6 +1013,9 @@ async function exportPDF() {
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([salida], { type: 'application/pdf' })), download: titulo + '.pdf' });
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    /* copia automática al Drive del equipo (misma ficha = reemplaza la anterior) */
+    if (ubic || nombre) Guardadas.subir(salida, { tipo: 'fondo', operacion: 'Venta', id: 'fondo|' + Guardadas.claveDir(ubic) + '|' + Guardadas.claveDir(nombre),
+      titulo: [nombre, ubic].filter(Boolean).join(' · '), nombre: titulo + '.pdf' });
   } catch (e) {
     alert('No se pudo generar el PDF: ' + (e.message || e));
   }
@@ -1177,6 +1183,12 @@ try {
     finally{window.html2canvas=h2c;d.style.zoom=z;if(oculto)document.body.classList.remove('ver-doc');}
   };
 })();
+</script>
+<script src="guardadas.js"></script>
+<script>
+Guardadas.iniciar({ tipos: { fondo: 'Fondo de comercio' }, titulo: 'Fichas',
+  ponerBotonDespuesDe: document.getElementById('btn-export').closest('.btn-draft-row'),
+  abrir: blob => abrirPDF(blob) });
 </script>
 </body>
 </html>
