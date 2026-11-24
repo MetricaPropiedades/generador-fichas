@@ -368,7 +368,6 @@ body.ver-interno .det-ap{display:block;}
     <div class="field"><label>Tasador <small style="font-weight:400;opacity:.55">(dato interno)</small></label><input type="text" id="s-analista" placeholder="ej: Santiago G." oninput="renderPreview()"></div>
   </div>
   <div class="field"><label>Tipo de tasación</label><div class="tog"><button id="st-alq" class="on" onclick="setSubjectTipo('Alquiler')">Alquiler</button><button id="st-vta" onclick="setSubjectTipo('Venta')">Venta</button></div></div>
-  <div class="field"><label>Inmueble</label><div class="tog"><button id="si-local" class="on" onclick="setTipoInm('Local')">Local</button><button id="si-deposito" onclick="setTipoInm('Depósito')">Depósito</button></div></div>
   <div class="field"><label>Descripción</label><textarea id="s-desc" rows="3" placeholder="Breve descripción del inmueble..." oninput="renderPreview()"></textarea></div>
 
   <div class="field">
@@ -778,12 +777,10 @@ function renderCompPhotoSb(c){
 // COMPARABLE CRUD
 // ══════════════════════════════════════
 function setPlantaPreset(id,planta,coef){setC(id,'planta',planta);setC(id,'plantaCoef',coef);renderSidebar();renderPreview();}
-/* local o depósito: cambia el subtítulo del informe ("Análisis de Mercado · Local Comercial / Depósito") */
+/* los depósitos tienen su propio tasador (tasador-depositos.html); tasaciones viejas de depósito hechas acá conservan el subtítulo */
 let tipoInm='Local';
 function setTipoInm(t,sinGuardar){
   tipoInm=t==='Depósito'?'Depósito':'Local';
-  document.getElementById('si-local').classList.toggle('on',tipoInm==='Local');
-  document.getElementById('si-deposito').classList.toggle('on',tipoInm==='Depósito');
   if(!sinGuardar){renderPreview();if(typeof autoSave==='function')autoSave();}
 }
 function setSubjectTipo(t){
@@ -1980,7 +1977,7 @@ async function leerPdf(file,avisar){
   const bytes=new Uint8Array(await file.arrayBuffer());
   const pdf=await PDFLib.PDFDocument.load(bytes.slice(),{updateMetadata:false});
   const dato=k=>{const ref=pdf.catalog.get(PDFLib.PDFName.of(k));return ref?JSON.parse(new TextDecoder().decode(PDFLib.decodePDFRawStream(pdf.context.lookup(ref)).decode())):null;};
-  if(pdf.catalog.get(PDFLib.PDFName.of('MetricaTasacionLocales'))||pdf.catalog.get(PDFLib.PDFName.of('MetricaTasacionDeptos')))
+  if(['MetricaTasacionLocales','MetricaTasacionDeptos','MetricaTasacionDepositos'].some(k=>pdf.catalog.get(PDFLib.PDFName.of(k))))
     throw new Error('Este PDF es una tasación completa: abrilo con el botón "Cargar" de arriba');
   const loc=dato('MetricaFicha');
   if(loc){

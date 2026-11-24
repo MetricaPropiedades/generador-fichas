@@ -1899,7 +1899,7 @@ async function leerPdf(file,avisar){
   const bytes=new Uint8Array(await file.arrayBuffer());
   const pdf=await PDFLib.PDFDocument.load(bytes.slice(),{updateMetadata:false});
   const dato=k=>{const ref=pdf.catalog.get(PDFLib.PDFName.of(k));return ref?JSON.parse(new TextDecoder().decode(PDFLib.decodePDFRawStream(pdf.context.lookup(ref)).decode())):null;};
-  if(pdf.catalog.get(PDFLib.PDFName.of('MetricaTasacionLocales'))||pdf.catalog.get(PDFLib.PDFName.of('MetricaTasacionDeptos')))
+  if(['MetricaTasacionLocales','MetricaTasacionDeptos','MetricaTasacionDepositos'].some(k=>pdf.catalog.get(PDFLib.PDFName.of(k))))
     throw new Error('Este PDF es una tasación completa: abrilo con el botón "Cargar" de arriba');
   const loc=dato('MetricaFicha');
   if(loc){
