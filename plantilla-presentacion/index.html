@@ -492,6 +492,7 @@ html.hoja{overflow:hidden}
   <button type="button" id="t-import">⤓ Importar ficha</button>
   <button type="button" id="t-edit">✎ Editar</button>
   <button type="button" id="t-pdf" title="Descargar en PDF: una hoja por diapositiva">PDF</button>
+  <button type="button" id="t-guardadas" title="Las presentaciones de todo el equipo: se guardan solas al tocar Descargar">🗂 Guardadas</button>
   <button type="button" class="primary" id="t-save" title="Descargar la presentación para el cliente (sin estos botones)">Descargar</button>
 </div>
 <input type="file" id="file-in" accept="image/*" hidden>
@@ -1563,7 +1564,12 @@ $("#t-save").addEventListener("click",()=>{
   const json=JSON.stringify(P,null,1).replace(/<\/script/gi,"<\\/script");
   const html=PRISTINE.replace(/(<script id="data" type="application\/json">)[\s\S]*?(<\/script>)/,(m,a,b)=>a+"\n"+json+"\n"+b).replace(/<html(?![^>]*data-cliente)/,'<html data-cliente="1"');
   const blob=new Blob([html],{type:"text/html"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);
-  a.download="Presentacion - "+String(P.meta.tituloPestana||"Metrica").replace(/<[^>]+>/g,"").replace(/[\\/:*?"<>|]/g,"")+".html";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)});
+  a.download="Presentacion - "+String(P.meta.tituloPestana||"Metrica").replace(/<[^>]+>/g,"").replace(/[\\/:*?"<>|]/g,"")+".html";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  /* copia automática al Drive del equipo: una por dirección, si se vuelve a descargar reemplaza a la anterior */
+  const dirG=String(get(P,"portada.direccion")||"").replace(/<[^>]+>/g,"").trim(),locG0=String(get(P,"portada.localidad")||"").replace(/<[^>]+>/g,"").trim(),locG=locG0==="Localidad"?"":locG0;
+  if(window.Guardadas&&dirG&&dirG!=="Dirección")Guardadas.subir(new TextEncoder().encode(html),{tipo:"presentacion",operacion:"",mime:"text/html",
+    id:"presentacion|"+Guardadas.claveDir(dirG)+"|"+Guardadas.claveDir(locG),titulo:[dirG,locG].filter(Boolean).join(" · "),nombre:a.download});
+});
 
 $("#t-pdf").addEventListener("click",()=>{if(EDIT)$("#t-edit").click();const t=document.title;document.title="Presentacion - "+String(P.meta.tituloPestana||"Metrica").replace(/<[^>]+>/g,"");
   setTimeout(()=>{window.print();document.title=t},400)});
@@ -1694,6 +1700,15 @@ document.querySelectorAll("#ms-fmt button").forEach(b=>{["pointerdown","mousedow
     if(todo)s.collapseToEnd();verEnDiapo(f.dataset.fk,limpiarHtml(f.innerHTML))})});
 
 modoMovil();resetModel();fit();render();
+</script>
+<script>
+/* Presentaciones guardadas (../guardadas.js, común con tasadores y fondo de comercio). No se carga en la copia que se le manda al cliente. */
+if(!document.documentElement.hasAttribute("data-cliente")){
+  const s=document.createElement("script");s.src=new URL("../guardadas.js",location.href).href;
+  s.onload=()=>{Guardadas.iniciar({tipos:{presentacion:"Presentación"},titulo:"Presentaciones",
+    abrir:blob=>importarPresentacion(blob)});document.getElementById("t-guardadas").addEventListener("click",Guardadas.abrirLista);};
+  document.head.appendChild(s);
+}
 </script>
 </body>
 </html>

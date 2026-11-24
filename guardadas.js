@@ -4,6 +4,7 @@
    la anterior. El botón "Guardadas" lista las de esta herramienta y las abre para seguir editando (el PDF trae los
    datos adentro). El generador de fichas tiene su propia copia de esto (ficha-locales.html), con la misma URL y clave.
 
+   Sirve para PDF y también para la presentación (.html, con mime 'text/html').
    Uso en una herramienta:
      Guardadas.iniciar({ tipos:{tasacion:'Tasación'}, titulo:'Tasaciones', ponerBotonDespuesDe: elemento,
                          abrir: async blob => {...} });
@@ -76,7 +77,7 @@
     const cont = modal.querySelector('.gdx-lista');
     if (!fs.length) {
       cont.innerHTML = '<div class="gdx-vacio">' + (lista.some(f => cfg.tipos[f.tipo]) ? 'No hay nada con esa búsqueda.'
-        : 'Todavía no hay nada guardado acá.<br>Se guarda solo cada vez que alguien descarga un PDF.') + '</div>';
+        : 'Todavía no hay nada guardado acá.<br>Se guarda solo cada vez que alguien descarga.') + '</div>';
       return;
     }
     cont.innerHTML = fs.map(f => {
@@ -112,7 +113,7 @@
     const txt = b.textContent; b.disabled = true; b.textContent = 'Abriendo…';
     try {
       const j = await llamar({ accion: 'abrir', id: f.id });
-      const blob = new Blob([Uint8Array.from(atob(j.pdf), c => c.charCodeAt(0))], { type: 'application/pdf' });
+      const blob = new Blob([Uint8Array.from(atob(j.pdf), c => c.charCodeAt(0))], { type: /\.html?$/i.test(j.nombre || f.nombre || '') ? 'text/html' : 'application/pdf' });
       if (b.dataset.gd === 'editar') { await cfg.abrir(blob); modal.hidden = true; }
       else {
         const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: j.nombre || f.nombre });
@@ -124,6 +125,7 @@
 
   window.Guardadas = {
     claveDir,
+    abrirLista: () => abrirLista(),
     iniciar(c) {
       cfg = c;
       const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
@@ -151,7 +153,7 @@
       if (!d.id || !d.titulo) return;
       aviso('Guardando copia en Guardadas…');
       try {
-        const j = await llamar({ accion: 'guardar', tipo: d.tipo, operacion: d.operacion || '', id: d.id, titulo: d.titulo, nombre: d.nombre, pdf: await aBase64(bytes) });
+        const j = await llamar({ accion: 'guardar', tipo: d.tipo, operacion: d.operacion || '', id: d.id, titulo: d.titulo, nombre: d.nombre, mime: d.mime || 'application/pdf', pdf: await aBase64(bytes) });
         const h = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
         aviso((j.reemplazada ? '✓ Actualizada en Guardadas · ' : '✓ Agregada a Guardadas · ') + h);
       } catch (e) {
